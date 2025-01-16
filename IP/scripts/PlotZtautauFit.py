@@ -9,115 +9,60 @@ import os
 import CPHiggs.IP.styles as styles
 import CPHiggs.IP.utils as utils
 
-XTitle = {
-    'mt': {
-        'mt_1'  : "m_{T} (GeV)",
-        'pt_1'  : "muon p_{T} (GeV)",
-        'eta_1' : "muon #eta",
-        'pt_2'  : "tau p_{T} (GeV)",
-        'eta_2' : "tau #eta",
-        'met': "E_{T}^{mis} (GeV)",
-        'm_vis': "m_{vis} (GeV)",
-        'ipsig_1': "muon IP sig",
-        'ipsig_2': "tau IP sig"
-    },
-    'et': {
-        'mt_1'  : "m_{T} (GeV)",
-        'pt_1'  : "electron p_{T} (GeV)",
-        'eta_1' : "electron #eta",
-        'pt_2'  : "tau p_{T} (GeV)",
-        'eta_2' : "tau #eta",
-        'met': "E_{T}^{mis} (GeV)",
-        'm_vis': "m_{vis} (GeV)",
-	'ipsig_1': "electron IP sig",
-        'ipsig_2': "tau IP sig"
-    }
-}
-
-def QCDEstimate(hists,perbin):
-    histIsoSS = hists['iso_SS']
-    histQCD = histIsoSS.Clone('QCD') 
-    nbins = histQCD.GetNbinsX()
-    histInvIsoOS = hists['inviso_OS']
-    histInvIsoSS = hists['inviso_SS']
-    normOS = histInvIsoOS.GetSumOfWeights()
-    normSS = histInvIsoSS.GetSumOfWeights()
-    ratio = 1.0
-    #    ratio = normOS/normSS
-    #    print('ratio = %5.3f'%(ratio))
-
-
-    for ib in range(1,nbins+1):
-        xOS = histInvIsoOS.GetBinContent(ib)
-        eOS = histInvIsoOS.GetBinError(ib)
-        xSS = histInvIsoSS.GetBinContent(ib)
-        eSS = histInvIsoSS.GetBinError(ib)
-        xData = histIsoSS.GetBinContent(ib)
-        eData = histIsoSS.GetBinError(ib)
-        xQCD = ratio * xData
-        eQCD = ratio * eData 
-        if perbin:
-            if xOS>0 and xSS>0:
-                xratio = xOS/xSS
-                if xratio>0.2 and xratio<5.0:
-                    xQCD = xratio*xData
-                    rOS = eOS/xOS
-                    rSS = eSS/xSS
-                    rData = eData/xData
-                    rQCD = math.sqrt(rOS*rOS+rSS*rSS+rData*rData)
-                    
-        if xQCD<0:
-            xQCD=0
-            eQCD=0
-        histQCD.SetBinContent(ib,xQCD)
-        histQCD.SetBinError(ib,eQCD)
-        
-    return histQCD
-
-def Plot(hists,**kwargs):
+def Plot(f,**kwargs):
 
     era = kwargs.get('era','Run3_2022EE')
-    var = kwargs.get('var','m_vis')
     chan = kwargs.get('channel','mt')
-    suffix = kwargs.get('suffix','')
+    binPt = kwargs.get('binPt','1')
+    binEta = kwargs.get('binEta','1')
+    postFit = kwargs.get('postFit',False)
+    region = kwargs.get('region','pass')
     per_process = kwargs.get('per_process',True)
     plotLegend = kwargs.get('plotLegend',True)
-    ymin = kwargs.get('ymin',0.701)
-    ymax = kwargs.get('ymax',1.299)
-
-    # histograms
-    h_data = hists['data_'+var+'_os_iso_all'].Clone('h_data')
-    h_ztt = hists['dy_'+var+'_os_iso_tau'].Clone('h_ztt')
-    h_zll = hists['dy_'+var+'_os_iso_lep'].Clone('h_zll')
-    h_zll.Add(h_zll,hists['dy_'+var+'_os_iso_had'],1.,1.)
-    h_top = hists['top_'+var+'_os_iso_all'].Clone('h_top')
-    h_vv = hists['vv_'+var+'_os_iso_all'].Clone('h_vv')
-    h_wjets = hists['wjets_'+var+'_os_iso_all'].Clone('h_wjets')
-
-    h_lep = hists['dy_'+var+'_os_iso_lep'].Clone('h_lep')
-    h_tau = hists['dy_'+var+'_os_iso_tau'].Clone('h_tau')
-    h_had = hists['dy_'+var+'_os_iso_had'].Clone('h_had')
-
-    for mc_sample in ['top','vv']:
-        h_lep.Add(h_lep,hists[mc_sample+'_'+var+'_os_iso_lep'],1.,1.)
-        h_tau.Add(h_tau,hists[mc_sample+'_'+var+'_os_iso_tau'],1.,1.)
-        h_had.Add(h_had,hists[mc_sample+'_'+var+'_os_iso_had'],1.,1.)
+    ymin = kwargs.get('ymin',0.501)
+    ymax = kwargs.get('ymax',1.499)
     
-    # qcd estimation
-    hists_qcd = {}
-    hists_qcd['iso_SS'] = hists['data_'+var+'_ss_iso_all'].Clone('iso_SS')
-    hists_qcd['inviso_SS'] = hists['data_'+var+'_ss_antiiso_all'].Clone('inviso_SS')
-    hists_qcd['inviso_OS'] = hists['data_'+var+'_os_antiiso_all'].Clone('inviso_OS')
-    for mc_sample in ['dy','top','vv','wjets']:
-        hists_qcd['iso_SS'].Add(hists_qcd['iso_SS'],hists[mc_sample+'_'+var+'_ss_iso_all'],1.,-1.)
-        hists_qcd['inviso_SS'].Add(hists_qcd['inviso_SS'],hists[mc_sample+'_'+var+'_ss_antiiso_all'],1.,-1.)
-        hists_qcd['inviso_OS'].Add(hists_qcd['inviso_OS'],hists[mc_sample+'_'+var+'_os_antiiso_all'],1.,-1.)
+    folder_fit = 'shapes_prefit'
+    if postFit: folder='shapes_fit_s'
 
-    h_qcd = QCDEstimate(hists_qcd,False)
+    folder_region = 'ch2'
+    if region=='pass':
+        folder_region='ch1'
+        region = 'pass'
 
+    folder = '%s/%s'
+    # histograms
+    h_data = f.Get(folder+'/data_obs').Clone('h_data')
+
+    h_ztt = f.Get(folder+'/ZTT_'+region).Clone('h_ztt')
+    h_ttt = f.Get(folder+'/TTT_'+region).Clone('h_ttt')
+    h_vvt = f.Get(folder+'/VVT_'+region).Clone('h_vvt')
+
+    h_zll = f.Get(folder+'/ZLL').Clone('h_zll')
+    h_ttl = f.Get(folder+'/TTL').Clone('h_ttl')
+    h_vvl = f.Get(folder+'/VVL').Clone('h_vvl')
+
+    h_wjets = f.Get(folder+'/WJ').Clone('h_zll')
+    h_qcd = f.Get(folder+'/QCD').Clone('h_qcd')
+
+    h_lep = h_zll.Clone('h_lep')
+    h_tau = h_ztt.Clone('h_tau')
+
+    h_lep.Add(h_lep,h_ttl,1.,1.)
+    h_lep.Add(h_lep,h_vvl,1.,1.)
+
+    h_tau.Add(h_tau,h_ttt,1.,1.)
+    h_tau.Add(h_tau,h_vvt,1.,1.)
+
+    h_top = h_ttt.Clone('h_top')
+    h_vv = h_vvt.Clone('h_vv')
+
+    h_top.Add(h_top,h_ttl,1.,1.)
+    h_vv.Add(h_vv,h_vvl,1.,1.)
+    
     styles.InitData(h_data)
 
-    xtitle = XTitle[chan][var]
+    xtitle = 'm_{vis} (GeV)'
     styles.InitHist(h_ztt,"","",ROOT.TColor.GetColor("#FFCC66"),1001)
     styles.InitHist(h_zll,"","",ROOT.TColor.GetColor(100,192,232),1001)
     styles.InitHist(h_top,"","",ROOT.TColor.GetColor("#9999CC"),1001)
@@ -126,7 +71,6 @@ def Plot(hists,**kwargs):
 
     styles.InitHist(h_tau,"","",ROOT.TColor.GetColor("#FFCC66"),1001)
     styles.InitHist(h_lep,"","",ROOT.TColor.GetColor(100,192,232),1001)
-    styles.InitHist(h_had,"","",ROOT.TColor.GetColor("#9999CC"),1001)
     styles.InitHist(h_wjets,"","",ROOT.TColor.GetColor("#DE5A6A"),1001)
 
     x_data = h_data.GetSumOfWeights()
@@ -141,7 +85,6 @@ def Plot(hists,**kwargs):
 
     x_tau = h_tau.GetSumOfWeights()
     x_lep = h_lep.GetSumOfWeights()
-    x_had = h_had.GetSumOfWeights()
         
     print('')
     print('Yields ->')
@@ -155,10 +98,9 @@ def Plot(hists,**kwargs):
     else:
         print('Prompt lep : %7.0f'%(x_lep))
         print('tau -> lep : %7.0f'%(x_tau))
-        print('had -> lep : %7.0f'%(x_had))
         print('jet -> tau : %7.0f'%(x_wjets))
         print('QCD        : %7.0f'%(x_qcd))
-        x_tot = x_tau + x_lep + x_had + x_wjets + x_qcd
+        x_tot = x_tau + x_lep + x_wjets + x_qcd
         
     print('Total      : %7.0f'%(x_tot))
     print('Data       : %7.0f'%(x_data))
@@ -171,8 +113,7 @@ def Plot(hists,**kwargs):
     h_ztt.Add(h_ztt,h_zll,1.,1.)
 
     h_wjets.Add(h_wjets,h_qcd,1.,1.)
-    h_had.Add(h_had,h_wjets,1.,1.)
-    h_lep.Add(h_lep,h_had,1.,1.)
+    h_lep.Add(h_lep,h_wjets,1.,1.)
     h_tau.Add(h_tau,h_lep,1.,1.)
     
     h_tot = None
@@ -199,7 +140,6 @@ def Plot(hists,**kwargs):
 
     utils.zeroBinErrors(h_tau)
     utils.zeroBinErrors(h_lep)
-    utils.zeroBinErrors(h_had)
     
     YMax = h_data.GetMaximum()
     if h_tot.GetMaximum()>YMax: YMax = h_tot.GetMaximum()
@@ -228,8 +168,8 @@ def Plot(hists,**kwargs):
     else:
         h_tau.Draw('hsame')
         h_lep.Draw('hsame')
-        h_had.Draw('hsame')
         h_wjets.Draw('hsame')
+        h_qcd.Draw('hsame')
         
     h_data.Draw('e1same')
     h_tot.Draw('e2same')
@@ -249,13 +189,12 @@ def Plot(hists,**kwargs):
         if chan=='mt':
             leg.AddEntry(h_tau,'#tau#rightarrow#mu','f')
             leg.AddEntry(h_lep,'prompt #mu','f')
-            leg.AddEntry(h_had,'jet#rightarrow#mu','f')
         else:
             leg.AddEntry(h_tau,'#tau#rightarrowe','f')
             leg.AddEntry(h_lep,'prompt e','f')
-            leg.AddEntry(h_had,'jet#rightarrowe','f')
-        leg.AddEntry(h_wjets,'jet#rightarrow#tau','f')
-            
+        leg.AddEntry(h_wjets,'simulated fakes','f')
+        leg.AddEntry(h_qcd,'QCD','f')
+        
     if plotLegend: leg.Draw()
 
     styles.CMS_label(upper,era=era)
@@ -294,8 +233,10 @@ def Plot(hists,**kwargs):
     canvas.Update()
     print('')
     typ_suffix = 'typ'
-    if per_process: typ_suffix = 'proc' 
-    outputGraphics = os.getenv('CMSSW_BASE') + '/src/CPHiggs/IP/figures/' + var + '_' + chan + '_' + era + '_' + typ_suffix + suffix + '.png'    
+    if per_process: typ_suffix = 'proc'
+    binPtEta = 'binPt%s_binEta%s'%(binPt,binEta)
+    basedir = '%s/src/CPHiggs/IP/figures'%(os.getenv('CMSSW_BASE'))
+    outputGraphics = '%s/%s_%s_%s_%s_%s_%s.png'%(chan,era,binPtEta,region,fit_suffix,typ_suffix)    
     canvas.Print(outputGraphics)
 
 if __name__ == "__main__":
@@ -306,27 +247,15 @@ if __name__ == "__main__":
     from argparse import ArgumentParser
     parser = ArgumentParser()
     parser.add_argument('-era' ,'--era', dest='era', default='Run3_2022', choices=['Run3_2022','Run3_2022EE','Run3_2023','Run3_2023BPix'])
-    parser.add_argument('-variable' ,'--variable', dest='variable', default='m_vis')
     parser.add_argument('-channel','--channel', dest='channel', default='mt',choices=['mt','et'])
-    parser.add_argument('-useCrossTrigger','--useCrossTrigger', dest='useCrossTrigger',action='store_true')
     parser.add_argument('-perType','--perType', dest='perType', action='store_true')
-    parser.add_argument('-mtCut','--mtCut',dest='mtCut',action='store_true')
-    parser.add_argument('-nbins','--nbins', dest='nbins', type=int, default=48)
-    parser.add_argument('-xmin','--xmin', dest='xmin', type=float, default=0.0)
-    parser.add_argument('-xmax','--xmax', dest='xmax', type=float, default=240.)
-    parser.add_argument('-ymin','--ymin', dest='ymin', type=float, default=0.701)
-    parser.add_argument('-ymax','--ymax', dest='ymax', type=float, default=1.299)
+    parser.add_argument('-ymin','--ymin', dest='ymin', type=float, default=0.501)
+    parser.add_argument('-ymax','--ymax', dest='ymax', type=float, default=1.499)
     parser.add_argument('--removeLegend','--removeLegend', dest='removeLegend', action='store_true')
     
     args = parser.parse_args()
     era = args.era
-    applyMTCut = args.mtCut
-    useCrossTrigger = args.useCrossTrigger
     chan = args.channel
-    var = args.variable
-    nbins = args.nbins
-    xmin = args.xmin
-    xmax = args.xmax
     ymin = args.ymin
     ymax = args.ymax
 
@@ -337,24 +266,21 @@ if __name__ == "__main__":
     proc = True
     if args.perType: proc = False
     
-    bins = []
-    width = (xmax-xmin)/float(nbins)
-    for i in range(0,nbins+1):
-        xb = xmin + width*float(i)
-        bins.append(xb)
-
-    suffix = ''
-    if useCrossTrigger:
-        if applyMTCut:
-            suffix = '_xtrig_mtcut'
-        else:
-            suffix = '_xtrig'
-    else:
-        if applyMTCut:
-            suffix = '_mtcut'
-
-    inputFileName = '%s/selection/%s_%s%s.root'%(os.getenv('PWD'),chan,era,suffix)
-    inputFile = ROOT.TFile(inputFileName,'read')
-    hists = utils.extractHistos(inputFile,var,bins)
-    Plot(hists,era=era,var=var,channel=chan,per_process=proc,suffix=suffix,ymin=ymin,ymax=ymax,plotLegend=plotLegend)
+    nbinsPt = 4
+    nbinsEta = 2
+    if chan=='mt': nbinsPt = 5
+    region_labels = ['pass','fail']
+    basedir='%s/src/CPHiggs/IP/datacards'%(os.getenv('CMSSW_BASE'))
+    for iPt in range(1,nbinsPt+1):
+        for iEta in range(1,nbinsEta+1):
+            fileName = '%s/%s_%s_binPt%s_binEta%s_fit.root'
+            inputFile = ROOT.TFile(fileName,'read')
+            for region in region_labels:
+                Plot(inputFile,
+                     era=era,
+                     channel=chan,
+                     per_process=proc,
+                     ymin=ymin,
+                     region=region,
+                     ymax=ymax)
     

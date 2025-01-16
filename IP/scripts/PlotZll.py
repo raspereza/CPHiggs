@@ -53,7 +53,7 @@ def Plot(hists,**kwargs):
     styles.InitData(h_data)
 
     xtitle = XTitle[chan][var]
-    styles.InitHist(h_zll,"","",ROOT.TColor.GetColor("#4496C8"),1001)
+    styles.InitHist(h_zll,"","",ROOT.TColor.GetColor(100,192,232),1001)
     styles.InitHist(h_top,"","",ROOT.TColor.GetColor("#9999CC"),1001)
     styles.InitHist(h_vv,"","",ROOT.TColor.GetColor("#DE5A6A"),1001)
     styles.InitHist(h_wjets,"","",ROOT.TColor.GetColor("#DE5A6A"),1001)
@@ -161,7 +161,7 @@ def Plot(hists,**kwargs):
     canvas.SetSelected(canvas)
     canvas.Update()
     print('')
-    outputGraphics = os.getenv('PWD') + '/figures/' + var + '_' + chan + '_' + era + '.png'    
+    outputGraphics = os.getenv('CMSSW_BASE') + '/src/CPHiggs/IP/figures/' + var + '_' + chan + '_' + era + '.png'    
     canvas.Print(outputGraphics)
 
 if __name__ == "__main__":
@@ -172,13 +172,17 @@ if __name__ == "__main__":
     from argparse import ArgumentParser
     parser = ArgumentParser()
     parser.add_argument('-era' ,'--era', dest='era', default='Run3_2022', choices=['Run3_2022','Run3_2022EE','Run3_2023','Run3_2023BPix'])
-    parser.add_argument('-variable' ,'--variable', dest='variable', default='m_vis')
     parser.add_argument('-channel','--channel', dest='channel', default='mt',choices=['mm','ee'])
-    parser.add_argument('-nbins','--nbins', dest='nbins', type=int, default=30)
-    parser.add_argument('-xmin','--xmin', dest='xmin', type=float, default=0.0)
-    parser.add_argument('-xmax','--xmax', dest='xmax', type=float, default=150.)
-    parser.add_argument('-ymin','--ymin', dest='ymin', type=float, default=0.0)
-    parser.add_argument('-ymax','--ymax', dest='ymax', type=float, default=2.0)
+    parser.add_argument('-variable' ,'--variable', dest='variable', default='m_vis')
+    parser.add_argument('-nbins','--nbins', dest='nbins', type=int, default=40)
+    parser.add_argument('-xmin','--xmin', dest='xmin', type=float, default=50.0)
+    parser.add_argument('-xmax','--xmax', dest='xmax', type=float, default=130.)
+    parser.add_argument('-ymin','--ymin', dest='ymin', type=float, default=0.701)
+    parser.add_argument('-ymax','--ymax', dest='ymax', type=float, default=1.299)
+    parser.add_argument('-applyIP1','--applyIP1',dest='applyIP1',type=int,default=0)
+    parser.add_argument('-applyIP2','--applyIP2',dest='applyIP2',type=int,default=0)
+    parser.add_argument('-applySF', '--applySF', dest='applySF' ,type=int,default=0)
+
     args = parser.parse_args()
 
     era = args.era
@@ -189,6 +193,15 @@ if __name__ == "__main__":
     xmax = args.xmax
     ymin = args.ymin
     ymax = args.ymax
+
+    plotLegend = True
+    if var=='eta_1' or var=='eta_2':
+        plotLegend = False
+
+    
+    applyIPSigLep1Cut = args.applyIP1
+    applyIPSigLep2Cut = args.applyIP2
+    applyIPSigPromptLepSF = args.applySF
     
     bins = []
     width = (xmax-xmin)/float(nbins)
@@ -196,9 +209,33 @@ if __name__ == "__main__":
         xb = xmin + width*float(i)
         bins.append(xb)
 
-    inputFileName = '%s/selection/%s_%s.root'%(os.getenv('PWD'),chan,era)
+    basedir = os.getenv('CMSSW_BASE')+'/src/CPHiggs/IP/selection'
+
+    suffix_ip1 = ''
+    suffix_ip2 = ''
+    suffix_prompt = ''
+    if applyIPSigLep1Cut==1:
+        suffix_ip1 = '_ipcut1'
+    if applyIPSigLep2Cut==1:
+        suffix_ip2 = '_ipcut2'
+    if applyIPSigPromptLepSF==1:
+        suffix_prompt = '_promptSF'
+
+    suffix = suffix_ip1+suffix_ip2+suffix_prompt 
+    
+    inputFileName = '%s/%s_%s%s.root'%(basedir,chan,era,suffix)
+    if os.path.isfile(inputFileName):        
+        print('')
+        print('Loading histograms from file %s'%(inputFileName))
+        print('')
+    else:
+        print('')
+        print('Input ROOT file %s not found'%(inputFileName))
+        print('Quitting')
+        print('')
+        exit()
     inputFile = ROOT.TFile(inputFileName,'read')
     hists = utils.extractHistos(inputFile,var,bins)
-    Plot(hists,era=era,var=var,channel=chan,ymin=ymin,ymax=ymax)
+    Plot(hists,era=era,var=var,channel=chan,ymin=ymin,ymax=ymax,plotLegend=plotLegend)
 
     
