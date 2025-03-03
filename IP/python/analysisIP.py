@@ -7,89 +7,219 @@ import CPHiggs.IP.utils as utils
 from CPHiggs.IP.ScaleFactor import ScaleFactor
 from CPHiggs.PolarimetricVector.PolarimetricA1 import PolarimetricA1
 
-def PolVector(PV, SV,
-              Pt, Pi1, Pi2,  Pi3,
-              q, qpi1, qpi2, qpi3):
+# three LorentzVectors (pions) and three doubles (charges) 
+# sorts three charged pions
+def sortA1(pi1,pi2,pi3,q1,q2,q3):
+
+    p1 = pi1
+    p2 = pi2
+    p3 = pi3
+
+#    print('sortA1    : q1 = %3.1f  q2 = %3.1f  q3 = %3.1f'%(q1,q2,q3))
     
+    condition1 = (q1*q2)<0. and (q1*q3)<0.
+    condition2 = (q2*q1)<0. and (q2*q3)<0.
+
+    if condition1:
+        p1 = pi1
+        p2 = pi2
+        p3 = pi3
+    elif condition2:
+        p1 = pi2
+        p2 = pi1
+        p3 = pi3
+    else:
+        p1 = pi3
+        p2 = pi1
+        p3 = pi2
+
+
+    dM12 = abs((p1+p2).M()-utils.rho_mass)
+    dM13 = abs((p1+p3).M()-utils.rho_mass)
+
+    if dM13<dM12:
+        temp = p2
+        p2 = p3
+        p3 = temp
+
+    print('a1 sorted -> ')
+    print('pi_os  (pt,eta,phi,mass) = (%5.1f,%5.3f,%5.3f,%5.3f)'%(p1.Pt(),p1.Eta(),p1.Phi(),p1.M()))
+    print('pi_ss1 (pt,eta,phi,mass) = (%5.1f,%5.3f,%5.3f,%5.3f)'%(p2.Pt(),p2.Eta(),p2.Phi(),p2.M()))
+    print('pi_ss2 (pt,eta,phi,mass) = (%5.1f,%5.3f,%5.3f,%5.3f)'%(p3.Pt(),p3.Eta(),p3.Phi(),p3.M()))
+    print('M(os_ss1) = %5.4f -- M(os_ss2) = %5.4f -- m(rho) = %5.4f'%((p1+p2).M(),(p1+p3).M(),utils.rho_mass))
+    
+    return p1,p2,p3
+
+def rotateToJMax(visTau,tau):
+    visTau_dir = visTau.Vect().Unit()
+    tau_dir = tau.Vect().Unit()
+    
+    mass_vis_tau = visTau.M()
+    theta_GJ = math.acos(max(-1.0,min(1.0,tau_dir.Dot(visTau_dir))))
+    sin_GJ_max = 0.5*(utils.tau_mass*utils.tau_mass-mass_vis_tau*mass_vis_tau)/(utils.tau_mass*visTau.P())
+    theta_GJ_max = math.asin(max(-1.0,min(1.0,sin_GJ_max)))
+
+    new_tau = tau
+    if theta_GJ>theta_GJ_max:
+        ratio = visTau.X()/visTau.Y()
+        n_1_x = 1.0/math.sqrt(1.0+ratio*ratio)
+        n_1_y = -n_1_x * ratio
+        n_1 = ROOT.TVector3(n_1_x,n_1_y,0.)
+        n_2 = n_1.Cross(visTau_dir)
+        
+        phi_opt_1 = math.atan(tau_dir.Dot(n_2)/tau_dir.Dot(n_1))
+        new_dir_1 = math.cos(theta_GJ_max)*visTau_dir+math.sin(theta_GJ_max)*(math.cos(phi_opt_1)*n_1+math.sin(phi_opt_1)*n_2)
+        phi_opt_2 = phi_opt_1 + ROOT.TMath.Pi()
+        new_dir_2 = math.cos(theta_GJ_max)*visTau_dir+math.sin(theta_GJ_max)*(math.cos(phi_opt_2)*n_1+math.sin(phi_opt_2)*n_2)
+        condition = new_dir_1.Dot(tau_dir) < new_dir_2.Dot(tau_dir)
+        new_dir = new_dir_1
+        if condition:
+            new_dir = new_dir_2
+
+        new_P = tau.P()*new_dir
+        new_tau.SetXYZT(new_P.X(),new_P.Y(),new_P.Z(),tau.E())
+    return new_tau
+    
+# returns full tau 4-momentum and polarimetric vector
+def PolVectRho(Pt,Pi,Pi0):
+    visTau = Pi+Pi0
+    tau = TLorentzVector()
+    tau.SetPtEtaPhiM(Pt,visTau.Eta(),visTau.Phi(),utils.tau_mass)
+
+    tempTau = tau
+    tempPi = Pi
+    tempPi0 = Pi0
+
+    boost = -tau.BoostVector()
+    
+    tempTau.Boost(boost)
+    tempPi.Boost(boost)
+    tempPi0.Boost(boost)
+
+    tempQ = tempPi - tempPi0
+    tempN = tempTau - tempPi - tempPi0
+    tempN.SetPtEtaPhiM(tempN.Pt(),tempN.Eta(),tempN.Phi(),0.)
+    
+    tempPV = 2*(tempQ*tempN)*tempQ.Vect()-tempQ.M2()*tempN.Vect()
+    pv = TLorentzVector()
+    pv.SetXYZT(tempPV.X(),tempPV.Y(),tempPV.Z(),0.)
+    pv.Boost(-boost)
+    
+    return tau,pv
+
+
+# returns corrected full tau 4-momentum and polarimetric vector in 
+def PolVectA1(PV,SV,
+              Pt,P1,P2,P3,
+              q,q1,q2,q3):    
+
+#    P1,P2,P3 = sortA1(Pi1,Pi2,Pi3,q1,q2,q3)    
+#    print('PolVectA1 : q1 = %3.1f  q2 = %3.1f  q3 = %3.1f   q = %3.1f'%(q1,q2,q3,q))
+#    print('PolVectA1 : PV(x) = %6.4f  PV(y) = %6.4f  PV(z) = %6.4f'%(PV.X(),PV.Y(),PV.Z()))
+#    print('PolVectA1 : SV(x) = %6.4f  SV(y) = %6.4f  SV(z) = %6.4f'%(SV.X(),SV.Y(),SV.Z()))
+
     n = SV - PV
-    massTau = 1.777
     
     Ptau = ROOT.TLorentzVector()
-    Ptau.SetPtEtaPhiM(Pt,n.Eta(),n.Phi(),massTau)
+    Ptau.SetPtEtaPhiM(Pt,n.Eta(),n.Phi(),utils.tau_mass)
+    visTau = P1+P2+P3
+    tau = rotateToJMax(visTau,Ptau)
+    tempTau = tau
+    tempP1 = P1
+    tempP2 = P2
+    tempP3 = P3
+    
+    boost = -tau.BoostVector()
 
-    q1 = q*qpi1
-    q2 = q*qpi2
-    q3 = q*qpi3
-
-    Pi_os  = Pi1
-    Pi1_ss = Pi2
-    Pi2_ss = Pi3
-    if q1<0:
-        Pi_os = Pi1
-        Pi1_ss = Pi2
-        Pi2_ss = Pi3
-    if q2<0:
-        Pi_os = Pi2
-        Pi1_ss = Pi1
-        Pi2_ss = Pi3
-    if q3<0:
-        Pi_os = Pi3
-        Pi1_ss = Pi1
-        Pi2_ss = Pi2
-
-    PA1 = PolarimetricA1(Ptau,
-                         Pi_os,
-                         Pi1_ss,
-                         Pi2_ss,
+    tempTau.Boost(boost)
+    tempP1.Boost(boost)
+    tempP2.Boost(boost)
+    tempP3.Boost(boost)
+    
+    PA1 = PolarimetricA1(tempTau,
+                         tempP1,
+                         tempP2,
+                         tempP3,
                          q)
 
-    pv = PA1.PVC()
-    return pv
+    tempPV = -PA1.PVC().Vect()
+    pv = ROOT.TLorentzVector()
+    pv.SetXYZT(tempPV.X(),tempPV.Y(),tempPV.Z(),0.)
+    pv.Boost(-boost)
+    return tau,pv
     
 # P1, P2, R1, R2 - TLorentzVectors
-# firstNeg, pi01 and pi02 - booleans
+# firstNeg = True if muon is negative, otherwise False
+# method_1, method_2 - str
+# available options for method_{1,2} :
+#   - Impact-Parameter
+#   - Decay-Plane
+#   - Decay-Plane-a1
+#   - PV 
 def acoCP(P1, P2, R1, R2,
-          firstNeg, pi01, pi02):
+          firstNeg, method_1, method_2):
 
-    y1 = 1
-    y2 = 1
-    
-    if pi01:
-        y1 = P1.E()-R1.E()
-    if pi02:
-        y2 = P2.E()-R2.E()
-
-    y = y1*y2
 
     Prongsum = P1 + P2
     boost = -Prongsum.BoostVector()
 
+    if method_1=='Impact-Parameter':
+        temp = R1.Vect().Unit()
+        R1.SetXYZT(temp.X(),temp.Y(),temp.Z(),0.)
+    if method_2=='Impact-Parameter':
+        temp = R2.Vect().Unit()
+        R2.SetXYZT(temp.X(),temp.Y(),temp.Z(),0.)
+    
     P1.Boost(boost)
     P2.Boost(boost)
     R1.Boost(boost)
     R2.Boost(boost)
+    
+    y1 = 1
+    y2 = 1
+    
+    if method_1=='Decay-Plane': # rho(+/-) -> pi(+/-) + pi0
+        y1 = (P1.E()-R1.E())/(P1.E()+R1.E())
+    elif method_1=='Decay-Plane-a1': # a1(+/-) -> rho0 + pi(+/-)
+        y1 = (R1.E()-P1.E())/(P1.E()+R1.E())
+        
+    if method_2=='Decay-Plane': # neutral pion
+        y2 = (P2.E()-R2.E())/(P2.E()+R2.E())
+    elif method_2=='Decay-Plane-a1': # a1(+/-) -> rho0 + pi(+/-)
+        y2 = (R2.E()-P2.E())/(P2.E()+R2.E())
 
-    vecP1 = P1.Vect()
-    vecP2 = P2.Vect()
+    y = y1*y2
+
+    vecP1 = P1.Vect().Unit()
+    vecP2 = P2.Vect().Unit()
     vecR1 = R1.Vect()
     vecR2 = R2.Vect()
 
-    vecP1 *= 1.0/vecP1.Mag()
-    vecP2 *= 1.0/vecP2.Mag()
-    vecR1 *= 1.0/vecR1.Mag()
-    vecR2 *= 1.0/vecR2.Mag()
 
-    R1transv = vecR1 - vecP1*(vecP1*vecR1)
-    R2transv = vecR2 - vecP2*(vecP2*vecR2)
+    R1transv = vecR1 - vecP1*(vecP1.Dot(vecR1))
+    R2transv = vecR2 - vecP2*(vecP2.Dot(vecR2))
 
-    R1transv *= 1.0/R1transv.Mag()
-    R2transv *= 1.0/R2transv.Mag()
+    n1 = R1transv.Unit()
+    n2 = R2transv.Unit()
 
-    acop = ROOT.TMath.ACos(R1transv*R2transv)
-    sign = vecP2 * R1transv.Cross(R2transv)
+    print('%s -- %s'%(method_1,method_2))
+    print('after boost in P1+P2 frame -> ')
+    print('vectors P1,P2,R1,R2 are normalized to unity ')
+    print('P1 (x,y,z,t)     = (%5.3f,%5.3f,%5.3f,%5.3f)'%(P1.X(),P1.Y(),P1.Z(),P1.T()))
+    print('P2 (x,y,z,t)     = (%5.3f,%5.3f,%5.3f,%5.3f)'%(P2.X(),P2.Y(),P2.Z(),P2.T()))
+    print('R1 (x,y,z,t)     = (%5.3f,%5.3f,%5.3f,%5.3f)'%(R1.X(),R1.Y(),R1.Z(),R1.T()))
+    print('R2 (x,y,z,t)     = (%5.3f,%5.3f,%5.3f,%5.3f)'%(R2.X(),R2.Y(),R2.Z(),R2.T()))
+    print('R1transv (x,y,z) = (%5.3f,%5.3f,%5.3f)'%(R1transv.X(),R1transv.Y(),R1transv.Z()))
+    print('R2transv (x,y,z) = (%5.3f,%5.3f,%5.3f)'%(R2transv.X(),R2transv.Y(),R2transv.Z()))
+    
+    acop = ROOT.TMath.ACos(n1.Dot(n2))
+
+    print('angle = %5.3f'%(acop))
+
+    sign = vecP2.Dot(n1.Cross(n2))
     
     if firstNeg:
-        sign = vecP1 * R2transv.Cross(R1transv)
+        sign = vecP1.Dot(n2.Cross(n1))
 
     if sign<0:
         acop = 2.0*ROOT.TMath.Pi() - acop
@@ -102,7 +232,7 @@ def acoCP(P1, P2, R1, R2,
     return acop
 
             
-def CosAlpha(pt,eta,phi,mass,Rx,Ry,Rz):
+def CosAlpha(pt,eta,phi,mass,Rx,Ry,Rz,prn):
 
     P = ROOT.TLorentzVector()
     P.SetPtEtaPhiM(pt,eta,phi,mass)
@@ -119,6 +249,10 @@ def CosAlpha(pt,eta,phi,mass,Rx,Ry,Rz):
     if denom > 0.: 
         cosa = abs( ez.Cross(p).Dot(n.Cross(p)) / denom )
     else:
+        if prn:
+            print('px = %3.1f  py = %3.1f  pz = %3.1f'%(p.X(),p.Y(),p.Z()))
+            print('nx = %3.1f  ny = %3.1f  nz = %3.1f'%(Rx,Ry,Rz))
+            print('')
         cosa = 1.0/math.sqrt(2.0)
     
     return cosa
@@ -411,15 +545,19 @@ class analysisSample:
         channel = self.channel
         sampleName = self.sampleName
         
-        massLep = 0.000511
+        massLep = utils.electron_mass
         if channel=='mt':
-            massLep = 0.105658
-        massPi = 0.13957
-        massPi0 = 0.13498
+            massLep = utils.muon_mass
+        massPi = utils.pi_mass
+        massPi0 = utils.pi0_mass
         
         # creating histograms 
         hists = self.DeclareHistos()
 
+        # run event
+        run    = np.zeros(1,dtype=np.int64)
+        event  = np.zeros(1,dtype=np.int64)
+        
         # floats
         weight      = np.zeros(1,dtype=np.float64)
 
@@ -458,6 +596,7 @@ class analysisSample:
         pi_pt_2     = np.zeros(1,dtype=np.float64)
         pi_eta_2    = np.zeros(1,dtype=np.float64)
         pi_phi_2    = np.zeros(1,dtype=np.float64)
+        pi_mass_2   = np.zeros(1,dtype=np.float64)
         pi_charge_2 = np.zeros(1,dtype=np.float64)
         
         pi0_pt_2     = np.zeros(1,dtype=np.float64)
@@ -470,11 +609,13 @@ class analysisSample:
         pi2_pt_2     = np.zeros(1,dtype=np.float64)
         pi2_eta_2    = np.zeros(1,dtype=np.float64)
         pi2_phi_2    = np.zeros(1,dtype=np.float64)
+        pi2_mass_2   = np.zeros(1,dtype=np.float64)
         pi2_charge_2 = np.zeros(1,dtype=np.float64)
         
         pi3_pt_2     = np.zeros(1,dtype=np.float64)
         pi3_eta_2    = np.zeros(1,dtype=np.float64)
         pi3_phi_2    = np.zeros(1,dtype=np.float64)
+        pi3_mass_2   = np.zeros(1,dtype=np.float64)
         pi3_charge_2 = np.zeros(1,dtype=np.float64)
         
         m_vis        = np.zeros(1,dtype=np.float64)
@@ -504,6 +645,7 @@ class analysisSample:
         trg_lep     = np.zeros(1,dtype='?')
         trg_cross   = np.zeros(1,dtype='?')
         os          = np.zeros(1,dtype='?')
+        hasRefitSV_2 = np.zeros(1,dtype='?')
         
         # integers
         idDeepTau2018v2p5VSe_2   = np.zeros(1,dtype=np.int64)
@@ -515,6 +657,9 @@ class analysisSample:
 
         # branches ->
 
+        tree.SetBranchAddress('run',run)
+        tree.SetBranchAddress('event',event)
+        
         # floats ->
         tree.SetBranchAddress('met_pt',met_pt)
         tree.SetBranchAddress('m_vis',m_vis)
@@ -553,9 +698,9 @@ class analysisSample:
 
         if channel=='mt' or channel=='et':
             
-            tree.SetBranchAddress('PVBS_x',PVBS_x)
-            tree.SetBranchAddress('PVBS_y',PVBS_y)
-            tree.SetBranchAddress('PVBS_z',PVBS_z)
+            tree.SetBranchAddress('PV_x',PVBS_x)
+            tree.SetBranchAddress('PV_y',PVBS_y)
+            tree.SetBranchAddress('PV_z',PVBS_z)
 
             tree.SetBranchAddress('pi0_pt_2',pi0_pt_2)
             tree.SetBranchAddress('pi0_eta_2',pi0_eta_2)
@@ -564,20 +709,24 @@ class analysisSample:
             tree.SetBranchAddress('pi_pt_2',pi_pt_2)
             tree.SetBranchAddress('pi_eta_2',pi_eta_2)
             tree.SetBranchAddress('pi_phi_2',pi_phi_2)
+            tree.SetBranchAddress('pi_mass_2',pi_mass_2)
             tree.SetBranchAddress('pi_charge_2',pi_charge_2)
 
             tree.SetBranchAddress('pi2_pt_2',pi2_pt_2)
             tree.SetBranchAddress('pi2_eta_2',pi2_eta_2)
             tree.SetBranchAddress('pi2_phi_2',pi2_phi_2)
+            tree.SetBranchAddress('pi2_mass_2',pi2_mass_2)
             tree.SetBranchAddress('pi2_charge_2',pi2_charge_2)
             
             tree.SetBranchAddress('pi3_pt_2',pi3_pt_2)
             tree.SetBranchAddress('pi3_eta_2',pi3_eta_2)
             tree.SetBranchAddress('pi3_phi_2',pi3_phi_2)
+            tree.SetBranchAddress('pi3_mass_2',pi3_mass_2)
             tree.SetBranchAddress('pi3_charge_2',pi3_charge_2)
 
-            tree.SetBranchAddress('FastMTT_pt_2',pt_FastMTT)
-            tree.SetBranchAddress('FastMTT_pt_2_constraint',pt_FastMTT_cons)
+            tree.SetBranchAddress('hasRefitSV_2',hasRefitSV_2)
+#            tree.SetBranchAddress('FastMTT_pt_2',pt_FastMTT)
+            tree.SetBranchAddress('FastMTT_pt_2_constraint',pt_FastMTT)
 
             tree.SetBranchAddress('sv_x_2',sv_x_2)
             tree.SetBranchAddress('sv_y_2',sv_y_2)
@@ -595,14 +744,16 @@ class analysisSample:
             tree.SetBranchAddress('aco_mu_pi',aco_lep_pi)
             tree.SetBranchAddress('aco_mu_rho',aco_lep_rho)
             tree.SetBranchAddress('aco_mu_a1',aco_lep_a1)
-            tree.SetBranchAddress('aco_mu_a1_FASTMTT_NoMassConstraint',aco_lep_a1_FastMTT)
+#            tree.SetBranchAddress('aco_mu_a1_FASTMTT_NoMassConstraint',aco_lep_a1_FastMTT)
+            tree.SetBranchAddress('aco_mu_a1_FASTMTT_MassConstraint',aco_lep_a1_FastMTT)
 
 
         if channel=='et':
             tree.SetBranchAddress('aco_e_pi',aco_lep_pi)
             tree.SetBranchAddress('aco_e_rho',aco_lep_rho)
             tree.SetBranchAddress('aco_e_a1',aco_lep_a1)
-            tree.SetBranchAddress('aco_e_a1_FASTMTT_NoMassConstraint',aco_lep_a1_FastMTT)
+#            tree.SetBranchAddress('aco_e_a1_FASTMTT_NoMassConstraint',aco_lep_a1_FastMTT)
+            tree.SetBranchAddress('aco_e_a1_FASTMTT_MassConstraint',aco_lep_a1_FastMTT)
             
         if channel=='mt' or channel=='et':
             tree.SetBranchAddress('decayMode_2',decayMode_2)
@@ -634,7 +785,7 @@ class analysisSample:
         nentries = tree.GetEntries()
 
         # run over entries
-        for entry in range(0,nentries):
+        for entry in range(0,100):
 
             tree.GetEntry(entry)
 
@@ -697,7 +848,7 @@ class analysisSample:
             variables['ipsig_1'] = abs(ipsig_1[0])
             variables['ipsig_2'] = abs(ipsig_2[0])
 
-            """
+            # jet related variables
             variables['n_jets'] = n_jets[0]
             variables['n_bjets'] = n_bjets[0]
             variables['jpt_1'] = -9999.
@@ -730,10 +881,11 @@ class analysisSample:
                 variables['alpha_DM10'] = -9999.
 
                 alpha = -9999.
-                cosa = CosAlpha(pi_pt_2[0],pi_eta_2[0],pi_phi_2[0],massPi,ip_x_2[0],ip_y_2[0],ip_z_2[0])
+                cosa = CosAlpha(pi_pt_2[0],pi_eta_2[0],pi_phi_2[0],massPi,ip_x_2[0],ip_y_2[0],ip_z_2[0],False)
                 alpha_IP = ROOT.TMath.ACos(cosa)
                 aco = -9999.
                 pv = ROOT.TLorentzVector()
+                aco_a1 = -9999.
                 
                 if decayModePNet_2[0]==0:
                     alpha = alpha_IP
@@ -747,18 +899,21 @@ class analysisSample:
                     R2 = ROOT.TLorentzVector()
                     R2.SetXYZT(ip_x_2[0],ip_y_2[0],ip_z_2[0],0)
                     firstNeg = charge_1[0] < 0.
-                    pi01 = False
-                    pi02 = False
-                    aco = acoCP(P1,P2,R1,R2,firstNeg,pi01,pi02)
+                    aco = acoCP(P1,P2,R1,R2,firstNeg,'Impact-Parameter','Impact-Parameter')
+                    if math.isnan(aco): aco = -9999.
                     variables['aco_DM0'] = RadToDeg*aco
                     if alpha > pi_over_4:
                         variables['aco_DM0_plus'] = RadToDeg*aco
                     else:
                         variables['aco_DM0_minus'] = RadToDeg*aco
-                elif decayModePNet_2[0]==1:
-                    pi0 = ROOT.TLorentzVector()
-                    pi0.SetPtEtaPhiM(pi0_pt_2[0],pi0_eta_2[0],pi0_phi_2[0],pi0_mass_2[0])
-                    cosa = CosAlpha(pt_2[0],eta_2[0],phi_2[0],mass_2[0],pi0.Px(),pi0.Py(),pi0.Pz())
+                elif decayModePNet_2[0]==1 and decayMode_2[0]==1 and pi0_phi_2[0]>-10:
+                    Pi0 = ROOT.TLorentzVector()
+                    Pi0.SetPtEtaPhiM(pi0_pt_2[0],pi0_eta_2[0],pi0_phi_2[0],massPi0)
+                    Pi = ROOT.TLorentzVector()
+                    Pi.SetPtEtaPhiM(pi0_pt_2[0],pi0_eta_2[0],pi0_phi_2[0],massPi)
+                    magPi0 = Pi0.Vect().Mag()
+                    magPi = Pi.Vect().Mag()
+                    cosa = CosAlpha(pi_pt_2[0],pi_eta_2[0],pi_phi_2[0],massPi,Pi0.Px(),Pi0.Py(),Pi0.Pz(),True)
                     alpha = ROOT.TMath.ACos(cosa)
                     variables['alpha_DM1'] = RadToDeg * alpha
                     P1 = ROOT.TLorentzVector()
@@ -770,57 +925,81 @@ class analysisSample:
                     R2 = ROOT.TLorentzVector()
                     R2.SetPtEtaPhiM(pi0_pt_2[0],pi0_eta_2[0],pi0_phi_2[0],massPi0)
                     firstNeg = charge_1[0] < 0.
-                    pi01 = False
-                    pi02 = True
-                    aco = acoCP(P1,P2,R1,R2,firstNeg,pi01,pi02)
+                    aco = acoCP(P1,P2,R1,R2,firstNeg,'Impact-Parameter','Decay-Plane')
+                    if math.isnan(aco): aco = -9999.
                     variables['aco_DM1'] = RadToDeg*aco
                     if alpha > pi_over_4:
                         variables['aco_DM1_plus'] = RadToDeg*aco
                     else:
                         variables['aco_DM1_minus'] = RadToDeg*aco
-                elif decayModePNet_2[0]==10:
+                elif decayModePNet_2[0]==10 and hasRefitSV_2[0]:
+                    print('run = %1i   event = %1i'%(run[0],event[0]))
+                    print('PNetDM = %2i  hasRefitSV_2 = %1i'%(decayModePNet_2[0],hasRefitSV_2[0]))
+                    print('muon   (pt,eta,phi,mass) = (%5.1f,%5.3f,%5.3f,%5.3f) q = %2i'%(pt_1[0],eta_1[0],phi_1[0],massLep,charge_2[0]))
+                    print('muon impact par. (x,y,z) = (%8.6f,%8.6f,%8.6f)'%(ip_x_1[0],ip_y_1[0],ip_z_1[0]))
+                    print('FastMTT_pt_2_constraint  = %5.1f'%(pt_FastMTT[0]))
+                    print('pi1    (pt,eta,phi,mass) = (%5.1f,%5.3f,%5.3f,%5.3f) q = %2i'%(pi_pt_2[0],pi_eta_2[0],pi_phi_2[0],pi_mass_2[0],int(pi_charge_2[0])))
+                    print('pi2    (pt,eta,phi,mass) = (%5.1f,%5.3f,%5.3f,%5.3f) q = %2i'%(pi2_pt_2[0],pi2_eta_2[0],pi2_phi_2[0],pi2_mass_2[0],int(pi2_charge_2[0])))
+                    print('pi3    (pt,eta,phi,mass) = (%5.1f,%5.3f,%5.3f,%5.3f) q = %2i'%(pi3_pt_2[0],pi3_eta_2[0],pi3_phi_2[0],pi3_mass_2[0],int(pi3_charge_2[0])))
                     sv_pv = ROOT.TVector3(sv_x_2[0]-PVBS_x[0],sv_y_2[0]-PVBS_y[0],sv_z_2[0]-PVBS_z[0])
-                    cosa = CosAlpha(pt_2[0],eta_2[0],phi_2[0],mass_2[0],sv_pv.X(),sv_pv.Y(),sv_pv.Z())
+                    Pi1 = ROOT.TLorentzVector()
+                    Pi1.SetPtEtaPhiM(pi_pt_2[0],pi_eta_2[0],pi_phi_2[0],massPi)
+                    Pi2 = ROOT.TLorentzVector()
+                    Pi2.SetPtEtaPhiM(pi2_pt_2[0],pi2_eta_2[0],pi2_phi_2[0],massPi)
+                    Pi3 = ROOT.TLorentzVector()
+                    Pi3.SetPtEtaPhiM(pi3_pt_2[0],pi3_eta_2[0],pi3_phi_2[0],massPi)
+                    lv_a1 = Pi1 + Pi2 + Pi3
+                    cosa = CosAlpha(lv_a1.Pt(),lv_a1.Eta(),lv_a1.Phi(),lv_a1.M(),sv_pv.X(),sv_pv.Y(),sv_pv.Z(),False)
                     alpha = ROOT.TMath.ACos(cosa)
                     variables['alpha_DM10'] = RadToDeg * alpha
-                    # computation of aco in 
-                    #                PV_Mag = math.sqrt(PVBS_x[0]*PVBS_x[0]+PVBS_y[0]*PVBS_y[0]+PVBS_z[0]*PVBS_z[0])
-                    #                SV_Mag = math.sqrt(sv_x_2[0]*sv_x_2[0]+sv_y_2[0]*sv_y_2[0]+sv_z_2[0]*sv_z_2[0])
-                    #                P1 = ROOT.TLorentzVector()
-                    #                P1.SetPtEtaPhiM(pt_1[0],eta_1[0],phi_1[0],massLep)
-                    #                P2 = ROOT.TLorentzVector()
-                    #                P2.SetPtEtaPhiM(pi_pt_2[0],pi_eta_2[0],pi_phi_2[0],massPi)
-                    #                R1 = ROOT.TLorentzVector()
-                    #                R1.SetXYZT(ip_x_1[0],ip_y_1[0],ip_z_1[0],0)
-                    #                PV = ROOT.TLorentzVector(PVBS_x[0],PVBS_y[0],PVBS_z[0],PV_Mag)
-                    #                SV = ROOT.TLorentzVector(sv_x_2[0],sv_y_2[0],sv_z_2[0],SV_Mag)
-                    #                Pi1 = ROOT.TLorentzVector()
-                    #                Pi1.SetPtEtaPhiM(pi_pt_2[0],pi_eta_2[0],pi_phi_2[0],massPi)
-                    #                Pi2 = ROOT.TLorentzVector()
-                    #                Pi2.SetPtEtaPhiM(pi2_pt_2[0],pi2_eta_2[0],pi2_phi_2[0],massPi)
-                    #                Pi3 = ROOT.TLorentzVector()
-                    #                Pi3.SetPtEtaPhiM(pi3_pt_2[0],pi3_eta_2[0],pi3_phi_2[0],massPi)                
-                    #                R2 = PolVector(PV,SV,
-                    #                               pt_FastMTT[0],Pi1,Pi2,Pi3,
-                    #                               charge_2[0],pi_charge_2[0],pi2_charge_2[0],pi3_charge_2[0])
-                    #                firstNeg = charge_1[0] < 0.
-                    #                pi01 = False
-                    #                pi02 = False
-                    #                aco = acoCP(P1,P2,R1,R2,firstNeg,pi01,pi02)
-                    variables['aco_DM10'] = RadToDeg*aco_lep_a1_FastMTT[0]
-                    if alpha > pi_over_4:
-                        variables['aco_DM10_plus'] = RadToDeg*aco_lep_a1_FastMTT[0]
-                    else:
-                        variables['aco_DM10_minus'] = RadToDeg*aco_lep_a1_FastMTT[0]
 
-                    #            if decayModePNet_2[0]==0:
-                    #                print('DM %2i -> alpha = %5.3f : %5.3f -- phi(CP) = %5.3f : %5.3f'%(decayModePNet_2[0],alpha,alphaAngle_2[0],aco_lep_pi[0],aco))
-                    #            elif decayModePNet_2[0]==1 and decayMode_2[0]==1:
-                    #                print('DM %2i -> alpha = %5.3f : %5.3f -- phi(CP) = %5.3f : %5.3f'%(decayModePNet_2[0],alpha_IP,alphaAngle_2[0],aco_lep_rho[0],aco))
-                    #            elif decayModePNet_2[0]==10 and decayMode_2[0]==10:
-                    #                print('DM %2i -> alpha = %5.3f : %5.3f -- phi(CP) = %5.3f : %5.3f'%(decayModePNet_2[0],alpha_IP,alphaAngle_2[0],aco_lep_a1_FastMTT[0],aco))
-                
-"""
+                    PV_Mag = math.sqrt(PVBS_x[0]*PVBS_x[0]+PVBS_y[0]*PVBS_y[0]+PVBS_z[0]*PVBS_z[0])
+                    SV_Mag = math.sqrt(sv_x_2[0]*sv_x_2[0]+sv_y_2[0]*sv_y_2[0]+sv_z_2[0]*sv_z_2[0])
+                    P1 = ROOT.TLorentzVector()
+                    P1.SetPtEtaPhiM(pt_1[0],eta_1[0],phi_1[0],massLep)
+                    R1 = ROOT.TLorentzVector()
+                    R1.SetXYZT(ip_x_1[0],ip_y_1[0],ip_z_1[0],0.0)
+
+                    PV = ROOT.TLorentzVector()
+                    PV.SetXYZT(PVBS_x[0],PVBS_y[0],PVBS_z[0],PV_Mag)
+                    SV = ROOT.TLorentzVector()
+                    SV.SetXYZT(sv_x_2[0],sv_y_2[0],sv_z_2[0],SV_Mag)
+                    Pi1 = ROOT.TLorentzVector()
+                    Pi1.SetPtEtaPhiM(pi_pt_2[0],pi_eta_2[0],pi_phi_2[0],massPi)
+                    Pi2 = ROOT.TLorentzVector()
+                    Pi2.SetPtEtaPhiM(pi2_pt_2[0],pi2_eta_2[0],pi2_phi_2[0],massPi)
+                    Pi3 = ROOT.TLorentzVector()
+                    Pi3.SetPtEtaPhiM(pi3_pt_2[0],pi3_eta_2[0],pi3_phi_2[0],massPi)                
+                    P_os,P_ss1,P_ss2 = sortA1(Pi1,Pi2,Pi3,pi_charge_2[0],pi2_charge_2[0],pi3_charge_2[0])
+                    P2,R2 = PolVectA1(PV,SV,
+                                      pt_FastMTT[0],P_os,P_ss1,P_ss2,
+                                      charge_2[0],pi_charge_2[0],pi2_charge_2[0],pi3_charge_2[0])
+                    firstNeg = charge_1[0] < 0.
+                    aco = acoCP(P1,P2,R1,R2,firstNeg,'Impact-Parameter','PV')
+                    aco_a1 = acoCP(P1,P_ss1,R1,P_os,firstNeg,'Impact-Parameter','Decay-Plane-a1')
+                    if math.isnan(aco): aco = -9999.
+                    if math.isnan(aco_a1): aco_a1 = -9999.
+                    variables['aco_DM10'] = RadToDeg*aco
+                    if alpha > pi_over_4:
+                        variables['aco_DM10_plus'] = RadToDeg*aco
+                    else:
+                        variables['aco_DM10_minus'] = RadToDeg*aco
+
+                    print('aco_mu_a1                        = %5.3f (tuple) : %5.3f (my code)'%(aco_lep_a1[0],aco_a1))
+                    print('aco_mu_a1_FASTMTT_MassConstraint = %5.3f (tuple) : %5.3f (my code)'%(aco_lep_a1_FastMTT[0],aco))
+                if decayModePNet_2[0]==0:
+                    print('PNetDM %2i -> alpha = %5.3f : %5.3f -- phi(CP) = %5.3f : %5.3f'%(decayModePNet_2[0],alpha,alphaAngle_2[0],aco_lep_pi[0],aco))
+                    print('muon impact par. (x,y,z) = (%8.6f,%8.6f,%8.6f)'%(ip_x_1[0],ip_y_1[0],ip_z_1[0]))
+                    print('')
+                elif decayModePNet_2[0]==1 and decayMode_2[0]==1 and pi0_phi_2[0]>-10:
+                    print('PNetDM %2i -> alpha = %5.3f : %5.3f -- phi(CP) = %5.3f : %5.3f'%(decayModePNet_2[0],alpha_IP,alphaAngle_2[0],aco_lep_rho[0],aco))
+                    print('muon impact par. (x,y,z) = (%8.6f,%8.6f,%8.6f)'%(ip_x_1[0],ip_y_1[0],ip_z_1[0]))
+                    print('')
+                elif decayModePNet_2[0]==10 and hasRefitSV_2[0]:
+#                    print('PNetDM %2i -> alpha = %5.3f : %5.3f -- aco_mu_a1 = %5.3f : %5.3f -- aco = %5.3f : %5.3f'%(decayModePNet_2[0],alpha_IP,alphaAngle_2[0],aco_lep_a1_FastMTT[0],aco,aco_lep_a1[0],aco_a1))
+           
+                    print('')
+
             sign_label = 'ss'
             lep_label = 'had'
             iso_label = 'rest'
