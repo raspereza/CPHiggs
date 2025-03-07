@@ -8,8 +8,11 @@ import ROOT
 eraLumiLabel = {
     "Run3_2022": "2022, 8.0 fb^{-1} (13.6TeV)",
     "Run3_2022EE": "2022EE, 26.7 fb^{-1} (13.6TeV)",
+    "Run3_2022All": "2022, 34.7 fb^{-1} (13.6TeV)",
     "Run3_2023": "2023, 17.8 fb^{-1} (13.6 TeV)",
     "Run3_2023BPix": "2023BPix, 9.5 fb^{-1} (13.6 TeV)",
+    "Run3_2023All": "2023, 27.3 fb^{-1} (13.6 TeV)",
+    "Run3": "2022-2023, 62.0 fb^{-1} (13.6 TeV)"
 }
 
 def InitROOT():
@@ -133,7 +136,9 @@ def MakeCanvas(name,title,dX,dY):
   
     return canvas
 
-def InitModel(hist,color):
+def InitModel(hist,xtit,ytit,color):
+    hist.SetXTitle(xtit)
+    hist.SetYTitle(ytit)
     hist.SetFillStyle(0)
     hist.SetLineStyle(1)
     hist.SetLineWidth(2)
@@ -141,6 +146,19 @@ def InitModel(hist,color):
     hist.SetMarkerStyle(0)
     hist.SetMarkerSize(0)
     hist.SetMarkerColor(0)
+    hist.SetTitleSize  (0.055,"Y")
+    hist.SetTitleOffset(1.200,"Y")
+    hist.SetLabelOffset(0.014,"Y")
+    hist.SetLabelSize  (0.040,"Y")
+    hist.SetLabelFont  (42   ,"Y")
+    hist.SetTitleSize  (0.055,"X")
+    hist.SetTitleOffset(1.300,"X")
+    hist.SetLabelOffset(0.014,"X")
+    hist.SetLabelSize  (0.050,"X")
+    hist.SetLabelFont  (42   ,"X")
+    hist.GetYaxis().SetTitleFont(42)
+    hist.GetXaxis().SetTitleFont(42)
+    hist.SetTitle("")
     
 
 def InitHist(hist, xtit, ytit, color, style):
