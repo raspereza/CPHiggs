@@ -134,7 +134,7 @@ def CreateCards(hists,**kwargs):
     f.write("bin %s %s %s %s %s %s %s %s\n"%(region,region,region,region,region,region,region,region))
     f.write("process  TTT_%s  VVT_%s  ZTT_%s  TTL  VVL  ZLL  WJ  QCD\n"%(region,region,region))
     f.write("process              -2    -1     0     1     2     3     4     5\n")
-    f.write("rate    %3.1f %3.1f %3.1f %3.1f %3.1f %3.1f %3.1f %3.1f\n"%(x_ttt,x_vvt,x_ztt,x_ttl,x_vvl,x_zll,x_wj,x_qcd))
+    f.write("rate    %6.4f %6.4f %6.4f %6.4f %6.4f %6.4f %6.4f %6.4f\n"%(x_ttt,x_vvt,x_ztt,x_ttl,x_vvl,x_zll,x_wj,x_qcd))
     f.write("---------------------------\n")
     f.write("lumi         lnN   1.02  1.02  1.02  1.02  1.02  1.02     -     -\n")
     f.write("xsec_tt      lnN   1.05     -     -  1.05     -     -     -     -\n")
@@ -155,15 +155,15 @@ if __name__ == "__main__":
 
     from argparse import ArgumentParser
     parser = ArgumentParser()
-    parser.add_argument('-era' ,'--era', dest='era', default='Run3_2022', choices=['Run3_2022','Run3_2022EE','Run3_2023','Run3_2023BPix'])
+    parser.add_argument('-era' ,'--era', dest='era', default='Run3_2022', choices=['Run3_2022','Run3_2022EE','Run3_2023','Run3_2023BPix','Run3_2022All','Run3_2023All'])
     parser.add_argument('-variable' ,'--variable', dest='variable', default='m_vis')
     parser.add_argument('-channel','--channel', dest='channel', default='mt',choices=['mt','et'])
     parser.add_argument('-useCrossTrigger','--useCrossTrigger', dest='useCrossTrigger',action='store_true')
     parser.add_argument('-applyMTCut','--applyMTCut', dest='applyMTCut', action='store_true')
     parser.add_argument('-applyIPSigPromptLepSF','--applyIPSigPromptLepSF',dest='applyIPSigPromptLepSF',action='store_true')
-    parser.add_argument('-nbins','--nbins', dest='nbins', type=int, default=32)
+    parser.add_argument('-nbins','--nbins', dest='nbins', type=int, default=20)
     parser.add_argument('-xmin','--xmin', dest='xmin', type=float, default=40.)
-    parser.add_argument('-xmax','--xmax', dest='xmax', type=float, default=200.)
+    parser.add_argument('-xmax','--xmax', dest='xmax', type=float, default=240.)
     
     args = parser.parse_args()
     era = args.era

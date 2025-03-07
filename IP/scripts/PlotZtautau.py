@@ -19,7 +19,13 @@ XTitle = {
         'met': "E_{T}^{mis} (GeV)",
         'm_vis': "m_{vis} (GeV)",
         'ipsig_1': "muon IP sig",
-        'ipsig_2': "tau IP sig"
+        'ipsig_2': "tau IP sig",
+        'n_jets': "number of jets",
+        'n_bjets': "number of b-jets",
+        'jpt_1': "leading jet p_{T} (GeV)",
+        'jpt_2': "trailing jet p_{T} (GeV)",
+        'mjj': "dijet mass (GeV)",
+        'jdeta': "#Delta#eta(j,j)"
     },
     'et': {
         'mt_1'  : "m_{T} (GeV)",
@@ -30,7 +36,13 @@ XTitle = {
         'met': "E_{T}^{mis} (GeV)",
         'm_vis': "m_{vis} (GeV)",
 	'ipsig_1': "electron IP sig",
-        'ipsig_2': "tau IP sig"
+        'ipsig_2': "tau IP sig",
+        'n_jets': "number of jets",
+        'n_bjets': "number of b-jets",
+        'jpt_1': "leading jet p_{T} (GeV)",
+        'jpt_2': "trailing jet p_{T} (GeV)",
+        'mjj': "dijet mass (GeV)",
+        'jdeta': "#Delta#eta(j,j)"
     }
 }
 
@@ -148,8 +160,8 @@ def Plot(hists,**kwargs):
     if per_process:
         print('Ztautau    : %7.0f'%(x_ztt))
         print('Zll        : %7.0f'%(x_zll))
-        print('Top        : %7.0f'%(x_top))
-        print('VV         : %7.0f'%(x_vv))
+        print('TTbar      : %7.0f'%(x_top))
+        print('VV+ST      : %7.0f'%(x_vv))
         print('WJets      : %7.0f'%(x_wjets))
         print('QCD        : %7.0f'%(x_qcd))
     else:
@@ -160,7 +172,7 @@ def Plot(hists,**kwargs):
         print('QCD        : %7.0f'%(x_qcd))
         x_tot = x_tau + x_lep + x_had + x_wjets + x_qcd
         
-    print('Total      : %7.0f'%(x_tot))
+    print('Total MC   : %7.0f'%(x_tot))
     print('Data       : %7.0f'%(x_data))
     print('')
 
@@ -305,18 +317,19 @@ if __name__ == "__main__":
 
     from argparse import ArgumentParser
     parser = ArgumentParser()
-    parser.add_argument('-era' ,'--era', dest='era', default='Run3_2022', choices=['Run3_2022','Run3_2022EE','Run3_2023','Run3_2023BPix'])
+    parser.add_argument('-era' ,'--era', dest='era', default='Run3_2022', choices=['Run3_2022','Run3_2022EE','Run3_2023','Run3_2023BPix','Run3_2022All','Run3_2023All'])
     parser.add_argument('-variable' ,'--variable', dest='variable', default='m_vis')
     parser.add_argument('-channel','--channel', dest='channel', default='mt',choices=['mt','et'])
-    parser.add_argument('-useCrossTrigger','--useCrossTrigger', dest='useCrossTrigger',action='store_true')
     parser.add_argument('-perType','--perType', dest='perType', action='store_true')
-    parser.add_argument('-mtCut','--mtCut',dest='mtCut',action='store_true')
+    parser.add_argument('-useCrossTrigger','--useCrossTrigger', dest='useCrossTrigger',type=int,default=0)
+    parser.add_argument('-mtCut','--mtCut',dest='mtCut',type=int,default=0)
     parser.add_argument('-nbins','--nbins', dest='nbins', type=int, default=48)
     parser.add_argument('-xmin','--xmin', dest='xmin', type=float, default=0.0)
     parser.add_argument('-xmax','--xmax', dest='xmax', type=float, default=240.)
     parser.add_argument('-ymin','--ymin', dest='ymin', type=float, default=0.701)
     parser.add_argument('-ymax','--ymax', dest='ymax', type=float, default=1.299)
-    parser.add_argument('--removeLegend','--removeLegend', dest='removeLegend', action='store_true')
+    parser.add_argument('-applyIP','--applyIP',dest='applyIP',type=int,default=0)
+    parser.add_argument('-applySF', '--applySF', dest='applySF' ,type=int,default=0)
     
     args = parser.parse_args()
     era = args.era
@@ -329,9 +342,11 @@ if __name__ == "__main__":
     xmax = args.xmax
     ymin = args.ymin
     ymax = args.ymax
-
+    applyIP = args.applyIP
+    applySF = args.applySF
+    
     plotLegend = True
-    if args.removeLegend:
+    if var=='eta_1' or var=='eta_2':
         plotLegend = False
     
     proc = True
@@ -343,17 +358,31 @@ if __name__ == "__main__":
         xb = xmin + width*float(i)
         bins.append(xb)
 
-    suffix = ''
-    if useCrossTrigger:
-        if applyMTCut:
-            suffix = '_xtrig_mtcut'
-        else:
-            suffix = '_xtrig'
-    else:
-        if applyMTCut:
-            suffix = '_mtcut'
+    suffix_mt = ''
+    suffix_xtrig = ''
+    suffix_ip = ''
+    suffix_sf = ''
+    if applyMTCut==1:
+        suffix_mt = '_xtrig_mtcut'
+    if useCrossTrigger==1:
+        suffix_xtrig = '_xtrig'        
+    if applyIP==1:
+        suffix_ip = '_ipcut1'
+    if applySF==1:
+        suffix_sf = '_promptSF_tauSF'
 
-    inputFileName = '%s/selection/%s_%s%s.root'%(os.getenv('PWD'),chan,era,suffix)
+    suffix = '%s%s%s%s'%(suffix_mt,suffix_xtrig,suffix_ip,suffix_sf)
+    basename = '%s/src/CPHiggs/IP'%(os.getenv('CMSSW_BASE'))
+    inputFileName = '%s/selection/%s_%s%s.root'%(basename,chan,era,suffix)
+    if os.path.isfile(inputFileName):
+        print('')
+        print('Loading ROOT file %s'%(inputFileName))
+        print('')
+    else:
+        print('')
+        print('ROOT file %s not found'%(inputFileName))
+        print('quitting')
+        print('')
     inputFile = ROOT.TFile(inputFileName,'read')
     hists = utils.extractHistos(inputFile,var,bins)
     Plot(hists,era=era,var=var,channel=chan,per_process=proc,suffix=suffix,ymin=ymin,ymax=ymax,plotLegend=plotLegend)

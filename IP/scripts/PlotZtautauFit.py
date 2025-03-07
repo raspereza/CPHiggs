@@ -9,7 +9,7 @@ import os
 import CPHiggs.IP.styles as styles
 import CPHiggs.IP.utils as utils
 
-def Plot(f,**kwargs):
+def Plot(f,d,**kwargs):
 
     era = kwargs.get('era','Run3_2022EE')
     chan = kwargs.get('channel','mt')
@@ -22,29 +22,51 @@ def Plot(f,**kwargs):
     ymin = kwargs.get('ymin',0.501)
     ymax = kwargs.get('ymax',1.499)
     
+    typ_suffix = 'typ'
+    if per_process: typ_suffix = 'proc'
+    fit_suffix = 'prefit'
+    if postFit: fit_suffix = 'postfit' 
+
     folder_fit = 'shapes_prefit'
-    if postFit: folder='shapes_fit_s'
+    if postFit: folder_fit='shapes_fit_s'
 
     folder_region = 'ch2'
     if region=='pass':
         folder_region='ch1'
-        region = 'pass'
 
-    folder = '%s/%s'
+    folder = '%s/%s'%(folder_fit,folder_region)
     # histograms
-    h_data = f.Get(folder+'/data_obs').Clone('h_data')
+    h_data = d.Get(region+'/data_obs').Clone('h_data')
 
-    h_ztt = f.Get(folder+'/ZTT_'+region).Clone('h_ztt')
-    h_ttt = f.Get(folder+'/TTT_'+region).Clone('h_ttt')
-    h_vvt = f.Get(folder+'/VVT_'+region).Clone('h_vvt')
+    h_ztt = h_data.Clone('h_ztt')
+    h_zll = h_data.Clone('h_zll')
+    h_ttt = h_data.Clone('h_ttt')
+    h_ttl = h_data.Clone('h_ttl')
+    h_vvt = h_data.Clone('h_vvt')
+    h_vvl = h_data.Clone('h_vvl')
+    h_wjets = h_data.Clone('h_wjets')
+    h_qcd = h_data.Clone('h_qcd')
+    
+    ZTT = f.Get(folder+'/ZTT_'+region)
+    TTT = f.Get(folder+'/TTT_'+region)
+    VVT = f.Get(folder+'/VVT_'+region)
 
-    h_zll = f.Get(folder+'/ZLL').Clone('h_zll')
-    h_ttl = f.Get(folder+'/TTL').Clone('h_ttl')
-    h_vvl = f.Get(folder+'/VVL').Clone('h_vvl')
+    ZLL = f.Get(folder+'/ZLL').Clone('h_zll')
+    TTL = f.Get(folder+'/TTL').Clone('h_ttl')
+    VVL = f.Get(folder+'/VVL').Clone('h_vvl')
 
-    h_wjets = f.Get(folder+'/WJ').Clone('h_zll')
-    h_qcd = f.Get(folder+'/QCD').Clone('h_qcd')
+    WJ = f.Get(folder+'/WJ').Clone('h_zll')
+    QCD = f.Get(folder+'/QCD').Clone('h_qcd')
 
+    utils.copyHist(ZTT,h_ztt)
+    utils.copyHist(ZLL,h_zll)
+    utils.copyHist(TTT,h_ttt)
+    utils.copyHist(TTL,h_ttl)
+    utils.copyHist(VVT,h_vvt)
+    utils.copyHist(VVL,h_vvl)
+    utils.copyHist(WJ,h_wjets)
+    utils.copyHist(QCD,h_qcd)
+    
     h_lep = h_zll.Clone('h_lep')
     h_tau = h_ztt.Clone('h_tau')
 
@@ -87,7 +109,7 @@ def Plot(f,**kwargs):
     x_lep = h_lep.GetSumOfWeights()
         
     print('')
-    print('Yields ->')
+    print('%s : %s : binPt%s_binEta%s : %s : %s ->'%(era,chan,binPt,binEta,region,fit_suffix))
     if per_process:
         print('Ztautau    : %7.0f'%(x_ztt))
         print('Zll        : %7.0f'%(x_zll))
@@ -232,11 +254,10 @@ def Plot(f,**kwargs):
     canvas.SetSelected(canvas)
     canvas.Update()
     print('')
-    typ_suffix = 'typ'
-    if per_process: typ_suffix = 'proc'
+    
     binPtEta = 'binPt%s_binEta%s'%(binPt,binEta)
     basedir = '%s/src/CPHiggs/IP/figures'%(os.getenv('CMSSW_BASE'))
-    outputGraphics = '%s/%s_%s_%s_%s_%s_%s.png'%(chan,era,binPtEta,region,fit_suffix,typ_suffix)    
+    outputGraphics = '%s/TP_%s_%s_%s_%s_%s_%s.png'%(basedir,chan,era,binPtEta,region,fit_suffix,typ_suffix)    
     canvas.Print(outputGraphics)
 
 if __name__ == "__main__":
@@ -251,7 +272,7 @@ if __name__ == "__main__":
     parser.add_argument('-perType','--perType', dest='perType', action='store_true')
     parser.add_argument('-ymin','--ymin', dest='ymin', type=float, default=0.501)
     parser.add_argument('-ymax','--ymax', dest='ymax', type=float, default=1.499)
-    parser.add_argument('--removeLegend','--removeLegend', dest='removeLegend', action='store_true')
+    parser.add_argument('-postFit','--postFit', dest='postFit',action='store_true')
     
     args = parser.parse_args()
     era = args.era
@@ -260,8 +281,7 @@ if __name__ == "__main__":
     ymax = args.ymax
 
     plotLegend = True
-    if args.removeLegend:
-        plotLegend = False
+    postFit = args.postFit
     
     proc = True
     if args.perType: proc = False
@@ -272,15 +292,24 @@ if __name__ == "__main__":
     region_labels = ['pass','fail']
     basedir='%s/src/CPHiggs/IP/datacards'%(os.getenv('CMSSW_BASE'))
     for iPt in range(1,nbinsPt+1):
+        binPt='%1i'%(iPt)
         for iEta in range(1,nbinsEta+1):
-            fileName = '%s/%s_%s_binPt%s_binEta%s_fit.root'
+            binEta='%1i'%(iEta)
+            fileName = '%s/%s_%s_binPt%s_binEta%s_fit.root'%(basedir,chan,era,binPt,binEta)            
             inputFile = ROOT.TFile(fileName,'read')
             for region in region_labels:
+                datacardsFileName = '%s/%s_%s_binPt%s_binEta%s_%s.root'%(basedir,chan,era,binPt,binEta,region)
+                datacardsFile = ROOT.TFile(datacardsFileName,'read')
                 Plot(inputFile,
+                     datacardsFile,
                      era=era,
                      channel=chan,
                      per_process=proc,
-                     ymin=ymin,
                      region=region,
-                     ymax=ymax)
+                     binPt=binPt,
+                     binEta=binEta,
+                     postFit=postFit)
+                datacardsFile.Close()
+
+            inputFile.Close()
     

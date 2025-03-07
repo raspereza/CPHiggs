@@ -67,17 +67,21 @@ def PlotTagProbe(eff_data,eff_mc,**kwargs):
     ymin = kwargs.get('ymin',0.5)
     ymax = kwargs.get('ymax',1.5)
     
-    header = 'prompt #mu, |#eta|<1.2'
+    header = 'prompt #mu, |#eta|<1.0'
     if chan=='mm':
         if binEta=='1':
-            header = 'prompt #mu, |#eta|<1.2'
+            header = 'prompt #mu, |#eta|<1.0'
+        elif binEta=='2':
+            header = 'prompt #mu, 1.0<|#eta|<1.6'
         else:
-            header = 'prompt #mu, |#eta|>1.2'
+            header = 'prompt #mu, 1.6<|#eta|<2.4'
     else:
         if binEta=='1':
-            header = 'prompt e, |#eta|<1.48'
+            header = 'prompt e, |#eta|<1.0'
+        elif binEta=='2':
+            header = 'prompt e, 1.0<|#eta|<1.6'
         else:
-            header = 'prompt e, |#eta|>1.48'
+            header = 'prompt e, 1.6<|#eta|<2.1'
 
     
     styles.InitData(eff_data)
@@ -288,8 +292,8 @@ def RunTagProbe(hists,**kwargs):
     canvas.Modified()
     canvas.Update()
     print('')
-    outputGraphics = os.getenv('CMSSW_BASE') + '/src/CPHiggs/IP/figures/' + sample + '_' + chan + '_ptBin' + binPt + '_etaBin' + binEta + '_' + era + '.png'    
-    canvas.Print(outputGraphics)
+    outputGraphics = os.getenv('CMSSW_BASE') + '/src/CPHiggs/IP/figures/' + sample + '_' + chan + '_ptBin' + binPt + '_etaBin' + binEta + '_' + era + '_' + region + '.png'
+    # canvas.Print(outputGraphics)
 
     del canvas
     return nCount,nIntegral,eIntegral
@@ -301,7 +305,7 @@ if __name__ == "__main__":
 
     from argparse import ArgumentParser
     parser = ArgumentParser()
-    parser.add_argument('-era' ,'--era', dest='era', default='Run3_2022', choices=['Run3_2022','Run3_2022EE','Run3_2023','Run3_2023BPix'])
+    parser.add_argument('-era' ,'--era', dest='era', default='Run3_2022', choices=['Run3_2022','Run3_2022EE','Run3_2023','Run3_2023BPix','Run3_2022All','Run3_2023All'])
     parser.add_argument('-channel','--channel', dest='channel', default='mm',choices=['mm','ee'])
     parser.add_argument('-nbins','--nbins', dest='nbins', type=int, default=60)
     parser.add_argument('-xmin','--xmin', dest='xmin', type=float, default=60.0)
@@ -310,6 +314,11 @@ if __name__ == "__main__":
     parser.add_argument('-ymax','--ymax', dest='ymax', type=float, default=1.299)
     args = parser.parse_args()
 
+    labels = {
+        'mm': 'PromptMu',
+        'ee': 'PromptE'
+    }
+    
     era = args.era
     chan = args.channel
     nbins = args.nbins
@@ -412,7 +421,7 @@ if __name__ == "__main__":
             effMC_2D.SetBinError(iPt,iEta,effErrMC)
         PlotTagProbe(effData_1D,effMC_1D,era=era,channel=chan,binEta=binEta,ymin=ymin,ymax=ymax)
 
-    outputFileName = '%s/ScaleFactors/SF_%s_%s.root'%(basedir,chan,era)
+    outputFileName = '%s/ScaleFactors/SF_%s_%s.root'%(basedir,labels[chan],era)
     outputFile = ROOT.TFile(outputFileName,'recreate')
     outputFile.cd('')
     effData_2D.Write('effData')
