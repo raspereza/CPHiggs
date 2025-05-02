@@ -12,7 +12,10 @@ eraLumiLabel = {
     "Run3_2023": "2023, 17.8 fb^{-1} (13.6 TeV)",
     "Run3_2023BPix": "2023BPix, 9.5 fb^{-1} (13.6 TeV)",
     "Run3_2023All": "2023, 27.3 fb^{-1} (13.6 TeV)",
-    "Run3": "2022-2023, 62.0 fb^{-1} (13.6 TeV)"
+    "Run3": "2022-2023, 62.0 fb^{-1} (13.6 TeV)",
+    "Run3v0": "2022-2023, 62.0 fb^{-1} (13.6 TeV)",
+    "Run3v1": "2022-2023, 62.0 fb^{-1} (13.6 TeV)",
+    "Run3v2": "2022-2023, 62.0 fb^{-1} (13.6 TeV)",
 }
 
 def InitROOT():
@@ -141,7 +144,7 @@ def InitModel(hist,xtit,ytit,color):
     hist.SetYTitle(ytit)
     hist.SetFillStyle(0)
     hist.SetLineStyle(1)
-    hist.SetLineWidth(2)
+    hist.SetLineWidth(3)
     hist.SetLineColor(color)
     hist.SetMarkerStyle(0)
     hist.SetMarkerSize(0)

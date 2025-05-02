@@ -17,6 +17,7 @@ tau_mass = 1.777
 pi_mass = 0.140
 pi0_mass = 0.13498
 rho_mass = 0.7755
+ctau = 0.0087
 
 ##################################
 # folder where tuples are stored #
@@ -179,24 +180,64 @@ lib_histos = {
     'mjj' : [200,0.,2000.],
     'jdeta' : [80,0.,8.],
 
-    'alpha_DM0': [90,0.,90.],
-    'alpha_DM1': [90,0.,90.],
-    'alpha_DM10': [90,0.,90.],
+    'alpha_lep_pi': [90,0.,90.],
+    'alpha_lep_rho': [90,0.,90.],
+    'alpha_lep_a1': [90,0.,90.],
 
-    'aco_DM0_plus': [8,0.,360.],
-    'aco_DM0_minus': [8,0.,360.],
-    'aco_DM0': [8,0.,360.],
+    'aco_lep_pi_plus': [8,0.,360.],
+    'aco_lep_pi_minus': [8,0.,360.],
+    'aco_lep_pi': [8,0.,360.],
+    'aco_lep_piIP': [8,0.,360.],
 
-    'aco_DM1_plus': [8,0.,360.],
-    'aco_DM1_minus': [8,0.,360.],
-    'aco_DM1': [8,0.,360.],
-    'aco_DM1_PV': [8,0.,360.],
+    'aco_lep_rho_plus': [8,0.,360.],
+    'aco_lep_rho_minus': [8,0.,360.],
+    'aco_lep_rho': [8,0.,360.],
+    'aco_lep_rhoECut': [8,0.,360.],
+    'aco_lep_rhoGen': [8,0.,360.],
+    'aco_lep_rhoReco': [8,0.,360.],
+    'aco_lep_rhoRecoECut': [8,0.,360.],
+    'aco_lep_rhoCollinear': [8,0.,360],
+    'aco_lep_rhoRecoGen': [8,0.,360.],
+    'aco_lep_rhoRecoGenECut': [8,0.,360.],
+
+    'aco_lep_rhoRecoIP1p0': [8,0.,360.],
+    'aco_lep_rhoRecoGenIP1p0': [8,0.,360.],
+    'aco_lep_rhoRecoIP1p2': [8,0.,360.],
+    'aco_lep_rhoRecoGenIP1p2': [8,0.,360.],
+    'aco_lep_rhoRecoIP1p5': [8,0.,360.],
+    'aco_lep_rhoRecoGenIP1p5': [8,0.,360.],
+
+    'aco_lep_rhoRecoIP1p0ECut': [8,0.,360.],
+    'aco_lep_rhoRecoGenIP1p0ECut': [8,0.,360.],
+    'aco_lep_rhoRecoIP1p2ECut': [8,0.,360.],
+    'aco_lep_rhoRecoGenIP1p2ECut': [8,0.,360.],
+    'aco_lep_rhoRecoIP1p5ECut': [8,0.,360.],
+    'aco_lep_rhoRecoGenIP1p5ECut': [8,0.,360.],
+
+    'aco_lep_a1_plus': [8,0.,360.],
+    'aco_lep_a1_minus': [8,0.,360.],
+    'aco_lep_a1': [8,0.,360.],
+    'aco_lep_a1DP': [8,0.,360.],
+    'aco_lep_a1PVGen': [8,0.,360.],
+    'aco_lep_a1PVDESY': [8,0.,360.],
+    'aco_lep_a1PVIC': [8,0.,360.],
     
-    'aco_DM10_plus': [8,0.,360.],
-    'aco_DM10_minus': [8,0.,360.],
-    'aco_DM10': [8,0.,360.],
-    'aco_DM10_DP': [8,0.,360.],
-    'aco_DM10_PV': [8,0.,360.]
+
+#    'aco_pi_pi': [8,0.,360.],
+#    'aco_pi_rho': [8,0.,360.],
+#    'aco_pi_rhoPV': [8,0.,360.],
+#    'aco_pi_a1': [8,0.,360.],
+#    'aco_pi_a1DP': [8,0.,360.],
+#    'aco_pi_a1PV': [8,0.,360.],
+    
+#    'aco_rho_rho': [8,0.,360.],
+#    'aco_rhoPV_rhoPV': [8,0.,360.],
+#    'aco_rho_a1': [8,0.,360.],
+#    'aco_rho_a1DP': [8,0.,360.],
+#    'aco_rho_a1PV': [8,0.,360.],
+
+#    'aco_a1_a1': [8,0.,360.]
+    
 }
 
 # (pt,eta) binning for scale factors of IPSig cut 
@@ -399,3 +440,4 @@ def extractHistos(f,var,bins):
                     histo = f.Get(name)
                     hists[name] = rebinHisto(histo,bins,'rebinned')
     return hists
+

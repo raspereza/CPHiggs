@@ -1,5 +1,5 @@
-### utils to compute phi(CP)
-import ROOT 
+### utilities to compute phi(CP)
+import ROOT
 import math
 from array import array
 import numpy as np
@@ -8,13 +8,47 @@ import CPHiggs.IP.utils as utils
 from CPHiggs.IP.ScaleFactor import ScaleFactor
 from CPHiggs.PolarimetricVector.PolarimetricA1 import PolarimetricA1
 
-# Ptau - TLorentzVector : total momentum of tau (from fastMTT)
-# Pvis - TLorentzVector : 4p visible tau
-# Ppion - TLorentzVector : 4p of charged pion
+####################################################################
+# TauDirRho : routine returns direction of fully reconstructed tau
+#             in tau->rho+nu decay channel 
+# Inputs ->
+# Pt -float : tau pT from fastMTT
+# Pvis - TLorentzVector : visible 4-momentum of tau (pi(+/-) + pi0
+# Ppion - TLorentzVector : visible 4-momentum of charged pion
 # IP - TVector3 : impact parameter vector
 # PGen - TLorentzVector : generator tau momentum
-def TauDirRho(Ptau,Pvis,Ppion,IP,PGen,method):
+#                         for exploratory MC study only,
+#                         assumes perfect knowledge of neutrino momentum
+#                         (any dummy TLorentzVector can be passed for data)
+# method - string : options ->
+#                   'reco'      - reconstruction info is used,
+#                                 method uses fastMTT and decay
+#                                 length information
+#                   'collinear' - reconstruction into is used,
+#                                 neutrino momentum is assumed
+#                                 to be collinear with tau momentum
+#                   'reco_gen'  - reconstruction info is used
+#                                  but two-fold ambiguity in
+#                                  solutions is resolved by
+#                                  mathcing to generator tau momentum 
+#                   'gen'       - solely generator info is used
+#                                 (for exploratory studies)
+#
+# Output ->
+# dir_tau - TVector3 : direction of tau momentum (unit vector)
+#########################################################
+def TauDirRho(Pt,Pvis,Ppion,IP,PGen,method):
 
+    Ptau = ROOT.TLorentzVector()
+    Ptau.SetPtEtaPhiM(Pt,Pvis.Eta(),Pvis.Phi(),utils.tau_mass)
+    if method=='collinear':
+        tau_dir = Ptau.Vect().Unit()
+        return tau_dir
+    elif method=='gen':
+        tau_dir = PGen.Vect().Unit()
+        return tau_dir
+
+    
     n = Pvis.Vect().Unit()
     p = Ppion.Vect().Unit()
     r = IP.Unit()    
@@ -23,9 +57,7 @@ def TauDirRho(Ptau,Pvis,Ppion,IP,PGen,method):
     if prod<0:
         l = -l
 
-    if method=='GenV1':
-        dirGen = PGen.Vect().Unit()
-        return dirGen
+    dirGen = PGen.Vect().Unit()
         
 #    prod = l.Dot(n)
 #    print('p*l = %6.4f'%(prod))
@@ -81,7 +113,6 @@ def TauDirRho(Ptau,Pvis,Ppion,IP,PGen,method):
 #        mag2 = math.sqrt(q2_x*q2_x+q2_y*q2_y+q2_z*q2_z)
 #        print('m1 = %10.8f    m2 = %10.8f'%(q1.Mag(),q2.Mag()))
 
-        """
         q1 = q1.Unit()
         q2 = q2.Unit()
         px1 = q1.Dot(dirGen)
@@ -90,30 +121,31 @@ def TauDirRho(Ptau,Pvis,Ppion,IP,PGen,method):
             q = q1
         else:
             q = q2
-        cosOmega1 = q1.Dot(r)        
-        cosOmega2 = q2.Dot(r)
-        IP_mag = IP.Mag()
-        L1 = IP_mag/cosOmega1
-        L2 = IP_mag/cosOmega2
-#        print('cos(1) = %10.8f    cos(2) = %10.8f : L1 = %10.8f    L2 = %10.8f'%(px1,px2,L1,L2))
-#        print('L1 = %10.8f     L2 = %10.8f'%(L1,L2))
-        if L1>0 and L2>0:
-            beta = utils.tau_mass/(utils.ctau*Ptau.P())
-            P1 = 1.0-ROOT.TMath.Exp(-L2*beta)
-            P2 = ROOT.TMath.Exp(-L1*beta)
-            if P1>P2:
-                q = q1
+        if method=='reco':
+            cosOmega1 = q1.Dot(r)        
+            cosOmega2 = q2.Dot(r)
+            IP_mag = IP.Mag()
+            L1 = IP_mag/cosOmega1
+            L2 = IP_mag/cosOmega2
+            #        print('cos(1) = %10.8f    cos(2) = %10.8f : L1 = %10.8f    L2 = %10.8f'%(px1,px2,L1,L2))
+            #        print('L1 = %10.8f     L2 = %10.8f'%(L1,L2))
+            if L1>0 and L2>0:
+                beta = utils.tau_mass/(utils.ctau*Ptau.P())
+                P1 = 1.0-ROOT.TMath.Exp(-L2*beta)
+                P2 = ROOT.TMath.Exp(-L1*beta)
+                if P1>P2:
+                    q = q1
+                else:
+                    q = q2
+#                s = l.Cross(n).Unit()
+#                m = n.Cross(s).Unit()
+#                q = cosThetaGJ*n-sinThetaGJ*m
             else:
-                q = q2
-            s = l.Cross(n).Unit()
-            m = n.Cross(s).Unit()
-            q = cosThetaGJ*n-sinThetaGJ*m
-        else:
-            if L1>L2:
-                q = q1
-            else:
-                q = q2
-        """                
+                if L1>L2:
+                    q = q1
+                else:
+                    q = q2
+
     dir_tau = q.Unit()
 #    cosTJ = dir_tau.Dot(n)
 #    perp = dir_tau.Dot(l)
@@ -121,39 +153,61 @@ def TauDirRho(Ptau,Pvis,Ppion,IP,PGen,method):
     
     return dir_tau
     
-# returns full tau 4-momentum and polarimetric vector
-def PolVectRho(Pt,Pi,Pi0,IP,PGen):
+################################################################
+# PolVectRho : routine returns full tau 4-momentum and
+# polarimetric vector in tau->rho+nu decay mode
+# Inputs ->
+# Pt  - float : tau pT from fastMTT
+# Pi  - TLorentzVector : 4-momentum of charged pion
+# Pi0 - TLorentzVector : 4-momentum of neutral pion
+# IP  - TLorentzVector : IP vector of charged pion
+# PGen - TLorentzVector : generator 4-momentum of tau
+#                         (for exploratory studies)
+# method - string : options ->
+#                   'reco'      - reconstruction,
+#                                 method uses fastMTT and decay
+#                                 length information
+#                   'collinear' - reconstruction,
+#                                 neutrino momentum is assumed
+#                                 to be collinear with tau momentum
+#                   'reco_gen'  - reconstruction,
+#                                 two-fold ambiguity in
+#                                 solutions is resolved by
+#                                 mathcing to generator tau momentum 
+#                   'gen'       - solely generator info is used
+#                                 (for exploratory studies)
+#
+# Outputs ->
+# Tau4P - TLorentzVector : full tau momentum
+# pv    - TLorentzVector : polarimetric vector
+#################################################################
+def PolVectRho(Pt,Pi,Pi0,IP,PGen,method):
 
     visTau = Pi+Pi0
-    tau = ROOT.TLorentzVector()
-    GenPt = PGen.Pt()
-    tau.SetPtEtaPhiM(Pt,visTau.Eta(),visTau.Phi(),utils.tau_mass)
-    vistau_mom = visTau.P()
-    tau_mom = tau.P()
-    vistau_mass = visTau.M()
 
-#    dir_tau = TauDirRho(tau,visTau,Pi,IP,PGen)
-#    mag_tau = dir_tau.Mag()
-#    print('Magnitude = %6.4f'%(mag_tau))
-    
+    tauP4 = ROOT.TLorentzVector()
+    if method=='gen':
+        tauP4.SetXYZT(PGen.X(),PGen.Y(),PGen.Z(),PGen.T())
+    else:
+        tau = ROOT.TLorentzVector()
+        tau.SetPtEtaPhiM(Pt,visTau.Eta(),visTau.Phi(),utils.tau_mass)
+        tau_mom = tau.P()
+        dir_tau = TauDirRho(Pt,visTau,Pi,IP,PGen,method)
+        tauP4.SetXYZT(tau_mom*dir_tau.X(),tau_mom*dir_tau.Y(),tau_mom*dir_tau.Z(),tau.E())
+        
     tempPi = ROOT.TLorentzVector()
     tempPi.SetXYZT(Pi.X(),Pi.Y(),Pi.Z(),Pi.T())
 
     tempPi0 = ROOT.TLorentzVector()
     tempPi0.SetXYZT(Pi0.X(),Pi0.Y(),Pi0.Z(),Pi0.T())
 
-    tempTau = ROOT.TLorentzVector()
-#    tempTau.SetXYZT(tau_mom*dir_tau.X(),tau_mom*dir_tau.Y(),tau_mom*dir_tau.Z(),tau.E())
-    tempTau.SetXYZT(tau.X(),tau.Y(),tau.Z(),tau.T())
-#    tempTau.SetXYZT(PGen.X(),PGen.Y(),PGen.Z(),PGen.T())
-
-#    boost = -tempTau.BoostVector()
-#    tempTau.Boost(boost)
+#    boost = -tau4P.BoostVector()
+#    tau4P.Boost(boost)
 #    tempPi.Boost(boost)
 #    tempPi0.Boost(boost)
 
     tempQ = tempPi - tempPi0
-    NN = tempTau - tempPi - tempPi0
+    NN = tauP4 - tempPi - tempPi0
     tempN = ROOT.TLorentzVector()
 #    print('neutrino P = %5.3f    M = %10.8f'%(NN.P(),NN.M()))
 #    print('')
@@ -166,8 +220,9 @@ def PolVectRho(Pt,Pi,Pi0,IP,PGen):
     pv = ROOT.TLorentzVector()
     pv.SetXYZT(tempPV.X(),tempPV.Y(),tempPV.Z(),tempPV.T())
 #    pv.Boost(-boost)
+#    tau4P.Boost(-boost)
     
-    return tempTau,pv
+    return tauP4,pv
 
 
 # three LorentzVectors (pions) and three doubles (charges) 
@@ -217,6 +272,11 @@ def sortA1(pi1_input,pi2_input,pi3_input,q1,q2,q3):
     return p1,p2,p3
 
 
+###################################################
+# Rotation of initial tau momentum
+# (along visible momentum) towards reconstructed
+# direction (e.g. SV-PV) to match theta_GJ
+###################################################
 def rotateToGJ(visTau,tau):
 
     vistau_P = visTau.Vect()
@@ -255,6 +315,12 @@ def rotateToGJ(visTau,tau):
     new_tau.SetXYZT(newTauP.X(),newTauP.Y(),newTauP.Z(),tau.E())
     return new_tau
 
+
+###########################################################
+# Rotation of visible tau momentum towards reconstructed  #
+# direction (e.g. SV-PV) to match theta_GJmax             #
+# method : 'recoDESY' or 'recoIC'                         #
+###########################################################
 def rotateToGJMax(vistau,tau,method):
     vistau_P = vistau.Vect()
     tau_P = tau.Vect()
@@ -274,7 +340,7 @@ def rotateToGJMax(vistau,tau,method):
     new_tau = ROOT.TLorentzVector()
     new_tau.SetXYZT(tau.X(),tau.Y(),tau.Z(),tau.T())
     if theta_GJ>theta_GJ_max:
-        if method=='IC':
+        if method=='RecoIC':
             r_vistau = vistau_P.X()/vistau_P.Y()            
             nx = 1.0/math.sqrt(1+r_vistau*r_vistau)
             ny = -nx*r_vistau
@@ -322,16 +388,36 @@ def rotateToGJMax(vistau,tau,method):
             
             new_P = tau_mom*new_dir
             new_tau.SetXYZT(new_P.X(),new_P.Y(),new_P.Z(),tau.E())
-    print('Method = %s'%(method))
-    print('Initial tau (x,y,z,t) = (%5.3f,%5.3f,%5.3f,%5.3f)'%(tau.X(),tau.Y(),tau.Z(),tau.T()))
-    print('Rotated tau (x,y,z,t) = (%5.3f,%5.3f,%5.3f,%5.3f)'%(new_tau.X(),new_tau.Y(),new_tau.Z(),new_tau.T()))
-    print('')
+#    print('Method = %s'%(method))
+#    print('Initial tau (x,y,z,t) = (%5.3f,%5.3f,%5.3f,%5.3f)'%(tau.X(),tau.Y(),tau.Z(),tau.T()))
+#    print('Rotated tau (x,y,z,t) = (%5.3f,%5.3f,%5.3f,%5.3f)'%(new_tau.X(),new_tau.Y(),new_tau.Z(),new_tau.T()))
+#    print('')
     return new_tau
 
-
-# returns corrected full tau 4-momentum and polarimetric vector in 
+###################################################################
+# PolVectA1 : routine returns corrected full
+# tau 4-momentum and polarimetric vector
+# in tau->a1(3-prong)+nu decay channel
+# Inputs ->
+# PV - TLorentzVector : primary vertex
+# SV - TLorentzVector : secondary vertex
+# Pt - float : tau pT from fastMTT
+# P1 - TLorentzVector : 4-momentum of os charged pion
+# P2 - TLorentzVector : 4-momentum of ss1 charged pion
+# P3 - TLorentzVector : 4-momentum of ss2 charged pion
+# PGen - TLorentzVector : full generator 4-momentum of tau
+#                         (only for exploratory studies with MC)
+# q  - tau charge
+# method - string : options ->
+#                   'recoDESY' - DESY-wise computation
+#                   'recoIC'   - IC-wise computation
+#                   'gen'      - generator information is used
+# Outputs ->
+# tau - TLorentzVector : corrected full 4-momentum of tau
+# pv  - TLorentzVector : polarimetric vector
+###################################################################
 def PolVectA1(PV,SV,
-              Pt,P1,P2,P3,
+              Pt,P1,P2,P3,PGen,
               q,method):    
 
 #    P1,P2,P3 = sortA1(Pi1,Pi2,Pi3,q1,q2,q3)    
@@ -341,11 +427,14 @@ def PolVectA1(PV,SV,
 
     n = SV - PV
     
-    Ptau = ROOT.TLorentzVector()
-    Ptau.SetPtEtaPhiM(Pt,n.Eta(),n.Phi(),utils.tau_mass)
     visTau = P1+P2+P3
-#    tau = rotateToGJ(visTau,Ptau)
-    tau = rotateToGJMax(visTau,Ptau,method)
+    tau = ROOT.TLorentzVector()
+    if method=='gen':
+        tau = PGen
+    else:
+        Ptau = ROOT.TLorentzVector()
+        Ptau.SetPtEtaPhiM(Pt,n.Eta(),n.Phi(),utils.tau_mass)
+        tau = rotateToGJMax(visTau,Ptau,method)
 
     tempTau = ROOT.TLorentzVector()
     tempTau.SetXYZT(tau.X(),tau.Y(),tau.Z(),tau.T())
@@ -373,22 +462,27 @@ def PolVectA1(PV,SV,
     pv = ROOT.TLorentzVector()
     if method=='IC':
         pv.SetXYZT(tempPV.X(),tempPV.Y(),tempPV.Z(),0.)
-        print('Pol. vector before boost = (%5.3f,%5.3f,%5.3f)'%(pv.X(),pv.Y(),pv.Z()))
+#        print('Pol. vector before boost = (%5.3f,%5.3f,%5.3f)'%(pv.X(),pv.Y(),pv.Z()))
         pv.Boost(-boost)
-        print('Pol. vector after boost = (%5.3f,%5.3f,%5.3f)'%(pv.X(),pv.Y(),pv.Z()))
+#        print('Pol. vector after boost = (%5.3f,%5.3f,%5.3f)'%(pv.X(),pv.Y(),pv.Z()))
     else:
         pv.SetXYZT(tempPV.X(),tempPV.Y(),tempPV.Z(),tempPV.T())
         
     return tau,pv
     
-# P1, P2, R1, R2 - TLorentzVectors
-# firstNeg = True if muon is negative, otherwise False
-# method_1, method_2 - str
-# available options for method_{1,2} :
-#   - Impact-Parameter
-#   - Decay-Plane
-#   - Decay-Plane-a1
-#   - PV 
+#############################################################
+# acoCP : routine returns acoplanarity angle phi(CP)
+# Inputs -> 
+# P1_input, P2_input, R1_input, R2_input - TLorentzVectors
+# firstNeg - boolean : True if first lepton is negative,
+#                      otherwise False
+# method_1, method_2 - string : available options
+#                               - Impact-Parameter
+#                               - Decay-Plane
+#                               - Decay-Plane-a1
+#                               - PV
+# Output : acop (float) - phi(CP)
+##############################################################
 def acoCP(P1_input, P2_input, R1_input, R2_input,
           firstNeg, method_1, method_2):
 
@@ -499,6 +593,7 @@ def CosAlpha(pt,eta,phi,mass,Rx,Ry,Rz,prn):
 
     denom = ez.Cross(p).Mag() * n.Cross(p).Mag()
 
+    cosa = 1.0/math.sqrt(2.0)
     if denom > 0.: 
         cosa = abs( ez.Cross(p).Dot(n.Cross(p)) / denom )
     else:
@@ -506,7 +601,6 @@ def CosAlpha(pt,eta,phi,mass,Rx,Ry,Rz,prn):
             print('px = %3.1f  py = %3.1f  pz = %3.1f'%(p.X(),p.Y(),p.Z()))
             print('nx = %3.1f  ny = %3.1f  nz = %3.1f'%(Rx,Ry,Rz))
             print('')
-        cosa = 1.0/math.sqrt(2.0)
     
     return cosa
 

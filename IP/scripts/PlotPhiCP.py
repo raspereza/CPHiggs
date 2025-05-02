@@ -9,14 +9,16 @@ import os
 import CPHiggs.IP.styles as styles
 import CPHiggs.IP.utils as utils
 
-header = {
-    'aco_DM0': '#mu+#pi',
-    'aco_DM1': '#mu+#rho',
-    'aco_DM1_PV': '#mu+#rho',
-    'aco_DM10': '#mu+a_{1}',
-    'aco_DM10_PV': '#mu+a_{1}',
-    'aco_DM10_DP': '#mu+a_{1}',
-}
+def header(name):
+    title = ''
+    if 'aco_lep_pi' in name:
+        title = '#mu+#pi'
+    if 'aco_lep_rho' in name:
+        title = '#mu+#rho'
+    if 'aco_lep_a1' in name:
+        title = 'aco_lep_a1'
+
+    return title
 
 
 def Plot(hists,**kwargs):
@@ -25,6 +27,7 @@ def Plot(hists,**kwargs):
     var = kwargs.get('var','m_vis')
     chan = kwargs.get('channel','mt')
     suffix = kwargs.get('suffix','')
+    asym = kwargs.get('asym',0.1)
     
     # histograms
     h_even = hists['even'].Clone('h_even')
@@ -52,7 +55,7 @@ def Plot(hists,**kwargs):
 
     leg = ROOT.TLegend(0.65,0.25,0.85,0.5)
     styles.SetLegendStyle(leg)
-    leg.SetHeader(header[var])
+    leg.SetHeader('%s (A=%5.3f)'%(header(var),asym))
     leg.SetTextSize(0.046)
     leg.AddEntry(h_even,'CP-even','l')
     leg.AddEntry(h_odd,'CP-odd','l')
@@ -75,8 +78,8 @@ if __name__ == "__main__":
     
     from argparse import ArgumentParser
     parser = ArgumentParser()
-    parser.add_argument('-era' ,'--era', dest='era', default='Run3_2022EE', choices=['Run3_2022','Run3_2022EE','Run3_2023','Run3_2023BPix','Run3'])
-    parser.add_argument('-variable' ,'--variable', dest='variable', default='aco_DM0')
+    parser.add_argument('-era' ,'--era', dest='era', default='Run3_2022EE', choices=['Run3_2022','Run3_2022EE','Run3_2023','Run3_2023BPix','Run3','Run3v0','Run3v1','Run3v2'])
+    parser.add_argument('-variable' ,'--variable', dest='variable', default='aco_lep_rho')
     parser.add_argument('-channel','--channel', dest='channel', default='mt',choices=['mt','et'])
     parser.add_argument('-applyIPSigCut','--applyIPSigCut', dest='applyIPSigCut',action='store_true')
     parser.add_argument('-useCrossTrigger','--useCrossTrigger', dest='useCrossTrigger',action='store_true')
@@ -129,33 +132,36 @@ if __name__ == "__main__":
     histEven = inputfile.Get('even_%s_os_iso_all'%(var))
     histOdd  = inputfile.Get('odd_%s_os_iso_all'%(var))
 
-    utils.zeroBinErrors(histEven)
-    utils.zeroBinErrors(histOdd)
+#    utils.zeroBinErrors(histEven)
+#    utils.zeroBinErrors(histOdd)
     
     normEven = histEven.GetSumOfWeights()
     normOdd  = histOdd.GetSumOfWeights()
-    histEven.Scale(1.0/normEven)
-    histOdd.Scale(1.0/normOdd)
+#    histOdd.Scale(normEven/normOdd)
+    histOdd.Scale(1547.3/normOdd)
+    histEven.Scale(1547.3/normEven)
     print('')
-    print('Norm(CP-odd) %4.2f  :  Norm(CP-even) = %4.2f'%(normOdd,normEven))
+    print('Norm(CP-odd) %5.1f  :  Norm(CP-even) = %5.1f'%(normOdd,normEven))
     print('')
-    print('  CP-Odd  |   CP-even')
-    print('----------+------------')
+    print('   CP-Odd  |   CP-even')
+    print('-----------+-------------')
     asym = 0
     for ib in range(1,nbins+1):
         xOdd = histOdd.GetBinContent(ib)
         xEven = histEven.GetBinContent(ib)
-        print('  %5.3f   |    %5.3f'%(xOdd,xEven))
+        print('  %6.2f   |    %6.2f'%(xOdd,xEven))
         asym += abs(xEven-xOdd)/(xEven+xOdd)
-    print('----------+------------')
+    print('-----------+-------------')
     asym /= float(nbins)
 
-    print('CP Asymetry = %5.3f'%(asym))
+    print('CP Asymetry = %7.5f'%(asym))
     print('')
     
     hists = {}
-    hists['even'] = histEven
-    hists['odd'] = histOdd
-    Plot(hists,era=era,var=var,channel=chan,suffix='')
+    hists['even'] = histOdd
+    hists['odd'] = histEven
+#    hists['even'] = histEven
+#    hists['odd'] = histOdd
+    Plot(hists,era=era,var=var,channel=chan,suffix='',asym=asym)
     
     
