@@ -16,7 +16,7 @@ def header(name):
     if 'aco_lep_rho' in name:
         title = '#mu+#rho'
     if 'aco_lep_a1' in name:
-        title = 'aco_lep_a1'
+        title = '#mu+a_{1}'
 
     return title
 
@@ -78,7 +78,7 @@ if __name__ == "__main__":
     
     from argparse import ArgumentParser
     parser = ArgumentParser()
-    parser.add_argument('-era' ,'--era', dest='era', default='Run3_2022EE', choices=['Run3_2022','Run3_2022EE','Run3_2023','Run3_2023BPix','Run3','Run3v0','Run3v1','Run3v2'])
+    parser.add_argument('-era' ,'--era', dest='era', default='Run3v2', choices=['Run3_2022','Run3_2022EE','Run3_2023','Run3_2023BPix','Run3','Run3v0','Run3v1','Run3v2','Run3v3'])
     parser.add_argument('-variable' ,'--variable', dest='variable', default='aco_lep_rho')
     parser.add_argument('-channel','--channel', dest='channel', default='mt',choices=['mt','et'])
     parser.add_argument('-applyIPSigCut','--applyIPSigCut', dest='applyIPSigCut',action='store_true')
@@ -137,9 +137,7 @@ if __name__ == "__main__":
     
     normEven = histEven.GetSumOfWeights()
     normOdd  = histOdd.GetSumOfWeights()
-#    histOdd.Scale(normEven/normOdd)
-    histOdd.Scale(1547.3/normOdd)
-    histEven.Scale(1547.3/normEven)
+    histOdd.Scale(normEven/normOdd)
     print('')
     print('Norm(CP-odd) %5.1f  :  Norm(CP-even) = %5.1f'%(normOdd,normEven))
     print('')
