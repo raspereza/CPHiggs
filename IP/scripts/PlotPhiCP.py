@@ -9,7 +9,7 @@ import os
 import CPHiggs.IP.styles as styles
 import CPHiggs.IP.utils as utils
 
-def header(name):
+def header(name,channel):
     title = ''
     if 'aco_lep_pi' in name:
         title = '#mu+#pi'
@@ -17,6 +17,14 @@ def header(name):
         title = '#mu+#rho'
     if 'aco_lep_a1' in name:
         title = '#mu+a_{1}'
+
+    if channel=='et':
+        if 'aco_lep_pi' in name:
+            title = 'e+#pi'
+        if 'aco_lep_rho' in name:
+            title = 'e+#rho'
+        if 'aco_lep_a1' in name:
+            title = 'e+a_{1}'
 
     return title
 
@@ -55,7 +63,7 @@ def Plot(hists,**kwargs):
 
     leg = ROOT.TLegend(0.65,0.25,0.85,0.5)
     styles.SetLegendStyle(leg)
-    leg.SetHeader('%s (A=%5.3f)'%(header(var),asym))
+    leg.SetHeader('%s (A=%5.3f)'%(header(var,chan),asym))
     leg.SetTextSize(0.046)
     leg.AddEntry(h_even,'CP-even','l')
     leg.AddEntry(h_odd,'CP-odd','l')
@@ -132,6 +140,9 @@ if __name__ == "__main__":
     histEven = inputfile.Get('even_%s_os_iso_all'%(var))
     histOdd  = inputfile.Get('odd_%s_os_iso_all'%(var))
 
+    histEven.Scale(2.12)
+    histOdd.Scale(2.12)
+    
 #    utils.zeroBinErrors(histEven)
 #    utils.zeroBinErrors(histOdd)
     
