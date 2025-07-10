@@ -339,10 +339,7 @@ def rotateToGJMax(vistau,tau,method):
 
     new_tau = ROOT.TLorentzVector()
     new_tau.SetXYZT(tau.X(),tau.Y(),tau.Z(),tau.T())
-    print('')
-    print('Routine rotateToGJMax ->')
     if theta_GJ>theta_GJ_max:
-        print('theta_GJ (%5.3f) > theta_GJ_max (%5.3f) -> rotation of tau 3-momentum'%(theta_GJ,theta_GJ_max))
         if method=='RecoIC':
             r_vistau = vistau_P.X()/vistau_P.Y()            
             nx = 1.0/math.sqrt(1+r_vistau*r_vistau)
@@ -391,9 +388,10 @@ def rotateToGJMax(vistau,tau,method):
             
             new_P = tau_mom*new_dir
             new_tau.SetXYZT(new_P.X(),new_P.Y(),new_P.Z(),tau.E())
-    print('Initial tau (x,y,z,t) = (%5.3f,%5.3f,%5.3f,%5.3f)'%(tau.X(),tau.Y(),tau.Z(),tau.T()))
-    print('Rotated tau (x,y,z,t) = (%5.3f,%5.3f,%5.3f,%5.3f)'%(new_tau.X(),new_tau.Y(),new_tau.Z(),new_tau.T()))
-    print('')
+#    print('Method = %s'%(method))
+#    print('Initial tau (x,y,z,t) = (%5.3f,%5.3f,%5.3f,%5.3f)'%(tau.X(),tau.Y(),tau.Z(),tau.T()))
+#    print('Rotated tau (x,y,z,t) = (%5.3f,%5.3f,%5.3f,%5.3f)'%(new_tau.X(),new_tau.Y(),new_tau.Z(),new_tau.T()))
+#    print('')
     return new_tau
 
 ###################################################################
@@ -460,25 +458,7 @@ def PolVectA1(PV,SV,
                          tempP3,
                          q)
 
-    xTau = ROOT.TLorentzVector(tempTau.X(),tempTau.Y(),tempTau.Z(),tempTau.T())
-    xP1 = ROOT.TLorentzVector(tempP1.X(),tempP1.Y(),tempP1.Z(),tempP1.T())
-    xP2 = ROOT.TLorentzVector(tempP2.X(),tempP2.Y(),tempP2.Z(),tempP2.T())
-    xP3 = ROOT.TLorentzVector(tempP3.X(),tempP3.Y(),tempP3.Z(),tempP3.T())
-    
-    PA1_tau = PolarimetricA1(xTau,
-                             xP1,
-                             xP2,
-                             xP3,
-                             q)
-
     tempPV = -PA1.PVC()
-    xPV = - PA1_tau.PVC()
-    print('')
-    print('pol. vector from PolarimetricA1.PVC() ->')
-    print('pol. vec. lab frame : (X,Y,Z,T)=(%6.4f,%6.4f,%6.4f,%6.4f)'%(tempPV.X(),tempPV.Y(),tempPV.Z(),tempPV.T()))
-    print('pol. vec. tau frame : (X,Y,Z,T)=(%6.4f,%6.4f,%6.4f,%6.4f)'%(xPV.X(),xPV.Y(),xPV.Z(),xPV.T()))
-    print('')
-    
     pv = ROOT.TLorentzVector()
     if method=='IC':
         pv.SetXYZT(tempPV.X(),tempPV.Y(),tempPV.Z(),0.)

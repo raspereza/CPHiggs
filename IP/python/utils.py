@@ -23,6 +23,8 @@ ctau = 0.0087
 # folder where tuples are stored #
 ##################################
 tupleFolder='/eos/cms/store/group/phys_tau/ksavva/For_Aliaksei/files/testingzpt'
+tupleFolderNew='/eos/cms/store/group/phys_tau/lrussell/forAliaksei'
+
 
 ############################
 # base folder with outputs #
@@ -38,7 +40,9 @@ eraLumi = {
     "Run3_2023BPix" : 9451.0,
     "Run3_2022All"  : 34652.1,
     "Run3_2023All"  : 27245.0,
-    "Run3"          : 61897.1
+    "Run3"          : 61897.1,
+    "Run3v2"        : 61897.1,
+    "Run3v3"        : 61897.1,
 }
 
 ###############
@@ -188,10 +192,14 @@ lib_histos = {
     'aco_lep_pi_minus': [8,0.,360.],
     'aco_lep_pi': [8,0.,360.],
     'aco_lep_piIP': [8,0.,360.],
-
+    'aco_lepIP_pi': [8,0.,360.],
+    'aco_lepIP_piIP': [8,0.,360.],    
+    
     'aco_lep_rho_plus': [8,0.,360.],
     'aco_lep_rho_minus': [8,0.,360.],
     'aco_lep_rho': [8,0.,360.],
+    'aco_lepIP_rho': [8,0.,360.],
+
     'aco_lep_rhoECut': [8,0.,360.],
     'aco_lep_rhoGen': [8,0.,360.],
     'aco_lep_rhoReco': [8,0.,360.],
@@ -217,9 +225,12 @@ lib_histos = {
     'aco_lep_a1_plus': [8,0.,360.],
     'aco_lep_a1_minus': [8,0.,360.],
     'aco_lep_a1': [8,0.,360.],
+    'aco_lepIP_a1': [8,0.,360.],
     'aco_lep_a1DP': [8,0.,360.],
     'aco_lep_a1PVGen': [8,0.,360.],
+    'aco_lepIP_a1PVGen': [8,0.,360.],
     'aco_lep_a1PVDESY': [8,0.,360.],
+    'aco_lepIP_a1PVDESY': [8,0.,360.],
     'aco_lep_a1PVIC': [8,0.,360.],
     
 

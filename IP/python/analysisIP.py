@@ -7,6 +7,7 @@ import CPHiggs.IP.utils as utils
 from CPHiggs.IP.ScaleFactor import ScaleFactor
 from CPHiggs.PolarimetricVector.PolarimetricA1 import PolarimetricA1
 import CPHiggs.IP.pv_utils as pv_utils
+from CPHiggs.fastMTT.fastmtt import fastmtt
 
 # Cuts for Z->tau+tau and Z->ll selection
 class AnalysisCuts:
@@ -425,6 +426,10 @@ class analysisSample:
         
         m_vis        = np.zeros(1,dtype=np.float64)
         met_pt       = np.zeros(1,dtype=np.float64)
+        met_phi      = np.zeros(1,dtype=np.float64)
+        met_covXX    = np.zeros(1,dtype=np.float64)
+        met_covXY    = np.zeros(1,dtype=np.float64)
+        met_covYY    = np.zeros(1,dtype=np.float64)
         aco_lep_pi   = np.zeros(1,dtype=np.float64)
         aco_lep_rho  = np.zeros(1,dtype=np.float64)
         aco_lep_a1   = np.zeros(1,dtype=np.float64)
@@ -489,6 +494,10 @@ class analysisSample:
         
         # floats ->
         tree.SetBranchAddress('met_pt',met_pt)
+        tree.SetBranchAddress('met_phi',met_phi)
+        tree.SetBranchAddress('met_covXX',met_covXX)
+        tree.SetBranchAddress('met_covXY',met_covXY)
+        tree.SetBranchAddress('met_covYY',met_covYY)
         tree.SetBranchAddress('m_vis',m_vis)
         tree.SetBranchAddress('os',os)
 
@@ -768,10 +777,13 @@ class analysisSample:
                 variables['aco_lep_pi_minus'] = -9999.
                 variables['aco_lep_pi'] = -9999.
                 variables['aco_lep_piIP'] = -9999.
+                variables['aco_lepIP_pi'] = -9999.
+                variables['aco_lepIP_piIP'] = -9999.
             
                 variables['aco_lep_rho_plus'] = -9999.
                 variables['aco_lep_rho_minus'] = -9999.
                 variables['aco_lep_rho'] = -9999.
+                variables['aco_lepIP_rho'] = -9999.
                 variables['aco_lep_rhoECut'] = -9999.
                 variables['aco_lep_rhoGen'] = -9999.
                 variables['aco_lep_rhoReco'] = -9999.
@@ -797,9 +809,12 @@ class analysisSample:
                 variables['aco_lep_a1_plus'] = -9999.
                 variables['aco_lep_a1_minus'] = -9999.
                 variables['aco_lep_a1'] = -9999.
+                variables['aco_lepIP_a1'] = -9999.
                 variables['aco_lep_a1DP'] = -9999.
                 variables['aco_lep_a1PVGen'] = -9999.
+                variables['aco_lepIP_a1PVGen'] = -9999.
                 variables['aco_lep_a1PVDESY'] = -9999.
+                variables['aco_lepIP_a1PVDESY'] = -9999.
                 variables['aco_lep_a1PVIC'] = -9999.
                 
                 variables['alpha_lep_pi'] = -9999.
@@ -835,6 +850,10 @@ class analysisSample:
                     variables['aco_lep_pi'] = RadToDeg*aco_lep_pi[0]
                     if abs(ipsig_2[0])>cuts.ipsigLepCut:
                         variables['aco_lep_piIP'] = RadToDeg*aco_lep_pi[0]
+                    if abs(ipsig_1[0])>cuts.ipsigLepCut:
+                        variables['aco_lepIP_pi'] = RadToDeg*aco_lep_pi[0]
+                    if abs(ipsig_1[0])>cuts.ipsigLepCut and abs(ipsig_2[0])>cuts.ipsigLepCut:
+                        variables['aco_lepIP_piIP'] = RadToDeg*aco_lep_pi[0]
                     if alpha > pi_over_4:
                         variables['aco_lep_pi_plus'] = RadToDeg*aco_lep_pi[0]
                     else:
@@ -897,7 +916,7 @@ class analysisSample:
                     if ipsig_2[0]>1.5:
                         variables['aco_lep_rhoRecoIP1p5']
                         if deltaE>cuts.tauToRhoDE:
-                            variables['aco_lep_rhoRecoIP1p5ECut']
+                            variables['aco_lep_rhoRecoIP1p5ECut'] = RadToDeg*aco
                     
                     # Reco-Gen
                     P2,R2 = pv_utils.PolVectRho(pt_2_FastMTT[0],Pi,Pi0,ip_vec_2,PGen,'reco_gen')
@@ -929,7 +948,8 @@ class analysisSample:
                     variables['aco_lep_rho'] = RadToDeg*aco_lep_rho[0]
                     if deltaE>cuts.tauToRhoDE:
                         variables['aco_lep_rhoECut'] = RadToDeg*aco_lep_rho[0]
-                        
+                    if abs(ipsig_1[0])>cuts.ipsigLepCut:
+                        variables['aco_lepIP_rho'] = RadToDeg*aco_lep_rho[0]
                     if alpha > pi_over_4:
                         variables['aco_lep_rho_plus'] = RadToDeg*aco_lep_rho[0]
                     else:
@@ -937,14 +957,16 @@ class analysisSample:
 #                    print('PNetDM %2i -> alpha = %5.3f : %5.3f -- phi(CP) = %5.3f : %5.3f'%(decayModePNet_2[0],alpha_IP,alphaAngle_2[0],aco_lep_rho[0],aco))
 #                    print('')
                 elif decayModePNet_2[0]==10 and hasRefitSV_2[0] and pt_2_FastMTT[0]>10.:
-#                    print('run = %1i   event = %1i'%(run[0],event[0]))
-#                    print('PNetDM = %2i  hasRefitSV_2 = %1i'%(decayModePNet_2[0],hasRefitSV_2[0]))
-#                    print('muon   (pt,eta,phi,mass) = (%5.1f,%5.3f,%5.3f,%5.3f) q = %2i'%(pt_1[0],eta_1[0],phi_1[0],massLep,charge_1[0]))
-#                    print('muon impact par. (x,y,z) = (%8.6f,%8.6f,%8.6f)'%(ip_x_1[0],ip_y_1[0],ip_z_1[0]))
-#                    print('FastMTT_pt_2_constraint  = %5.1f'%(pt_2_FastMTT[0]))
-#                    print('pi1    (pt,eta,phi,mass) = (%5.1f,%5.3f,%5.3f,%5.3f) q = %2i'%(pi_pt_2[0],pi_eta_2[0],pi_phi_2[0],pi_mass_2[0],int(pi_charge_2[0])))
-#                    print('pi2    (pt,eta,phi,mass) = (%5.1f,%5.3f,%5.3f,%5.3f) q = %2i'%(pi2_pt_2[0],pi2_eta_2[0],pi2_phi_2[0],pi2_mass_2[0],int(pi2_charge_2[0])))
-#                    print('pi3    (pt,eta,phi,mass) = (%5.1f,%5.3f,%5.3f,%5.3f) q = %2i'%(pi3_pt_2[0],pi3_eta_2[0],pi3_phi_2[0],pi3_mass_2[0],int(pi3_charge_2[0])))
+                    print('')
+                    print('----------------------------------------------')
+                    print('run = %1i   event = %1i'%(run[0],event[0]))
+                    print('PNetDM = %2i  hasRefitSV_2 = %1i'%(decayModePNet_2[0],hasRefitSV_2[0]))
+                    print('muon   (pt,eta,phi,mass) = (%5.1f,%5.3f,%5.3f,%5.3f) q = %2i'%(pt_1[0],eta_1[0],phi_1[0],massLep,charge_1[0]))
+                    print('muon impact par. (x,y,z) = (%8.6f,%8.6f,%8.6f)'%(ip_x_1[0],ip_y_1[0],ip_z_1[0]))
+                    print('FastMTT_pt_2_constraint  = %5.1f'%(pt_2_FastMTT[0]))
+                    print('pi1    (pt,eta,phi,mass) = (%5.1f,%5.3f,%5.3f,%5.3f) q = %2i'%(pi_pt_2[0],pi_eta_2[0],pi_phi_2[0],pi_mass_2[0],int(pi_charge_2[0])))
+                    print('pi2    (pt,eta,phi,mass) = (%5.1f,%5.3f,%5.3f,%5.3f) q = %2i'%(pi2_pt_2[0],pi2_eta_2[0],pi2_phi_2[0],pi2_mass_2[0],int(pi2_charge_2[0])))
+                    print('pi3    (pt,eta,phi,mass) = (%5.1f,%5.3f,%5.3f,%5.3f) q = %2i'%(pi3_pt_2[0],pi3_eta_2[0],pi3_phi_2[0],pi3_mass_2[0],int(pi3_charge_2[0])))
 
                     
                     PGen = ROOT.TLorentzVector()
@@ -974,27 +996,29 @@ class analysisSample:
                     SV = ROOT.TLorentzVector()
                     SV.SetXYZT(sv_x_2[0],sv_y_2[0],sv_z_2[0],SV_Mag)
 
-#                    print('PV (x,y,z) = (%6.5f,%6.5f,%6.5f)'%(PV.X(),PV.Y(),PV.Z()))
-#                    print('SV (x,y,z) = (%6.5f,%6.5f,%6.5f)'%(SV.X(),SV.Y(),SV.Z()))
+                    print('PV (x,y,z) = (%6.5f,%6.5f,%6.5f)'%(PV.X(),PV.Y(),PV.Z()))
+                    print('SV (x,y,z) = (%6.5f,%6.5f,%6.5f)'%(SV.X(),SV.Y(),SV.Z()))
                     
                     P_os,P_ss1,P_ss2 = pv_utils.sortA1(Pi1,Pi2,Pi3,pi_charge_2[0],pi2_charge_2[0],pi3_charge_2[0])
                     firstNeg = charge_1[0] < 0.
 
                     # Gen
-                    P2,R2 = pv_utils.PolVectA1(PV,SV,
-                                               pt_2_FastMTT[0],P_os,P_ss1,P_ss2,PGen,
-                                               charge_2[0],'gen')
-                    aco = pv_utils.acoCP(P1,P2,R1,R2,firstNeg,'Impact-Parameter','PV')
-                    if math.isnan(aco): aco = -9999.
-                    variables['aco_lep_a1PVGen'] = RadToDeg * aco
-
+                    #P2,R2 = pv_utils.PolVectA1(PV,SV,
+                    #                           pt_2_FastMTT[0],P_os,P_ss1,P_ss2,PGen,
+                    #                           charge_2[0],'gen')
+                    #aco = pv_utils.acoCP(P1,P2,R1,R2,firstNeg,'Impact-Parameter','PV')
+                    #if math.isnan(aco): aco = -9999.
+                    #variables['aco_lep_a1PVGen'] = RadToDeg * aco
+                    #if abs(ipsig_1[0])>cuts.ipsigLepCut:
+                    #    variables['aco_lepIP_a1PVGen'] = RadToDeg * aco
+                    
                     # IC method
-                    P2,R2 = pv_utils.PolVectA1(PV,SV,
-                                               pt_2_FastMTT[0],P_os,P_ss1,P_ss2,PGen,
-                                               charge_2[0],'recoIC')
-                    aco = pv_utils.acoCP(P1,P2,R1,R2,firstNeg,'Impact-Parameter','PV')
-                    if math.isnan(aco): aco = -9999.
-                    variables['aco_lep_a1PVIC'] = RadToDeg * aco
+                    #P2,R2 = pv_utils.PolVectA1(PV,SV,
+                    #                           pt_2_FastMTT[0],P_os,P_ss1,P_ss2,PGen,
+                    #                           charge_2[0],'recoIC')
+                    #aco = pv_utils.acoCP(P1,P2,R1,R2,firstNeg,'Impact-Parameter','PV')
+                    #if math.isnan(aco): aco = -9999.
+                    #variables['aco_lep_a1PVIC'] = RadToDeg * aco
 
                     # DESY method
                     P2,R2  = pv_utils.PolVectA1(PV,SV,
@@ -1002,16 +1026,23 @@ class analysisSample:
                                                 charge_2[0],'recoDESY')
                     aco = pv_utils.acoCP(P1,P2,R1,R2,firstNeg,'Impact-Parameter','PV')
                     if math.isnan(aco): aco = -9999.
-                    variables['aco_lep_a1PVIC'] = RadToDeg * aco
+                    variables['aco_lep_a1PVDESY'] = RadToDeg * aco
+                    if abs(ipsig_1[0])>cuts.ipsigLepCut:
+                        variables['aco_lepIP_a1PVDESY'] = RadToDeg * aco
 
+                    aco_DESY = aco
+                        
                     variables['aco_lep_a1DP'] = RadToDeg*aco_lep_a1[0]
                     variables['aco_lep_a1'] = RadToDeg*aco_lep_a1_FastMTT[0]
+                    if abs(ipsig_1[0])>cuts.ipsigLepCut:
+                        variables['aco_lepIP_a1'] = RadToDeg*aco_lep_a1_FastMTT[0]
                     if alpha > pi_over_4:
                         variables['aco_lep_a1_plus'] = RadToDeg*aco_lep_a1_FastMTT[0]
                     else:
                         variables['aco_lep_a1_minus'] = RadToDeg*aco_lep_a1_FastMTT[0]
 
-#                    print('aco_mu_a1                        = %5.3f (tuple) : %5.3f (my code)'%(aco_lep_a1[0],aco_a1))
+#                    print('aco_mu_a1  = %5.3f (tuple) : %5.3f (my code)'%(aco_lep_a1[0],aco_DESY))
+                    print('aco_mu_a1_FASTMTT_MassConstraint = %5.3f (tuple) : %5.3f (DESY code)'%(aco_lep_a1_FastMTT[0],aco_DESY))
 #                    print('aco_mu_a1_FASTMTT_MassConstraint = %5.3f (tuple) : %5.3f (IC code) : %5.3f (DESY code)'%(aco_lep_a1_FastMTT[0],aco_IC,aco))
 #                    print('')
 
@@ -1056,6 +1087,45 @@ class analysisSample:
                 print('weight %3.1f > 10'%(Weight))
                 continue
 
+            ###############################
+            # Checking fastMTT
+            ###############################
+            pt1 = []; pt1.append(pt_1[0])
+            eta1 = []; eta1.append(eta_1[0])
+            phi1 = []; phi1.append(phi_1[0])
+            mass1 = []; mass1.append(mass_1[0])
+            pt2 = []; pt2.append(pt_2[0])
+            eta2 = []; eta2.append(eta_2[0])
+            phi2 = []; phi2.append(phi_2[0])
+            mass2 = []; mass2.append(mass_2[0])
+            metx = []; metx.append(met_pt[0]*math.cos(met_phi[0]))
+            mety = []; mety.append(met_pt[0]*math.sin(met_phi[0]))
+            met_covxx = []; met_covxx.append(met_covXX[0])
+            met_covxy = []; met_covxy.append(met_covXY[0])
+            met_covyx = []; met_covyx.append(met_covXY[0])
+            met_covyy = []; met_covyy.append(met_covyy[0])
+
+            decay_type1 = []; decay_type1.append(1);
+            decay_type2 = []; decay_type2.append(2)
+            
+            fastmtt_out = fastmtt(pt1,eta1,phi1,mass1,decay_type1,
+                                  pt2,eta2,phi2,mass2,decay_type2,
+                                  metx,mety,met_covxx,met_covxy,met_covyx,met_covyy,
+                                  verbosity=-1,
+                                  delta=1/1.15,
+                                  reg_order=6,
+                                  Mass=125.0,
+                                  Width=2.0
+                                  )
+
+            mtautau = fastmtt_out['mtt'][0]
+            x1 = fastmtt_out['x_1'][0]
+            x2 = fastmtt_out['x_2'][0]
+            mtautau_cons = fastmtt_out['mtt_cons'][0]
+            x1_cons = fastmtt_out['x_1_cons'][0]
+            x1_cons = fastmtt_out['x_2_cons'][0]
+            print('mtt = %6.1f   mtt_cons')
+            
             ############################
             ## applying scale factors ##
             ## for IPSig cuts         ##
