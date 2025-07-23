@@ -1,16 +1,19 @@
 #!/bin/bash
 era=$1
 channel=$2
-period=$3
+sample=$3
+period=$4
 
-cat > condor/job_${era}_${channel}.submit <<EOF
+folder=/afs/cern.ch/work/r/rasp/CPHiggs/Analysis
+
+cat > ${folder}/condor/job_${era}_${channel}_${sample}.submit <<EOF
 universe = vanilla
-executable = condor/job_${era}_${channel}.sh
-output = condor/job_${era}_${channel}.out
-error = condor/job_${era}_${channel}.err
-log = condor/job_${era}_${channel}.log
+executable = /afs/cern.ch/work/r/rasp/CPHiggs/Analysis/condor/job_${era}_${channel}_${sample}.sh
+output = /afs/cern.ch/work/r/rasp/CPHiggs/Analysis/condor/job_${era}_${channel}_${sample}.out
+error = /afs/cern.ch/work/r/rasp/CPHiggs/Analysis/condor/job_${era}_${channel}_${sample}.err
+log = /afs/cern.ch/work/r/rasp/CPHiggs/Analysis/condor/job_${era}_${channel}_${sample}.log
 notification = Never
-initialdir = /afs/cern.ch/work/r/rasp/CMSSW_14_1_0_pre4/src/CPHiggs/IP
+initialdir = /afs/cern.ch/work/r/rasp/CMSSW_14_1_0_pre4/src/CPHiggs/Analysis
 +MaxRuntime = ${period}
 +RequestRuntime = ${period}
 MY.WantOS = el9
@@ -18,15 +21,15 @@ queue
 EOF
 
 
-cat > condor/job_${era}_${channel}.sh <<EOF1
+cat > /afs/cern.ch/work/r/rasp/CPHiggs/Analysis/condor/job_${era}_${channel}_${sample}.sh <<EOF1
 #!/bin/bash
 cd /afs/cern.ch/work/r/rasp/CMSSW_14_1_0_pre4/src
 echo $PWD
 export SCRAM_ARCH=el9_amd64_gcc10
 cmsenv
-cd CPHiggs/IP
-./scripts/RunSelection.py --era ${era} --channel ${channel} --applyIPSigPromptLepSF 
+cd CPHiggs/Analysis
+./scripts/RunSelection.py --era ${era} --channel ${channel} --sample ${sample} --applyIPSigLep1Cut --applyIPSigLep2Cut
 EOF1
 
-chmod u+x condor/job_${era}_${channel}.sh
-condor_submit condor/job_${era}_${channel}.submit
+chmod u+x /afs/cern.ch/work/r/rasp/CPHiggs/Analysis/condor/job_${era}_${channel}_${sample}.sh
+condor_submit /afs/cern.ch/work/r/rasp/CPHiggs/Analysis/condor/job_${era}_${channel}_${sample}.submit
