@@ -338,7 +338,7 @@ map<string, py::array_t<double>> fastmtt_cpp(unsigned int N,
     
     mass[i] = m_vis/sqrt(x1_opt*x2_opt);
 
-    if (counter%100==0 && verbosity) {
+    if (counter%1000==0 && verbosity) {
       printf("Processed %1i events out of %1i\n",counter,N);
       printf("m(vis) = %5.1f   m(tautau) = %5.1f\n",m_vis,mass[i]);
       printf("no mass constraint   : x1 = %5.3f   x2 = %5.3f\n",x_1[i],x_2[i]);

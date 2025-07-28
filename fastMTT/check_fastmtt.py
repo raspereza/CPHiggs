@@ -13,17 +13,25 @@ def fill_hist(hist, array):
 parser = ArgumentParser()
 parser.add_argument('-era','--era',dest='era',default='Run3_2022',choices=['Run3_2022','Run3_2022EE','Run3_2023','Run3_2023BPix'])
 parser.add_argument('-channel','--channel',dest='channel',default='mt',choices=['mt','et','tt'])
-parser.add_argument('-sample','--sample',dest='sample',default='GluGluHTo2Tau_UncorrelatedDecay_SM_Filtered_ProdAndDecay',choices=["GluGluHTo2Tau_UncorrelatedDecay_SM_UnFiltered_ProdAndDecay","DYto2L_M_50_madgraphMLM","GluGluHTo2Tau_UncorrelatedDecay_SM_Filtered_ProdAndDecay"])
-parser.add_argument('-nevts','--nevts',dest='nevts',type=int,default=10000)
-parser.add_
+parser.add_argument('-sample','--sample',dest='sample',default='higgs',choices=['higgs','dy'])
+parser.add_argument('-nevts','--nevts',dest='nevts',type=int,required=True)
+parser.add_argument('-verbosity','--verbosity',dest='verbosity',action='store_true')
 
 args = parser.parse_args()
 dirname='/eos/cms/store/group/phys_tau/ksavva/For_Aliaksei/files/testingzpt'
-filename=dirname+'/'+args.era+'/'+args.channel+"/"+args.sample+"/nominal/merged.root"
 
+sampleDict = {'higgs' : 'GluGluHTo2Tau_UncorrelatedDecay_SM_Filtered_ProdAndDecay',
+              'dy' : 'DYto2L_M_50_madgraphMLM'}
+
+sample = sampleDict[args.sample]
+
+filename=dirname+'/'+args.era+'/'+args.channel+"/"+sample+"/nominal/merged.root"
+
+print('')
 print('opening file %s'%(filename))    
 df = ROOT.RDataFrame("ntuple",filename)
 
+print('')
 print('defining cuts')
 cuts = 'os>0.5&&idDeepTau2018v2p5VSe_2>=6&&idDeepTau2018v2p5VSmu_2>=4&&idDeepTau2018v2p5VSjet_2>=7&&pt_2>20.&&fabs(eta_2)<2.3'
 
@@ -34,16 +42,20 @@ if args.channel=='et':
 if args.channel=='tt':
     cuts += '&&idDeepTau2018v2p5VSe_1>=6&&idDeepTau2018v2p5VSmu_1>=4&&idDeepTau2018v2p5VSjet_1>=7&&pt_1>40.&&pt_2>40.&&fabs(eta_1)<2.3'
     
+print('')
 print('reading tuple as numpy columns')
 cols = df.Filter(cuts).AsNumpy(["pt_1","pt_2","eta_1","eta_2","phi_1","phi_2","mass_1","mass_2","met_pt","met_phi","met_covXX","met_covXY","met_covYY","m_vis","FastMTT_mass","FastMTT_pt_1","FastMTT_pt_2","FastMTT_pt_1_constraint","FastMTT_pt_2_constraint","genPart_pt_1","genPart_pt_2"])
 
-print('Length of column : %1i \n',len(cols["pt_1"]))
+
+print('')
+print('Length of column : %1i\n'%(len(cols["pt_1"])))
+print('Running fastMTT (be patient)')
 
 ####################################
-# decay_type = 0 : tau -> electron
-#            = 1 : tau -> muon
-#            = 2 : tau -> hadrons
-###################################
+# decay_type = 0 : tau -> electron #
+#            = 1 : tau -> muon     #
+#            = 2 : tau -> hadrons  #
+####################################
 
 decay_type_1 = 1*np.ones(len(cols["pt_1"]),dtype=np.int32)
 decay_type_2 = 2*np.ones(len(cols["pt_1"]),dtype=np.int32)
@@ -51,14 +63,19 @@ if args.channel=='et':
     decay_type_1 = 0*np.ones(len(cols["pt_1"]),dtype=np.int32)
 if args.channel=='tt':
     decay_type_1 = 2*np.ones(len(cols["pt_1"]),dtype=np.int32)
-                             
+
+# set lenght of column to be processed
 N = min(args.nevts,len(cols['pt_1']))
 
-verbosity = args.verbosity
-delta = 1.0/1.15
-reg_order = 6.0
-mX = 125.10
-widthX = 2.5
+# steering parameters
+verbosity = args.verbosity # verbosity
+delta = 1.0/1.15 # regularization parameter delta
+reg_order = 6.0  # regularization parameter order
+mX = 125.10 # Higgs mass
+widthX = 2.5 # window
+if args.sample=='dy':
+   mX = 91.2 # Z boson mass
+   widthX = 4.0 # window
 
 #######################
 # Calling fastmtt_cpp #
@@ -85,13 +102,16 @@ results = fastmtt_cpp.fastmtt_cpp(int(N),
                                   mX,
                                   widthX)
 
+###############################################
+# accessing results (library: keyword->column)
+###############################################
 mass = results['mass']
 x1 = results['x1']
 x2 = results['x2']
 x1_BW = results['x1_BW']
 x2_BW = results['x2_BW']
-x1_cons = reults['x1_cons']
-x2_cons = reults['x2_cons']
+x1_cons = results['x1_cons']
+x2_cons = results['x2_cons']
 
 pt1 = np.where(x1>0.01,cols['pt_1']/x1,cols['pt_1'])
 pt2 = np.where(x2>0.01,cols['pt_2']/x2,cols['pt_2'])
@@ -114,7 +134,8 @@ dpt2 = np.where(cols['genPart_pt_2']>0.001,pt2/cols['genPart_pt_2'],0.0001)
 dpt2_BW = np.where(cols['genPart_pt_2']>0.001,pt2_BW/cols['genPart_pt_2'],0.0001) 
 dpt2_cons = np.where(cols['genPart_pt_2']>0.001,pt2_cons/cols['genPart_pt_2'],0.0001) 
     
-f = ROOT.TFile("%s.root"%(args.sample),"recreate")
+outputFile="%s.root"%(args.sample)
+f = ROOT.TFile(outputFile,"recreate")
 f.cd('')
 hist_mvis = ROOT.TH1D("mvis","mvis",40,0.,200.)
 hist_mtt = ROOT.TH1D("mtt","mtt",60,0.,300.)
@@ -155,13 +176,13 @@ fill_hist(hist_x2_cons,x2_cons)
     
 fill_hist(hist_dpt1,dpt1)
 fill_hist(hist_dpt1_BW,dpt1_BW)
-fill_hist(hist_dpt1_cons,dpt1_const)
+fill_hist(hist_dpt1_cons,dpt1_cons)
 fill_hist(hist_dpt1_nom,dpt1_nom)
 fill_hist(hist_dpt1_BW_nom,dpt1_BW_nom)
     
 fill_hist(hist_dpt2,dpt2)
 fill_hist(hist_dpt2_BW,dpt2_BW)
-fill_hist(hist_dpt2_cons,dpt2_const)
+fill_hist(hist_dpt2_cons,dpt2_cons)
 fill_hist(hist_dpt2_nom,dpt2_nom)
 fill_hist(hist_dpt2_BW_nom,dpt2_BW_nom)
 
@@ -193,3 +214,6 @@ hist_dpt2_nom.Write("dpt2_nom")
 hist_dpt2_BW_nom.Write("dpt2_BW_nom")
 
 f.Close()
+print('')
+print('Histograms are saved in file %s'%(outputFile))
+print('')
