@@ -1,19 +1,11 @@
-###########################################
-#
-# Author: Alexei Raspereza (June 2025)
-# Code to validate FastMTT programme
-###########################################
-
+#! /usr/bin/env python3
 import numpy as np
-#from fastmtt_cpp import fastmtt_cpp
 import fastmtt_cpp
-import ROOT 
-import CPHiggs.Analysis.utils as utils
+import ROOT
 from argparse import ArgumentParser
 
 def fill_hist(hist, array):
     [hist.Fill(x) for x in array]
-
 
 ################
 # Main routine #
@@ -23,14 +15,13 @@ parser.add_argument('-era','--era',dest='era',default='Run3_2022',choices=['Run3
 parser.add_argument('-channel','--channel',dest='channel',default='mt',choices=['mt','et','tt'])
 parser.add_argument('-sample','--sample',dest='sample',default='GluGluHTo2Tau_UncorrelatedDecay_SM_Filtered_ProdAndDecay',choices=["GluGluHTo2Tau_UncorrelatedDecay_SM_UnFiltered_ProdAndDecay","DYto2L_M_50_madgraphMLM","GluGluHTo2Tau_UncorrelatedDecay_SM_Filtered_ProdAndDecay"])
 parser.add_argument('-nevts','--nevts',dest='nevts',type=int,default=10000)
+parser.add_
 
-print('Beginning')
-    
 args = parser.parse_args()
 dirname='/eos/cms/store/group/phys_tau/ksavva/For_Aliaksei/files/testingzpt'
 filename=dirname+'/'+args.era+'/'+args.channel+"/"+args.sample+"/nominal/merged.root"
 
-print('opening %s'%(filename))    
+print('opening file %s'%(filename))    
 df = ROOT.RDataFrame("ntuple",filename)
 
 print('defining cuts')
@@ -44,13 +35,15 @@ if args.channel=='tt':
     cuts += '&&idDeepTau2018v2p5VSe_1>=6&&idDeepTau2018v2p5VSmu_1>=4&&idDeepTau2018v2p5VSjet_1>=7&&pt_1>40.&&pt_2>40.&&fabs(eta_1)<2.3'
     
 print('reading tuple as numpy columns')
-cols = df.Filter(cuts).AsNumpy(["pt_1","pt_2","eta_1","eta_2","phi_1","phi_2","mass_1","mass_2","puppimet","puppimetphi","puppimetcov00","puppimetcov01","puppimetcov11","m_vis","FastMTT_mass","FastMTT_pt_1","FastMTT_pt_2","FastMTT_pt_1_constraint","FastMTT_pt_2_constraint","genPart_pt_1","genPart_pt_2"])
+cols = df.Filter(cuts).AsNumpy(["pt_1","pt_2","eta_1","eta_2","phi_1","phi_2","mass_1","mass_2","met_pt","met_phi","met_covXX","met_covXY","met_covYY","m_vis","FastMTT_mass","FastMTT_pt_1","FastMTT_pt_2","FastMTT_pt_1_constraint","FastMTT_pt_2_constraint","genPart_pt_1","genPart_pt_2"])
 
-print('Length of %: \n',len(cols["pt_1"]))
+print('Length of column : %1i \n',len(cols["pt_1"]))
 
+####################################
 # decay_type = 0 : tau -> electron
 #            = 1 : tau -> muon
 #            = 2 : tau -> hadrons
+###################################
 
 decay_type_1 = 1*np.ones(len(cols["pt_1"]),dtype=np.int32)
 decay_type_2 = 2*np.ones(len(cols["pt_1"]),dtype=np.int32)
@@ -61,12 +54,15 @@ if args.channel=='tt':
                              
 N = min(args.nevts,len(cols['pt_1']))
 
-verbosity = -1
+verbosity = args.verbosity
 delta = 1.0/1.15
 reg_order = 6.0
 mX = 125.10
 widthX = 2.5
-            
+
+#######################
+# Calling fastmtt_cpp #
+#######################
 results = fastmtt_cpp.fastmtt_cpp(int(N),
                                   cols["pt_1"],
                                   cols["eta_1"],
@@ -78,11 +74,11 @@ results = fastmtt_cpp.fastmtt_cpp(int(N),
                                   cols["phi_2"],
                                   cols["mass_2"],
                                   decay_type_2,
-                                  cols["puppimet"],
-                                  cols["puppimetphi"],
-                                  cols["puppimetcov00"],
-                                  cols["puppimetcov01"],
-                                  cols["puppimetcov11"],
+                                  cols["met_pt"],
+                                  cols["met_phi"],
+                                  cols["met_covXX"],
+                                  cols["met_covXY"],
+                                  cols["met_covYY"],
                                   verbosity,
                                   delta,
                                   reg_order,
@@ -143,6 +139,9 @@ hist_dpt2 = ROOT.TH1D("dpt2","dpt",40,0.,2.)
 hist_dpt2_BW = ROOT.TH1D("dpt2_BW","dpt",40,0.,2.)
 hist_dpt2_cons = ROOT.TH1D("dpt2_cons","dpt",40,0.,2.)
 
+#####################
+# Filling histograms
+#####################
 fill_hist(hist_mvis,cols["m_vis"])
 fill_hist(hist_mtt,mass)
 fill_hist(hist_mtt_nom,cols["FastMTT_mass"])
@@ -166,6 +165,9 @@ fill_hist(hist_dpt2_cons,dpt2_const)
 fill_hist(hist_dpt2_nom,dpt2_nom)
 fill_hist(hist_dpt2_BW_nom,dpt2_BW_nom)
 
+#####################
+# saving histograms
+#####################
 f.cd('')
 hist_mvis.Write("mvis")
 hist_mtt.Write("mtt")
