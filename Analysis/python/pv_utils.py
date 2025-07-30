@@ -4,8 +4,7 @@ import math
 from array import array
 import numpy as np
 import os
-import CPHiggs.IP.utils as utils
-from CPHiggs.IP.ScaleFactor import ScaleFactor
+import CPHiggs.Analysis.utils as utils
 from CPHiggs.PolarimetricVector.PolarimetricA1 import PolarimetricA1
 
 ####################################################################
@@ -127,8 +126,6 @@ def TauDirRho(Pt,Pvis,Ppion,IP,PGen,method):
             IP_mag = IP.Mag()
             L1 = IP_mag/cosOmega1
             L2 = IP_mag/cosOmega2
-            #        print('cos(1) = %10.8f    cos(2) = %10.8f : L1 = %10.8f    L2 = %10.8f'%(px1,px2,L1,L2))
-            #        print('L1 = %10.8f     L2 = %10.8f'%(L1,L2))
             if L1>0 and L2>0:
                 beta = utils.tau_mass/(utils.ctau*Ptau.P())
                 P1 = 1.0-ROOT.TMath.Exp(-L2*beta)
@@ -261,13 +258,13 @@ def sortA1(pi1_input,pi2_input,pi3_input,q1,q2,q3):
         p2 = p3
         p3 = temp
 
-    """
-    print('a1 sorted -> ')
-    print('pi_os  (pt,eta,phi,mass) = (%5.1f,%5.3f,%5.3f,%5.3f)'%(p1.Pt(),p1.Eta(),p1.Phi(),p1.M()))
-    print('pi_ss1 (pt,eta,phi,mass) = (%5.1f,%5.3f,%5.3f,%5.3f)'%(p2.Pt(),p2.Eta(),p2.Phi(),p2.M()))
-    print('pi_ss2 (pt,eta,phi,mass) = (%5.1f,%5.3f,%5.3f,%5.3f)'%(p3.Pt(),p3.Eta(),p3.Phi(),p3.M()))
-    print('M(os_ss1) = %5.4f -- M(os_ss2) = %5.4f -- m(rho) = %5.4f'%((p1+p2).M(),(p1+p3).M(),utils.rho_mass))
-    """
+
+#    print('a1 sorted -> ')
+#    print('pi_os  (pt,eta,phi,mass) = (%5.1f,%5.3f,%5.3f,%5.3f)'%(p1.Pt(),p1.Eta(),p1.Phi(),p1.M()))
+#    print('pi_ss1 (pt,eta,phi,mass) = (%5.1f,%5.3f,%5.3f,%5.3f)'%(p2.Pt(),p2.Eta(),p2.Phi(),p2.M()))
+#    print('pi_ss2 (pt,eta,phi,mass) = (%5.1f,%5.3f,%5.3f,%5.3f)'%(p3.Pt(),p3.Eta(),p3.Phi(),p3.M()))
+#    print('M(os_ss1) = %5.4f -- M(os_ss2) = %5.4f -- m(rho) = %5.4f'%((p1+p2).M(),(p1+p3).M(),utils.rho_mass))
+
     
     return p1,p2,p3
 
@@ -319,9 +316,10 @@ def rotateToGJ(visTau,tau):
 ###########################################################
 # Rotation of visible tau momentum towards reconstructed  #
 # direction (e.g. SV-PV) to match theta_GJmax             #
-# method : 'recoDESY' or 'recoIC'                         #
+# vistau - 4-momentum of visible tau decay products       #
+# tau - full 4-momentum of tau                            #
 ###########################################################
-def rotateToGJMax(vistau,tau,method):
+def rotateToGJMax(vistau,tau):
     vistau_P = vistau.Vect()
     tau_P = tau.Vect()
     vistau_dir = vistau_P.Unit()
@@ -339,61 +337,39 @@ def rotateToGJMax(vistau,tau,method):
 
     new_tau = ROOT.TLorentzVector()
     new_tau.SetXYZT(tau.X(),tau.Y(),tau.Z(),tau.T())
-    print('')
-    print('Routine rotateToGJMax ->')
+#    print('')
+#    print('Routine rotateToGJMax ->')
     if theta_GJ>theta_GJ_max:
-        print('theta_GJ (%5.3f) > theta_GJ_max (%5.3f) -> rotation of tau 3-momentum'%(theta_GJ,theta_GJ_max))
-        if method=='RecoIC':
-            r_vistau = vistau_P.X()/vistau_P.Y()            
-            nx = 1.0/math.sqrt(1+r_vistau*r_vistau)
-            ny = -nx*r_vistau
-            n = ROOT.TVector3(nx,ny,0.)
-            m = n.Cross(vistau_dir)
-            phi1 = math.atan(tau_dir.Dot(m)/tau_dir.Dot(n))
-            phi2 = phi1 + ROOT.TMath.Pi()
-            new_dir_1 = math.cos(theta_GJ_max)*vistau_dir+math.sin(theta_GJ_max)*(math.cos(phi1)*n+math.sin(phi1)*m)
-            new_dir_2 = math.cos(theta_GJ_max)*vistau_dir+math.sin(theta_GJ_max)*(math.cos(phi2)*n+math.sin(phi2)*m)
-
-            condition = new_dir_1.Dot(tau_dir) > new_dir_2.Dot(tau_dir)
-            new_dir = new_dir_1
-            if condition:
-                new_dir = new_dir_2
-            
-            new_P = tau_mom*new_dir
-            new_tau.SetXYZT(new_P.X(),new_P.Y(),new_P.Z(),tau.E())
-            
-        else:
-            n1 = vistau_dir
-            n3 = n1.Cross(tau_dir).Unit()
-            n2 = n3.Cross(n1).Unit()
+#       print('theta_GJ (%5.3f) > theta_GJ_max (%5.3f) -> rotation of tau 3-momentum'%(theta_GJ,theta_GJ_max))
+        n1 = vistau_dir
+        n3 = n1.Cross(tau_dir).Unit()
+        n2 = n3.Cross(n1).Unit()
         
-            P_perp  = tau_P.Dot(n3)
-            P_paral = math.sqrt(tau_mom*tau_mom-P_perp*P_perp) 
+        P_perp  = tau_P.Dot(n3)
+        P_paral = math.sqrt(tau_mom*tau_mom-P_perp*P_perp) 
         
-            #            cos_theta_GJX = 0.5*(tau_E*vistau_E-utils.tau_mass*utils.tau_mass-mass_vis_tau*mass_vis_tau)/(tau_mom*vistau_mom)
-            #            cos_theta_GJ = max(-1.0,min(1.0,cos_theta_GJX))
-            #            sin_theta_GJ = math.sqrt(1-cos_theta_GJ*cos_theta_GJ)
-            #            n_paral_1 = (n1*cos_theta_GJ-n2*sin_theta_GJ).Unit()
-            #            n_paral_2 = (n1*cos_theta_GJ+n2*sin_theta_GJ).Unit()
+        #            cos_theta_GJX = 0.5*(tau_E*vistau_E-utils.tau_mass*utils.tau_mass-mass_vis_tau*mass_vis_tau)/(tau_mom*vistau_mom)
+        #            cos_theta_GJ = max(-1.0,min(1.0,cos_theta_GJX))
+        #            sin_theta_GJ = math.sqrt(1-cos_theta_GJ*cos_theta_GJ)
+        #            n_paral_1 = (n1*cos_theta_GJ-n2*sin_theta_GJ).Unit()
+        #            n_paral_2 = (n1*cos_theta_GJ+n2*sin_theta_GJ).Unit()
 
-            n_paral_1 = (n1*math.cos(theta_GJ_max)-n2*math.sin(theta_GJ_max)).Unit()
-            n_paral_2 = (n1*math.cos(theta_GJ_max)+n2*math.sin(theta_GJ_max)).Unit()
-
-
-            new_dir_1 = (n3*P_perp+n_paral_1*P_paral).Unit()
-            new_dir_2 = (n3*P_perp+n_paral_2*P_paral).Unit()
-            
-            condition = new_dir_1.Dot(tau_dir) < new_dir_2.Dot(tau_dir)
+        n_paral_1 = (n1*math.cos(theta_GJ_max)-n2*math.sin(theta_GJ_max)).Unit()
+        n_paral_2 = (n1*math.cos(theta_GJ_max)+n2*math.sin(theta_GJ_max)).Unit()
+        new_dir_1 = (n3*P_perp+n_paral_1*P_paral).Unit()
+        new_dir_2 = (n3*P_perp+n_paral_2*P_paral).Unit()
         
-            new_dir = new_dir_1
-            if condition:
-                new_dir = new_dir_2
+        condition = new_dir_1.Dot(tau_dir) < new_dir_2.Dot(tau_dir)
+        
+        new_dir = new_dir_1
+        if condition:
+            new_dir = new_dir_2
             
-            new_P = tau_mom*new_dir
-            new_tau.SetXYZT(new_P.X(),new_P.Y(),new_P.Z(),tau.E())
-    print('Initial tau (x,y,z,t) = (%5.3f,%5.3f,%5.3f,%5.3f)'%(tau.X(),tau.Y(),tau.Z(),tau.T()))
-    print('Rotated tau (x,y,z,t) = (%5.3f,%5.3f,%5.3f,%5.3f)'%(new_tau.X(),new_tau.Y(),new_tau.Z(),new_tau.T()))
-    print('')
+        new_P = tau_mom*new_dir
+        new_tau.SetXYZT(new_P.X(),new_P.Y(),new_P.Z(),tau.E())
+#    print('Initial tau (x,y,z,t) = (%5.3f,%5.3f,%5.3f,%5.3f)'%(tau.X(),tau.Y(),tau.Z(),tau.T()))
+#    print('Rotated tau (x,y,z,t) = (%5.3f,%5.3f,%5.3f,%5.3f)'%(new_tau.X(),new_tau.Y(),new_tau.Z(),new_tau.T()))
+#    print('')
     return new_tau
 
 ###################################################################
@@ -411,7 +387,7 @@ def rotateToGJMax(vistau,tau,method):
 #                         (only for exploratory studies with MC)
 # q  - tau charge
 # method - string : options ->
-#                   'recoDESY' - DESY-wise computation
+#                   'recoDESY' - DESY-wise computation (preferred)
 #                   'recoIC'   - IC-wise computation
 #                   'gen'      - generator information is used
 # Outputs ->
@@ -473,11 +449,11 @@ def PolVectA1(PV,SV,
 
     tempPV = -PA1.PVC()
     xPV = - PA1_tau.PVC()
-    print('')
-    print('pol. vector from PolarimetricA1.PVC() ->')
-    print('pol. vec. lab frame : (X,Y,Z,T)=(%6.4f,%6.4f,%6.4f,%6.4f)'%(tempPV.X(),tempPV.Y(),tempPV.Z(),tempPV.T()))
-    print('pol. vec. tau frame : (X,Y,Z,T)=(%6.4f,%6.4f,%6.4f,%6.4f)'%(xPV.X(),xPV.Y(),xPV.Z(),xPV.T()))
-    print('')
+#    print('')
+#    print('pol. vector from PolarimetricA1.PVC() ->')
+#    print('pol. vec. lab frame : (X,Y,Z,T)=(%6.4f,%6.4f,%6.4f,%6.4f)'%(tempPV.X(),tempPV.Y(),tempPV.Z(),tempPV.T()))
+#    print('pol. vec. tau frame : (X,Y,Z,T)=(%6.4f,%6.4f,%6.4f,%6.4f)'%(xPV.X(),xPV.Y(),xPV.Z(),xPV.T()))
+#    print('')
     
     pv = ROOT.TLorentzVector()
     if method=='IC':
@@ -490,7 +466,7 @@ def PolVectA1(PV,SV,
         
     return tau,pv
     
-#############################################################
+######################################################################
 # acoCP : routine returns acoplanarity angle phi(CP)
 # Inputs -> 
 # P1_input, P2_input, R1_input, R2_input - TLorentzVectors
@@ -501,8 +477,8 @@ def PolVectA1(PV,SV,
 #                               - Decay-Plane
 #                               - Decay-Plane-a1
 #                               - PV
-# Output : acop (float) - phi(CP)
-##############################################################
+# Output -> acop (float): this is tau decay mode specific phi(CP) 
+######################################################################
 def acoCP(P1_input, P2_input, R1_input, R2_input,
           firstNeg, method_1, method_2):
 
@@ -524,16 +500,6 @@ def acoCP(P1_input, P2_input, R1_input, R2_input,
     if method_2=='Impact-Parameter':
         temp = R2.Vect().Unit()
         R2.SetXYZT(temp.X(),temp.Y(),temp.Z(),0.)
-    
-    """
-    if method_1=='Impact-Parameter' and method_2=='Impact-Parameter':
-        print('%s -- %s'%(method_1,method_2))
-        print('before boost in P1+P2 frame -> ')
-        print('P1 (x,y,z,t)     = (%5.3f,%5.3f,%5.3f,%5.3f)'%(P1.X(),P1.Y(),P1.Z(),P1.T()))
-        print('P2 (x,y,z,t)     = (%5.3f,%5.3f,%5.3f,%5.3f)'%(P2.X(),P2.Y(),P2.Z(),P2.T()))
-        print('R1 (x,y,z,t)     = (%5.3f,%5.3f,%5.3f,%5.3f)'%(R1.X(),R1.Y(),R1.Z(),R1.T()))
-        print('R2 (x,y,z,t)     = (%5.3f,%5.3f,%5.3f,%5.3f)'%(R2.X(),R2.Y(),R2.Z(),R2.T()))
-    """
     
     P1.Boost(boost)
     P2.Boost(boost)
@@ -569,20 +535,6 @@ def acoCP(P1_input, P2_input, R1_input, R2_input,
     cos_phi = n1.Dot(n2)
     acop = math.acos(cos_phi)
 
-    """
-    if method_1=='Impact-Parameter' and method_2=='Impact-Parameter':
-        print('after boost in P1+P2 frame -> ')
-        print('P1 (x,y,z,t)     = (%5.3f,%5.3f,%5.3f,%5.3f)'%(P1.X(),P1.Y(),P1.Z(),P1.T()))
-        print('P2 (x,y,z,t)     = (%5.3f,%5.3f,%5.3f,%5.3f)'%(P2.X(),P2.Y(),P2.Z(),P2.T()))
-        print('R1 (x,y,z,t)     = (%5.3f,%5.3f,%5.3f,%5.3f)'%(R1.X(),R1.Y(),R1.Z(),R1.T()))
-        print('R2 (x,y,z,t)     = (%5.3f,%5.3f,%5.3f,%5.3f)'%(R2.X(),R2.Y(),R2.Z(),R2.T()))
-        print('R1transv (x,y,z) = (%5.3f,%5.3f,%5.3f)'%(R1transv.X(),R1transv.Y(),R1transv.Z()))
-        print('R2transv (x,y,z) = (%5.3f,%5.3f,%5.3f)'%(R2transv.X(),R2transv.Y(),R2transv.Z()))
-        print('n1 (x,y,z) = (%5.3f,%5.3f,%5.3f) len = %5.3f'%(n1.X(),n1.Y(),n1.Z(),n1.Mag()))
-        print('n2 (x,y,z) = (%5.3f,%5.3f,%5.3f) len = %5.3f'%(n2.X(),n2.Y(),n2.Z(),n1.Mag()))
-        print('cos(phi) = %5.4f'%(cos_phi))
-    """
-
     sign = vecP2.Dot(n1.Cross(n2))
     
     if firstNeg:
@@ -599,7 +551,7 @@ def acoCP(P1_input, P2_input, R1_input, R2_input,
     return acop
 
             
-def CosAlpha(pt,eta,phi,mass,Rx,Ry,Rz,prn):
+def CosAlpha(pt,eta,phi,mass,Rx,Ry,Rz):
 
     P = ROOT.TLorentzVector()
     P.SetPtEtaPhiM(pt,eta,phi,mass)
@@ -616,11 +568,6 @@ def CosAlpha(pt,eta,phi,mass,Rx,Ry,Rz,prn):
     cosa = 1.0/math.sqrt(2.0)
     if denom > 0.: 
         cosa = abs( ez.Cross(p).Dot(n.Cross(p)) / denom )
-    else:
-        if prn:
-            print('px = %3.1f  py = %3.1f  pz = %3.1f'%(p.X(),p.Y(),p.Z()))
-            print('nx = %3.1f  ny = %3.1f  nz = %3.1f'%(Rx,Ry,Rz))
-            print('')
     
     return cosa
 
