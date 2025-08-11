@@ -7,10 +7,10 @@ import yaml
 from yaml.loader import SafeLoader
 from array import array
 
-import CPHiggs.IP.styles as styles
-import CPHiggs.IP.utils as utils
-import CPHiggs.IP.analysisIP as analysis
-from CPHiggs.IP.ScaleFactor import ScaleFactor
+import CPHiggs.Analysis.styles as styles
+import CPHiggs.Analysis.utils as utils
+import CPHiggs.Analysis.analysis as analysis
+from CPHiggs.Analysis.ScaleFactor import ScaleFactor
 import os
 
 if __name__ == "__main__":
@@ -20,41 +20,61 @@ if __name__ == "__main__":
 
     from argparse import ArgumentParser
     parser = ArgumentParser()
-    parser.add_argument('-era' ,'--era', dest='era', default='Run3_2022', choices=['Run3_2022','Run3_2022EE','Run3_2023','Run3_2023BPix'])
-    parser.add_argument('-channel','--channel', dest='channel', default='mt',choices=['mt','et','ee','mm'])
-    parser.add_argument('-useCrossTrigger','--useCrossTrigger', dest='useCrossTrigger',action='store_true')
+    parser.add_argument('-era','--era',dest='era',default='Run3_2022preEE',choices=['Run3_2022preEE','Run3_2022postEE','Run3_2023preBPix','Run3_2023postBPix'])
+    parser.add_argument('-channel','--channel',dest='channel',default='mt',choices=['mt','et','ee','mm'])
     parser.add_argument('-applyMTCut','--mtCut',dest='applyMTCut',action='store_true')
     parser.add_argument('-applyMVisCut','--applyMVisCut',dest='applyMVisCut',action='store_true')
-    parser.add_argument('-applyIPSigLep1Cut','--applyIPSigLep1Cut',dest='applyIPSigLep1Cut',action='store_true')
-    parser.add_argument('-applyIPSigLep2Cut','--applyIPSigLep2Cut',dest='applyIPSigLep2Cut',action='store_true')
-    parser.add_argument('-applyIPSigPromptLepSF','--applyIPSigPromptLepSF',dest='applyIPSigPromptLepSF',action='store_true')
-    parser.add_argument('-applyIPSigTauLepSF','--applyIPSigTauLepSF',dest='applyIPSigTauLepSF',action='store_true')
-    parser.add_argument('-ipSigCut','--ipSigCut',dest='ipSigCut',type=float,default=1.0)
-    parser.add_argument('-runOnData','--runOnData',dest='runOnData',action='store_true')
-    parser.add_argument('-runOnDY','--runOnDY',dest='runOnDY',action='store_true')
-    parser.add_argument('-runOnSignal','--runOnSignal',dest='runOnSignal',action='store_true')
+    parser.add_argument('-useCrossTrigger','--useCrossTrigger',dest='useCrossTrigger',type=int,default=0)
+    parser.add_argument('-applyIPSigLep1Cut','--applyIPSigLep1Cut',dest='applyIPSigLep1Cut',type=int,default=0)
+    parser.add_argument('-applyIPSigLep2Cut','--applyIPSigLep2Cut',dest='applyIPSigLep2Cut',type=int,default=0)
+    parser.add_argument('-applyIPSigPromptLepSF','--applyIPSigPromptLepSF',dest='applyIPSigPromptLepSF',type=int,default=0)
+    parser.add_argument('-applyIPSigTauLepSF','--applyIPSigTauLepSF',dest='applyIPSigTauLepSF',type=int,default=0)
+    parser.add_argument('-sample','--sample',dest='sample',default='data',choices=['all','data','dy','ztt_0j','ztt_1j','ztt_2j','zll_0j','zll_1j','zll_2j','zll_incl','zll_ext','wjets','top','vv','even','odd','dy_incl','dy_ext','dy_1j','dy_2j','dy_3j','dy_4j','zll_powheg','ztt_powheg'])
+    parser.add_argument('-analysisType','--analysisType',dest='analysisType',default='ipSig',choices=['baseline','ipSig','phiCP'])
     args = parser.parse_args()
 
-    basedir = '%s/src/CPHiggs/IP'%(os.getenv('CMSSW_BASE'))
-
-    era = args.era
+    eras_2022 = ['Run3_2022','Run3_2022preEE','Run3_2022postEE']
+    
+    
+    eras = utils.periods[args.era]
     chan = args.channel
-    useCrossTrigger = args.useCrossTrigger
+    sample = args.sample
     applyMTCut = args.applyMTCut
     applyMVisCut = args.applyMVisCut
-    applyIPSigLep1Cut = args.applyIPSigLep1Cut
-    applyIPSigLep2Cut = args.applyIPSigLep2Cut
-    applyIPSigPromptLepSF = args.applyIPSigPromptLepSF
-    applyIPSigTauLepSF = args.applyIPSigTauLepSF
-    runOnData = args.runOnData
-    runOnDY = args.runOnDY
-    runOnSignal = args.runOnSignal
+    analysisType = args.analysisType
+
+    useCrossTrigger = False
+    applyIPSigLep1Cut = False
+    applyIPSigLep2Cut = False
+    applyIPSigPromptLepSF = False
+    applyIPSigTauLepSF = False
+    if args.useCrossTrigger==1:
+        useCrossTrigger = True
+    if args.applyIPSigLep1Cut==1:
+        applyIPSigLep1Cut = True
+    if args.applyIPSigLep2Cut==1:
+        applyIPSigLep2Cut = True
+    if args.applyIPSigPromptLepSF==1:
+        applyIPSigPromptLepSF = True
+    if args.applyIPSigTauLepSF==1:
+        applyIPSigTauLepSF = True
+    
+    baseFolder = '%s/src/CPHiggs/Analysis'%(os.getenv('CMSSW_BASE'))
+    tupleFolder = utils.tupleFolder
+    tupleFolderV2 = utils.tupleFolderV2
+    tupleFolderMG = utils.tupleFolderMG
+    outputFolder = utils.outputFolder
+    folderSF = utils.outputFolder+'/ScaleFactors'
     
     mTcut = 999999.
     if applyMTCut: mTcut = 70.
 
-    mvisCut = 999999.
-    if applyMVisCut: mvisCut = 80.
+    mvisUpperCut = 999999.
+    if applyMVisCut: mvisUpperCut = 80.
+
+    mvisLowerCut = 0.
+    if chan=='mt':
+        mvisLowerCut = 40.
     
     ptbins = utils.ptbins[chan]
     etabins = utils.etabins[chan]
@@ -70,40 +90,36 @@ if __name__ == "__main__":
     histPtBins = ROOT.TH1D('histPtBins','',nbinsPt,array('d',list(ptbins)))
     histEtaBins = ROOT.TH1D('histEtaBins','',nbinsEta,array('d',list(etabins)))
 
-    dyNames,topNames,vvNames,wjetsNames = utils.samplesEra(era,
-                                                           utils.dy_samples,
-                                                           utils.top_samples,
-                                                           utils.vv_samples,
-                                                           utils.wjets_samples)
-
     oddNames = utils.higgs_samples
     evenNames = utils.higgs_samples
-    
+
+    #########################
+    # Loading scale factors #
+    #########################
     ipSigPromptLepSF = None
     ipSigTauLepSF = None
-    folderSF = os.getenv('CMSSW_BASE')+'/src/CPHiggs/IP/ScaleFactors'
 
     suffixPromptLep = 'PromptMu'
     suffixTauLep = 'TauMu'
     if chan=='ee' or chan=='et':
         suffixPromptLep = 'PromptE'
         suffixTauLep = 'TauE'
+
+    sf_map = {'Run3_2022' : 'Run3_2022',
+              'Run3_2022preEE' : 'Run3_2022',
+              'Run3_2022postEE' : 'Run3_2022',
+              'Run3_2023' : 'Run3_2023',
+              'Run3_2023preBPix' : 'Run3_2023',
+              'Run3_2023postBPix' : 'Run3_2023',
+              }
         
-    fileNamePromptLepSF = '%s/SF_%s_%s.root'%(folderSF,suffixPromptLep,era)
+    fileNamePromptLepSF = '%s/SF_%s_%s.root'%(folderSF,suffixPromptLep,sf_map[args.era])
     if applyIPSigPromptLepSF:
         ipSigPromptLepSF = ScaleFactor(filename=fileNamePromptLepSF)
-
-    labels = {
-        'Run3_2022': 'Run3_2022All',
-        'Run3_2022EE': 'Run3_2022All',
-        'Run3_2023': 'Run3_2023All',
-        'Run3_2023BPix': 'Run3_2023All'
-    }
-        
-    fileNameTauLepSF = '%s/SF_%s_%s.root'%(folderSF,suffixTauLep,labels[era])
+    
+    fileNameTauLepSF = '%s/SF_%s_%s.root'%(folderSF,suffixTauLep,sf_map[args.era])
     if applyIPSigTauLepSF:
         ipSigTauLepSF = ScaleFactor(filename=fileNameTauLepSF)
-        
     
     ######################
     # definition of cuts #
@@ -119,7 +135,11 @@ if __name__ == "__main__":
     ptTauCrossTrigger = 32.
     lepMomScale = 0.002
     lepTauMomScale = 0.01
-    ipSigLepCut = args.ipSigCut
+    antiMu = 4
+    antiE = 2
+    antiJet = 7
+    ipSigLepCut = 1.00 # don't change
+    ipSigTauCut = 1.25 # don't change
     
     # et channel
     if chan=='et':
@@ -131,10 +151,13 @@ if __name__ == "__main__":
         ptTauCrossTrigger = 35.
         lepMomScale = 0.025
         lepTauMomScale = 0.04
+        antiMu = 4
+        antiE = 6
+        antiJet = 7
 
     # ee channel
     if chan=='ee':
-        ptSingleLepTrigger = 32.
+        ptSingleLepTrigger = 31.
         etaSingleLepTrigger = 2.1
         ptLep1Cut = 25.
         etaLep1Cut = 2.1
@@ -145,13 +168,14 @@ if __name__ == "__main__":
 
     # mm channel
     if chan=='mm':
-        ptLep1Cut = 25.
+        ptLep1Cut = 26.
         etaLep1Cut = 2.4
         ptLep2Cut = 25.
         etaLep2Cut = 2.4
 
     cuts = analysis.AnalysisCuts(mtCut=mTcut,
-                                 mvisCut=mvisCut,
+                                 mvisUpperCut=mvisUpperCut,
+                                 mvisLowerCut=mvisLowerCut,
                                  etaLep1Cut=etaLep1Cut,
                                  ptLep1Cut=ptLep1Cut,
                                  etaLep2Cut=etaLep2Cut,
@@ -163,124 +187,376 @@ if __name__ == "__main__":
                                  useCrossTrigger=useCrossTrigger,
                                  applyIPSigLep1Cut=applyIPSigLep1Cut,
                                  applyIPSigLep2Cut=applyIPSigLep2Cut,
-                                 ipsigLepCut=ipSigLepCut)
+                                 ipsigLepCut=ipSigLepCut,
+                                 ipsigTauCut=ipSigTauCut,
+                                 antiMu=antiMu,
+                                 antiE=antiE,
+                                 antiJet=antiJet)
 
-    yaml_file = utils.tupleFolder+'/params/'+era+'.yaml'
-    if not os.path.isfile(yaml_file):
-        print('file %s not found'%(yaml_file))
-        exit()
+    # reading lumi, cross section,
+    # effective number of MC events and 
+    metadata = {}
+    for era in eras:
+        yaml_file = baseFolder+'/params/'+era+'.yaml'
+        if not os.path.isfile(yaml_file):
+            print('file %s not found'%(yaml_file))
+            exit()
+        metafile = open(yaml_file,'r')
+        metadata[era] = list(yaml.load_all(metafile,Loader=SafeLoader))
 
-    metafile = open(yaml_file,'r')
-    metadata = list(yaml.load_all(metafile,Loader=SafeLoader))
-    lumi = metadata[0]['lumi']
-    
-    tupleFolder = utils.tupleFolder
+        
+    Samples = {}
     print('')
     print('initializing data samples >>>')
-    dataNames = utils.muonSamples[era]
-    if args.channel=='et' or args.channel=='ee': dataNames =  utils.elecSamples[era]
+    dataNames = {}
+    for era in eras:
+        datasets = utils.muonSamples[era]
+        if args.channel=='et' or args.channel=='ee': datasets =  utils.elecSamples[era]
+        dataNames[era] = datasets
+
     dataSamples = {}
-    for name in dataNames:
-        dataSamples[name] = analysis.analysisSample(tupleFolder,era,chan,name,1.0,True)
-        dataSamples[name].SetConfig(cuts,histPtBins,histEtaBins)
-        
+    for era in eras:
+        for name in dataNames[era]:
+            sampleName = name
+            dataSamples[sampleName] = analysis.analysisSample(tupleFolderV2,era,chan,name,1.0,True,analysisType=analysisType)
+            dataSamples[sampleName].SetConfig(cuts,histPtBins,histEtaBins)
+    Samples['data'] = dataSamples
+    
+
     print('')
-    print('initializing DY samples >>')
-    dySamples = {} 
-    for name in dyNames:
-        norm = lumi*metadata[0][name]['xs']/metadata[0][name]['eff']
-        dySamples[name] = analysis.analysisSample(tupleFolder,era,chan,name,norm,False)
-        dySamples[name].SetConfig(cuts,histPtBins,histEtaBins,
-                                  applyIPSigPromptLepSF=applyIPSigPromptLepSF,
-                                  applyIPSigTauLepSF=applyIPSigTauLepSF,
-                                  ipSigPromptLepSF=ipSigPromptLepSF,
-                                  ipSigTauLepSF=ipSigTauLepSF)
-        
+    print('initializing dy_incl_MG samples >>')
+    dyInclSamples = {} 
+    for era in eras:
+        for name in utils.dy_incl_MG_samples[era]:
+            norm = metadata[era][0]['lumi']*metadata[era][0][name]['xs']*metadata[era][0][name]['filter_efficiency']/metadata[era][0][name]['eff']
+            sampleName = name+'_'+era
+            dyInclSamples[sampleName] = analysis.analysisSample(tupleFolderMG,era,chan,name,norm,False,analysisType=analysisType)
+            dyInclSamples[sampleName].SetConfig(cuts,histPtBins,histEtaBins,
+                                               applyIPSigPromptLepSF=applyIPSigPromptLepSF,
+                                               applyIPSigTauLepSF=applyIPSigTauLepSF,
+                                               ipSigPromptLepSF=ipSigPromptLepSF,
+                                               ipSigTauLepSF=ipSigTauLepSF)
+    Samples['dy_incl'] = dyInclSamples
+
+    print('')
+    print('initializing dy_1j_MG samples >>')
+    dy1JSamples = {} 
+    for era in eras:
+        for name in utils.dy_1j_MG_samples[era]:
+            norm = metadata[era][0]['lumi']*metadata[era][0][name]['xs']*metadata[era][0][name]['filter_efficiency']/metadata[era][0][name]['eff']
+            sampleName = name+'_'+era
+            dy1JSamples[sampleName] = analysis.analysisSample(tupleFolderMG,era,chan,name,norm,False,analysisType=analysisType)
+            dy1JSamples[sampleName].SetConfig(cuts,histPtBins,histEtaBins,
+                                               applyIPSigPromptLepSF=applyIPSigPromptLepSF,
+                                               applyIPSigTauLepSF=applyIPSigTauLepSF,
+                                               ipSigPromptLepSF=ipSigPromptLepSF,
+                                               ipSigTauLepSF=ipSigTauLepSF)
+    Samples['dy_1j'] = dy1JSamples
+
+    print('')
+    print('initializing dy_2j_MG samples >>')
+    dy2JSamples = {} 
+    for era in eras:
+        for name in utils.dy_2j_MG_samples[era]:
+            norm = metadata[era][0]['lumi']*metadata[era][0][name]['xs']*metadata[era][0][name]['filter_efficiency']/metadata[era][0][name]['eff']
+            sampleName = name+'_'+era
+            dy2JSamples[sampleName] = analysis.analysisSample(tupleFolderMG,era,chan,name,norm,False,analysisType=analysisType)
+            dy2JSamples[sampleName].SetConfig(cuts,histPtBins,histEtaBins,
+                                               applyIPSigPromptLepSF=applyIPSigPromptLepSF,
+                                               applyIPSigTauLepSF=applyIPSigTauLepSF,
+                                               ipSigPromptLepSF=ipSigPromptLepSF,
+                                               ipSigTauLepSF=ipSigTauLepSF)
+    Samples['dy_2j'] = dy2JSamples
+
+    print('')
+    print('initializing dy_3j_MG samples >>')
+    dy3JSamples = {} 
+    for era in eras:
+        for name in utils.dy_3j_MG_samples[era]:
+            norm = metadata[era][0]['lumi']*metadata[era][0][name]['xs']*metadata[era][0][name]['filter_efficiency']/metadata[era][0][name]['eff']
+            sampleName = name+'_'+era
+            dy3JSamples[sampleName] = analysis.analysisSample(tupleFolderMG,era,chan,name,norm,False,analysisType=analysisType)
+            dy3JSamples[sampleName].SetConfig(cuts,histPtBins,histEtaBins,
+                                               applyIPSigPromptLepSF=applyIPSigPromptLepSF,
+                                               applyIPSigTauLepSF=applyIPSigTauLepSF,
+                                               ipSigPromptLepSF=ipSigPromptLepSF,
+                                               ipSigTauLepSF=ipSigTauLepSF)
+    Samples['dy_3j'] = dy3JSamples
+
+    print('')
+    print('initializing dy_4j_MG samples >>')
+    dy4JSamples = {} 
+    for era in eras:
+        for name in utils.dy_4j_MG_samples[era]:
+            norm = metadata[era][0]['lumi']*metadata[era][0][name]['xs']*metadata[era][0][name]['filter_efficiency']/metadata[era][0][name]['eff']
+            sampleName = name+'_'+era
+            dy4JSamples[sampleName] = analysis.analysisSample(tupleFolderMG,era,chan,name,norm,False,analysisType=analysisType)
+            dy4JSamples[sampleName].SetConfig(cuts,histPtBins,histEtaBins,
+                                               applyIPSigPromptLepSF=applyIPSigPromptLepSF,
+                                               applyIPSigTauLepSF=applyIPSigTauLepSF,
+                                               ipSigPromptLepSF=ipSigPromptLepSF,
+                                               ipSigTauLepSF=ipSigTauLepSF)
+    Samples['dy_4j'] = dy4JSamples
+
+
+    print('')
+    print('initializing ztt_0j samples >>')
+    ztt0JSamples = {} 
+    for era in eras:
+        for name in utils.ztt_0j_samples[era]:
+            norm = metadata[era][0]['lumi']*metadata[era][0][name]['xs']*metadata[era][0][name]['filter_efficiency']/metadata[era][0][name]['eff']
+            sampleName = name+'_'+era
+            ztt0JSamples[sampleName] = analysis.analysisSample(tupleFolderV2,era,chan,name,norm,False,analysisType=analysisType)
+            ztt0JSamples[sampleName].SetConfig(cuts,histPtBins,histEtaBins,
+                                               applyIPSigPromptLepSF=applyIPSigPromptLepSF,
+                                               applyIPSigTauLepSF=applyIPSigTauLepSF,
+                                               ipSigPromptLepSF=ipSigPromptLepSF,
+                                               ipSigTauLepSF=ipSigTauLepSF)
+    Samples['ztt_0j'] = ztt0JSamples
+
+    print('')
+    print('initializing ztt_1j samples >>')
+    ztt1JSamples = {} 
+    for era in eras:
+        for name in utils.ztt_1j_samples[era]:
+            norm = metadata[era][0]['lumi']*metadata[era][0][name]['xs']*metadata[era][0][name]['filter_efficiency']/metadata[era][0][name]['eff']
+            sampleName = name+'_'+era
+            ztt1JSamples[sampleName] = analysis.analysisSample(tupleFolderV2,era,chan,name,norm,False,analysisType=analysisType)
+            ztt1JSamples[sampleName].SetConfig(cuts,histPtBins,histEtaBins,
+                                               applyIPSigPromptLepSF=applyIPSigPromptLepSF,
+                                               applyIPSigTauLepSF=applyIPSigTauLepSF,
+                                               ipSigPromptLepSF=ipSigPromptLepSF,
+                                               ipSigTauLepSF=ipSigTauLepSF)
+    Samples['ztt_1j'] = ztt1JSamples
+
+    print('')
+    print('initializing ztt_2j samples >>')
+    ztt2JSamples = {} 
+    for era in eras:
+        for name in utils.ztt_2j_samples[era]:
+            norm = metadata[era][0]['lumi']*metadata[era][0][name]['xs']*metadata[era][0][name]['filter_efficiency']/metadata[era][0][name]['eff']
+            sampleName = name+'_'+era
+            ztt2JSamples[sampleName] = analysis.analysisSample(tupleFolderV2,era,chan,name,norm,False,analysisType=analysisType)
+            ztt2JSamples[sampleName].SetConfig(cuts,histPtBins,histEtaBins,
+                                               applyIPSigPromptLepSF=applyIPSigPromptLepSF,
+                                               applyIPSigTauLepSF=applyIPSigTauLepSF,
+                                               ipSigPromptLepSF=ipSigPromptLepSF,
+                                               ipSigTauLepSF=ipSigTauLepSF)
+    Samples['ztt_2j'] = ztt2JSamples
+
+    print('')
+    print('initializing zll_0j samples >>')
+    zll0JSamples = {} 
+    for era in eras:
+        for name in utils.zll_0j_samples[era]:
+            norm = metadata[era][0]['lumi']*metadata[era][0][name]['xs']*metadata[era][0][name]['filter_efficiency']/metadata[era][0][name]['eff']
+            sampleName = name+'_'+era
+            zll0JSamples[sampleName] = analysis.analysisSample(tupleFolderV2,era,chan,name,norm,False,analysisType=analysisType)
+            zll0JSamples[sampleName].SetConfig(cuts,histPtBins,histEtaBins,
+                                               applyIPSigPromptLepSF=applyIPSigPromptLepSF,
+                                               applyIPSigTauLepSF=applyIPSigTauLepSF,
+                                               ipSigPromptLepSF=ipSigPromptLepSF,
+                                               ipSigTauLepSF=ipSigTauLepSF)
+    Samples['zll_0j'] = zll0JSamples
+    
+    print('')
+    print('initializing zll_1j samples >>')
+    zll1JSamples = {} 
+    for era in eras:
+        for name in utils.zll_1j_samples[era]:
+            norm = metadata[era][0]['lumi']*metadata[era][0][name]['xs']*metadata[era][0][name]['filter_efficiency']/metadata[era][0][name]['eff']
+            sampleName = name+'_'+era
+            zll1JSamples[sampleName] = analysis.analysisSample(tupleFolderV2,era,chan,name,norm,False,analysisType=analysisType)
+            zll1JSamples[sampleName].SetConfig(cuts,histPtBins,histEtaBins,
+                                               applyIPSigPromptLepSF=applyIPSigPromptLepSF,
+                                               applyIPSigTauLepSF=applyIPSigTauLepSF,
+                                               ipSigPromptLepSF=ipSigPromptLepSF,
+                                               ipSigTauLepSF=ipSigTauLepSF)
+    Samples['zll_1j'] = zll1JSamples
+    
+    print('')
+    print('initializing zll_2j samples >>')
+    zll2JSamples = {} 
+    for era in eras:
+        for name in utils.zll_2j_samples[era]:
+            norm = metadata[era][0]['lumi']*metadata[era][0][name]['xs']*metadata[era][0][name]['filter_efficiency']/metadata[era][0][name]['eff']
+            sampleName = name+'_'+era
+            zll2JSamples[sampleName] = analysis.analysisSample(tupleFolderV2,era,chan,name,norm,False,analysisType=analysisType)
+            zll2JSamples[sampleName].SetConfig(cuts,histPtBins,histEtaBins,
+                                               applyIPSigPromptLepSF=applyIPSigPromptLepSF,
+                                               applyIPSigTauLepSF=applyIPSigTauLepSF,
+                                               ipSigPromptLepSF=ipSigPromptLepSF,
+                                               ipSigTauLepSF=ipSigTauLepSF)
+    Samples['zll_2j'] = zll2JSamples
+
+    print('')
+    print('initializing zll_incl samples >>')
+    zllInclSamples = {} 
+    for era in eras:
+        for name in utils.zll_incl_samples[era]:
+            norm = metadata[era][0]['lumi']*metadata[era][0][name]['xs']*metadata[era][0][name]['filter_efficiency']/metadata[era][0][name]['eff']
+            sampleName = name+'_'+era
+            zllInclSamples[sampleName] = analysis.analysisSample(tupleFolderV2,era,chan,name,norm,False,analysisType=analysisType)
+            zllInclSamples[sampleName].SetConfig(cuts,histPtBins,histEtaBins,
+                                                 applyIPSigPromptLepSF=applyIPSigPromptLepSF,
+                                                 applyIPSigTauLepSF=applyIPSigTauLepSF,
+                                                 ipSigPromptLepSF=ipSigPromptLepSF,
+                                                 ipSigTauLepSF=ipSigTauLepSF)
+    Samples['zll_incl'] = zllInclSamples
+
+    zllExtSamples = {}
+    dyExtSamples = {}
+    if args.era in eras_2022:
+        print('')
+        print('initializing zll_ext samples >>')
+        for era in eras:
+            for name in utils.zll_ext_samples[era]:
+                norm = metadata[era][0]['lumi']*metadata[era][0][name]['xs']*metadata[era][0][name]['filter_efficiency']/metadata[era][0][name]['eff']
+                sampleName = name+'_'+era
+                zllExtSamples[sampleName] = analysis.analysisSample(tupleFolderV2,era,chan,name,norm,False,analysisType=analysisType)
+                zllExtSamples[sampleName].SetConfig(cuts,histPtBins,histEtaBins,
+                                                 applyIPSigPromptLepSF=applyIPSigPromptLepSF,
+                                                 applyIPSigTauLepSF=applyIPSigTauLepSF,
+                                                 ipSigPromptLepSF=ipSigPromptLepSF,
+                                                 ipSigTauLepSF=ipSigTauLepSF)
+        Samples['zll_ext'] = zllExtSamples
+
+        print('')
+        print('initializing dy_ext samples >>')
+        for era in eras:
+            for name in utils.dy_ext_MG_samples[era]:
+                norm = metadata[era][0]['lumi']*metadata[era][0][name]['xs']*metadata[era][0][name]['filter_efficiency']/metadata[era][0][name]['eff']
+                sampleName = name+'_'+era
+                dyExtSamples[sampleName] = analysis.analysisSample(tupleFolderMG,era,chan,name,norm,False,analysisType=analysisType)
+                dyExtSamples[sampleName].SetConfig(cuts,histPtBins,histEtaBins,
+                                                    applyIPSigPromptLepSF=applyIPSigPromptLepSF,
+                                                    applyIPSigTauLepSF=applyIPSigTauLepSF,
+                                                    ipSigPromptLepSF=ipSigPromptLepSF,
+                                                    ipSigTauLepSF=ipSigTauLepSF)
+        Samples['dy_ext'] = dyExtSamples
+    
+    print('')
+    print('initializing zll_powheg samples >>')
+    zll_powheg_samples = utils.zmm_powheg_samples[era]
+    if chan=='ee' or chan=='et':
+        zll_powheg_samples = utils.zee_powheg_samples[era]
+    zllPowhegSamples = {}
+    for era in eras:
+        for name in zll_powheg_samples:
+            norm = metadata[era][0]['lumi']*metadata[era][0][name]['xs']*metadata[era][0][name]['filter_efficiency']/metadata[era][0][name]['eff']
+            sampleName = name+'_'+era
+            zllPowhegSamples[sampleName] = analysis.analysisSample(tupleFolder,era,chan,name,norm,False,analysisType=analysisType)
+            zllPowhegSamples[sampleName].SetConfig(cuts,histPtBins,histEtaBins,
+                                                   applyIPSigPromptLepSF=applyIPSigPromptLepSF,
+                                                   applyIPSigTauLepSF=applyIPSigTauLepSF,
+                                                   ipSigPromptLepSF=ipSigPromptLepSF,
+                                                   ipSigTauLepSF=ipSigTauLepSF)        
+    Samples['zll_powheg'] = zllPowhegSamples
+    
+    if chan=='et' or chan=='mt':
+        print('')
+        print('initializing Ztt_powheg samples >>')
+        zttPowhegSamples = {}
+        for era in eras:
+            for name in utils.ztt_powheg_samples[era]:
+                norm = metadata[era][0]['lumi']*metadata[era][0][name]['xs']*metadata[era][0][name]['filter_efficiency']/metadata[era][0][name]['eff']
+                sampleName = name+'_'+era
+                zttPowhegSamples[sampleName] = analysis.analysisSample(tupleFolder,era,chan,name,norm,False,analysisType=analysisType)
+                zttPowhegSamples[sampleName].SetConfig(cuts,histPtBins,histEtaBins,
+                                                   applyIPSigPromptLepSF=applyIPSigPromptLepSF,
+                                                   applyIPSigTauLepSF=applyIPSigTauLepSF,
+                                                   ipSigPromptLepSF=ipSigPromptLepSF,
+                                                   ipSigTauLepSF=ipSigTauLepSF)        
+        Samples['ztt_powheg'] = zttPowhegSamples
+    
     print('')
     print('initializing Top samples >>')
-    topSamples = {} 
-    for name in topNames:
-        norm = lumi*metadata[0][name]['xs']/metadata[0][name]['eff']
-        topSamples[name] = analysis.analysisSample(tupleFolder,era,chan,name,norm,False)
-        topSamples[name].SetConfig(cuts,histPtBins,histEtaBins,
-                                   applyIPSigPromptLepSF=applyIPSigPromptLepSF,
-                                   applyIPSigTauLepSF=applyIPSigTauLepSF,
-                                   ipSigPromptLepSF=ipSigPromptLepSF,
-                                   ipSigTauLepSF=ipSigTauLepSF)
-        
+    topSamples = {}
+    for era in eras:
+        for name in utils.top_samples[era]:
+            norm = metadata[era][0]['lumi']*metadata[era][0][name]['xs']*metadata[era][0][name]['filter_efficiency']/metadata[era][0][name]['eff']
+            sampleName = name+'_'+era
+            topSamples[sampleName] = analysis.analysisSample(tupleFolderV2,era,chan,name,norm,False,analysisType=analysisType)
+            topSamples[sampleName].SetConfig(cuts,histPtBins,histEtaBins,
+                                             applyIPSigPromptLepSF=applyIPSigPromptLepSF,
+                                             applyIPSigTauLepSF=applyIPSigTauLepSF,
+                                             ipSigPromptLepSF=ipSigPromptLepSF,
+                                             ipSigTauLepSF=ipSigTauLepSF)        
+    Samples['top'] = topSamples
+
     print('')
     print('initializing VV samples >>')
     vvSamples = {} 
-    for name in vvNames:
-        norm = lumi*metadata[0][name]['xs']/metadata[0][name]['eff']
-        vvSamples[name] = analysis.analysisSample(tupleFolder,era,chan,name,norm,False)
-        vvSamples[name].SetConfig(cuts,histPtBins,histEtaBins,
-                                  applyIPSigPromptLepSF=applyIPSigPromptLepSF,
-                                  applyIPSigTauLepSF=applyIPSigTauLepSF,
-                                  ipSigPromptLepSF=ipSigPromptLepSF,
-                                  ipSigTauLepSF=ipSigTauLepSF)
+    for era in eras:
+        for name in utils.vv_samples[era]:
+            norm = metadata[era][0]['lumi']*metadata[era][0][name]['xs']*metadata[era][0][name]['filter_efficiency']/metadata[era][0][name]['eff']
+            sampleName = name+'_'+era
+            vvSamples[sampleName] = analysis.analysisSample(tupleFolderV2,era,chan,name,norm,False,analysisType=analysisType)
+            vvSamples[sampleName].SetConfig(cuts,histPtBins,histEtaBins,
+                                            applyIPSigPromptLepSF=applyIPSigPromptLepSF,
+                                            applyIPSigTauLepSF=applyIPSigTauLepSF,
+                                            ipSigPromptLepSF=ipSigPromptLepSF,
+                                            ipSigTauLepSF=ipSigTauLepSF)
+    Samples['vv'] = vvSamples
         
     print('')
     print('initializing WJets samples >>')
     wjetsSamples = {}
-    for name in wjetsNames:
-        norm = lumi*metadata[0][name]['xs']/metadata[0][name]['eff']
-        wjetsSamples[name] = analysis.analysisSample(tupleFolder,era,chan,name,norm,False)
-        wjetsSamples[name].SetConfig(cuts,histPtBins,histEtaBins,
-                                     applyIPSigPromptLepSF=applyIPSigPromptLepSF,
-                                     applyIPSigTauLepSF=applyIPSigTauLepSF,
-                                     ipSigPromptLepSF=ipSigPromptLepSF,
-                                     ipSigTauLepSF=ipSigTauLepSF)
-
-    print('')
+    for era in eras:
+        for name in utils.wjets_samples[era]:
+            norm = metadata[era][0]['lumi']*metadata[era][0][name]['xs']*metadata[era][0][name]['filter_efficiency']/metadata[era][0][name]['eff']
+            sampleName = name+'_'+era
+            wjetsSamples[sampleName] = analysis.analysisSample(tupleFolderV2,era,chan,name,norm,False,analysisType=analysisType)
+            wjetsSamples[sampleName].SetConfig(cuts,histPtBins,histEtaBins,
+                                               applyIPSigPromptLepSF=applyIPSigPromptLepSF,
+                                               applyIPSigTauLepSF=applyIPSigTauLepSF,
+                                               ipSigPromptLepSF=ipSigPromptLepSF,
+                                               ipSigTauLepSF=ipSigTauLepSF)
+    Samples['wjets'] = wjetsSamples
 
     print('')
     print('initializing CP-even Higgs samples >>')
     evenSamples = {}
-    for name in evenNames:
-        norm = lumi*metadata[0][name]['xs']/metadata[0][name]['eff']
-        evenSamples[name] = analysis.analysisSample(tupleFolder,era,chan,name,norm,False)
-        evenSamples[name].SetConfig(cuts,histPtBins,histEtaBins,
-                                    applyIPSigPromptLepSF=applyIPSigPromptLepSF,
-                                    applyIPSigTauLepSF=applyIPSigTauLepSF,
-                                    ipSigPromptLepSF=ipSigPromptLepSF,
-                                    ipSigTauLepSF=ipSigTauLepSF,
-                                    applyWeightCP=1)
-
-    print('')
+    for era in eras:
+        for name in evenNames:
+            norm = metadata[era][0]['lumi']*metadata[era][0][name]['xs']*metadata[era][0][name]['filter_efficiency']/metadata[era][0][name]['eff']
+            sampleName = name+'_'+era
+            evenSamples[sampleName] = analysis.analysisSample(tupleFolderV2,era,chan,name,norm,False,analysisType=analysisType)
+            evenSamples[sampleName].SetConfig(cuts,histPtBins,histEtaBins,
+                                              applyIPSigPromptLepSF=applyIPSigPromptLepSF,
+                                              applyIPSigTauLepSF=applyIPSigTauLepSF,
+                                              ipSigPromptLepSF=ipSigPromptLepSF,
+                                              ipSigTauLepSF=ipSigTauLepSF,
+                                              applyWeightCP=1)
+    Samples['even'] = evenSamples
 
     print('')
     print('initializing CP-odd Higgs samples >>')
     oddSamples = {}
-    for name in oddNames:
-        norm = lumi*metadata[0][name]['xs']/metadata[0][name]['eff']
-        oddSamples[name] = analysis.analysisSample(tupleFolder,era,chan,name,norm,False)
-        oddSamples[name].SetConfig(cuts,histPtBins,histEtaBins,
-                                   applyIPSigPromptLepSF=applyIPSigPromptLepSF,
-                                   applyIPSigTauLepSF=applyIPSigTauLepSF,
-                                   ipSigPromptLepSF=ipSigPromptLepSF,
-                                   ipSigTauLepSF=ipSigTauLepSF,
-                                   applyWeightCP=2)
-
+    for era in eras:
+        for name in oddNames:
+            norm = metadata[era][0]['lumi']*metadata[era][0][name]['xs']*metadata[era][0][name]['filter_efficiency']/metadata[era][0][name]['eff']
+            sampleName = name+'_'+era
+            oddSamples[sampleName] = analysis.analysisSample(tupleFolderV2,era,chan,name,norm,False,analysisType=analysisType)
+            oddSamples[sampleName].SetConfig(cuts,histPtBins,histEtaBins,
+                                             applyIPSigPromptLepSF=applyIPSigPromptLepSF,
+                                             applyIPSigTauLepSF=applyIPSigTauLepSF,
+                                             ipSigPromptLepSF=ipSigPromptLepSF,
+                                             ipSigTauLepSF=ipSigTauLepSF,
+                                             applyWeightCP=2)
+    Samples['odd'] = oddSamples
+            
     print('')
 
     #######################
     ## running selection ##
     #######################
     hists = {}
-    if runOnData:
-        hists['data']  = analysis.RunSamplesTuple(dataSamples,'data')
-    elif runOnDY:
-        hists['dy']    = analysis.RunSamplesTuple(dySamples,'dy')
-    elif runOnSignal:
-        hists['even'] = analysis.RunSamplesTuple(evenSamples,'even')
-        hists['odd']  = analysis.RunSamplesTuple(oddSamples,'odd')
-    else:
-        hists['data']  = analysis.RunSamplesTuple(dataSamples,'data')
-        hists['dy']    = analysis.RunSamplesTuple(dySamples,'dy')
-        hists['top']   = analysis.RunSamplesTuple(topSamples,'top')
-        hists['vv']    = analysis.RunSamplesTuple(vvSamples,'vv')
-        hists['wjets'] = analysis.RunSamplesTuple(wjetsSamples,'wjets')
+    if sample=='all':
+        for s in Samples:
+            hists[s]  = analysis.RunSamplesTuple(Samples[s],s)
+    else: 
+        hists[sample]  = analysis.RunSamplesTuple(Samples[sample],sample)
     
     suffix_mt = ''
     suffix_mvis = ''
@@ -304,14 +580,12 @@ if __name__ == "__main__":
     if applyIPSigTauLepSF:
         suffix_tau = '_tauSF'
     
-    suffix = suffix_mt+suffix_mvis+suffix_xtrig+suffix_ip1+suffix_ip2+suffix_prompt+suffix_tau 
-    outputFileName = '%s/selection/%s_%s%s.root'%(basedir,chan,era,suffix)
-    if runOnData:
-        outputFileName = '%s/selection/data_%s_%s%s.root'%(basedir,chan,era,suffix)
-    if runOnDY:
-        outputFileName = '%s/selection/dy_%s_%s%s.root'%(basedir,chan,era,suffix)
-    if runOnSignal:
-        outputFileName = '%s/selection/signal_%s_%s%s.root'%(basedir,chan,era,suffix)
+    suffix = '_x'+suffix_mt+suffix_mvis+suffix_xtrig+suffix_ip1+suffix_ip2+suffix_prompt+suffix_tau 
+    outputFileName = ''
+    if sample=='all':
+        outputFileName = '%s/selection/%s_%s%s.root'%(outputFolder,chan,args.era,suffix)
+    else:
+        outputFileName = '%s/selection/%s_%s_%s%s.root'%(outputFolder,sample,chan,args.era,suffix)
         
     outputFile = ROOT.TFile(outputFileName,'recreate')
     outputFile.cd('')

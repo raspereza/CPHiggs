@@ -6,11 +6,11 @@ import math
 from array import array
 import os
 
-import CPHiggs.IP.utils as utils
+import CPHiggs.Analysis.utils as utils
 
 def CreateCards(hists,**kwargs):
 
-    era = kwargs.get('era','Run3_2022EE')
+    era = kwargs.get('era','Run3_2022')
     chan = kwargs.get('channel','mt')
     binPt = kwargs.get('binPt','1')
     binEta = kwargs.get('binEta','1')
@@ -101,7 +101,7 @@ def CreateCards(hists,**kwargs):
     print('Data  = %7.0f'%(x_data))
     print('')
     
-    basedir = os.getenv('CMSSW_BASE')+'/src/CPHiggs/IP/datacards'
+    basedir = utils.outputFolder+'/datacards'
 
     suffix = 'binPt'+binPt+'_binEta'+binEta
     outputFileName = '%s/%s_%s_%s_%s.root'%(basedir,chan,era,suffix,region)
@@ -155,7 +155,7 @@ if __name__ == "__main__":
 
     from argparse import ArgumentParser
     parser = ArgumentParser()
-    parser.add_argument('-era' ,'--era', dest='era', default='Run3_2022', choices=['Run3_2022','Run3_2022EE','Run3_2023','Run3_2023BPix','Run3_2022All','Run3_2023All'])
+    parser.add_argument('-era' ,'--era', dest='era', default='Run3_2022',choices=['Run3_2022','Run3_2023','Run3'])
     parser.add_argument('-variable' ,'--variable', dest='variable', default='m_vis')
     parser.add_argument('-channel','--channel', dest='channel', default='mt',choices=['mt','et'])
     parser.add_argument('-useCrossTrigger','--useCrossTrigger', dest='useCrossTrigger',action='store_true')
@@ -192,8 +192,8 @@ if __name__ == "__main__":
     if applyIPSigPromptLepSF:
         suffix_prompt = '_promptSF'
 
-    suffix = suffix_mt+suffix_xtrig+suffix_prompt
-    basedir = os.getenv('CMSSW_BASE')+'/src/CPHiggs/IP'    
+    suffix = '_x'+suffix_mt+suffix_xtrig+suffix_prompt
+    basedir = utils.outputFolder
     inputFileName = '%s/selection/%s_%s%s.root'%(basedir,chan,era,suffix)
     if os.path.isfile(inputFileName):
         print('')

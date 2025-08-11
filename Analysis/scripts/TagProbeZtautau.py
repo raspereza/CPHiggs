@@ -1,14 +1,21 @@
 #! /usr/bin/env python3
 # Author: Alexei Raspereza (December 2024)
-# Tag-and-Probe measurement of SF with Z->ee(mumu) samples
-#
+# Tag-and-Probe measurement of SF with Z->tau(l)tau(h) samples
+################################################################
 import ROOT
 import math
 from array import array
 import os
 
-import CPHiggs.IP.styles as styles
-import CPHiggs.IP.utils as utils
+def FitFuncSF(x,par):
+    a = 0.1*(x[0]-20.)
+    b = par[0]+par[1]*a+par[2]*a*a
+    if x[0]>70.:
+        b = par[3]
+    return b
+
+import CPHiggs.Analysis.styles as styles
+import CPHiggs.Analysis.utils as utils
 
 def ComputeEff(f):
 
@@ -72,7 +79,13 @@ def PlotTagProbe(eff_data,eff_mc,**kwargs):
     binEta = kwargs.get('binEta','1')
     ymin = kwargs.get('ymin',0.5)
     ymax = kwargs.get('ymax',1.5)
-    
+
+    xtit=''
+    if chan=='mt':
+        xtit="muon p_{T} [GeV]"
+    else:
+        xtit="electron p_{T} [GeV]"
+    ytit='SF'
     header = '#tau#rightarrow#mu, |#eta|<1.2'
     if chan=='mt':
         if binEta=='1':
@@ -114,12 +127,44 @@ def PlotTagProbe(eff_data,eff_mc,**kwargs):
         sf.SetBinContent(ib,xsf)
         sf.SetBinError(ib,esf)
 
+    fmin = sf.GetXaxis().GetBinLowEdge(1)
+    fmax = sf.GetXaxis().GetBinLowEdge(nbins+1)
+    print('fmin=%2.0f  fmax=%3.0f'%(fmin,fmax))
+    
+    fitSF = ROOT.TF1('fitFuncSF',FitFuncSF,fmin,fmax,4)
+    fitSF.SetParameter(0,1.0)
+    fitSF.SetParameter(1,0.0)
+    fitSF.SetParameter(2,0.0)
+    fitSF.SetParameter(3,1.0)
+    fitSF.SetParName(0,'a0')
+    fitSF.SetParName(1,'a1')
+    fitSF.SetParName(2,'a2')
+    fitSF.SetParName(3,'const')
+
+    dummy = styles.MakeCanvas('dummy','',400,400)
+    sf.Fit(fitSF,"R")
+    hfit = ROOT.TH1D("hfit_binEta"+binEta,"",200,fmin,fmax)
+    ROOT.TVirtualFitter.GetFitter().GetConfidenceIntervals(hfit,0.68)
+    styles.InitModel(hfit,xtit,ytit,4)
+    hfit.SetFillColor(ROOT.kCyan)
+    hfit.SetFillStyle(1001)
+    hfit.SetLineWidth(0)
+    hfit.SetLineColor(4)
+    hfit.SetMarkerSize(0)
+    hfit.SetMarkerStyle(0)
+    hfit.GetYaxis().SetTitle("scale factor (IP sig.)")
+    
     eff_data.GetYaxis().SetRangeUser(0.,1.1)
     eff_data.GetXaxis().SetLabelSize(0)
+    eff_data.GetXaxis().SetMoreLogLabels(True)
+    eff_data.GetXaxis().SetNoExponent()
     eff_data.GetYaxis().SetTitle('Efficiency')
     sf.GetYaxis().SetTitle('SF')
     sf.GetXaxis().SetTitle('p_{T} (GeV)')
     sf.GetYaxis().SetRangeUser(ymin,ymax)
+    sf.GetXaxis().SetMoreLogLabels(True)
+    sf.GetXaxis().SetNoExponent()
+    sf.GetXaxis().SetTitleOffset(1.2)
     styles.InitRatioHist(sf)
     
     # canvas and pads
@@ -143,6 +188,7 @@ def PlotTagProbe(eff_data,eff_mc,**kwargs):
 
     styles.CMS_label(upper,era=era)
 
+    upper.SetLogx(True)
     upper.Draw("SAME")
     upper.RedrawAxis()
     upper.Modified()
@@ -156,6 +202,8 @@ def PlotTagProbe(eff_data,eff_mc,**kwargs):
     styles.InitLowerPad(lower)
 
     sf.Draw('e1')
+    hfit.Draw('e2same')
+    sf.Draw('e1same')
 
     xmin = sf.GetXaxis().GetBinLowEdge(1)    
     xmax = sf.GetXaxis().GetBinLowEdge(nbins+1)
@@ -164,6 +212,7 @@ def PlotTagProbe(eff_data,eff_mc,**kwargs):
     line.SetLineWidth(2)
     line.SetLineColor(4)
     line.Draw()
+    lower.SetLogx(True)
     lower.Modified()
     lower.RedrawAxis()
 
@@ -174,8 +223,9 @@ def PlotTagProbe(eff_data,eff_mc,**kwargs):
     canvas.Update()
 
     print('')
-    outputGraphics = '%s/src/CPHiggs/IP/figures/SF_%s_binEta%s_%s.png'%(os.getenv('CMSSW_BASE'),chan,binEta,era)    
+    outputGraphics = '%s/figures/SF_%s_binEta%s_%s.png'%(utils.outputFolder,chan,binEta,era)    
     canvas.Print(outputGraphics)
+    return hfit,fitSF
     
 if __name__ == "__main__":
 
@@ -184,7 +234,7 @@ if __name__ == "__main__":
 
     from argparse import ArgumentParser
     parser = ArgumentParser()
-    parser.add_argument('-era' ,'--era', dest='era', default='Run3_2022', choices=['Run3_2022','Run3_2022EE','Run3_2023','Run3_2023BPix','Run3_2022All','Run3_2023All'])
+    parser.add_argument('-era' ,'--era', dest='era', default='Run3_2022', choices=['Run3_2022','Run3_2023','Run3'])
     parser.add_argument('-channel','--channel', dest='channel', default='mt',choices=['mt','et'])
     parser.add_argument('-ymin','--ymin', dest='ymin', type=float, default=0.701)
     parser.add_argument('-ymax','--ymax', dest='ymax', type=float, default=1.299)
@@ -195,9 +245,9 @@ if __name__ == "__main__":
     ymin = args.ymin
     ymax = args.ymax
     
-    basedir = '%s/src/CPHiggs/IP'%(os.getenv('CMSSW_BASE'))
+    basedir = '%s'%(utils.outputFolder)
     
-    inputFileName = '%s/selection/%s_%s_xtrig_promptSF.root'%(basedir,chan,era)
+    inputFileName = '%s/selection/%s_%s_x_promptSF.root'%(basedir,chan,era)
     inputFile = ROOT.TFile(inputFileName,'read')
     print('')
     print(inputFile)
@@ -210,7 +260,7 @@ if __name__ == "__main__":
     ptBins = []
     for iPt in range(1,nbinsPt+1):
         ptBins.append(histPtBins.GetBinLowEdge(iPt))
-    ptBins.append(100.)
+    ptBins.append(150.)
 
     etaBins = []
     for iEta in range(1,nbinsEta+2):
@@ -237,7 +287,7 @@ if __name__ == "__main__":
     effMC['3'] = []
     errMC['3'] = []
     
-    cards_folder = '%s/src/CPHiggs/IP/datacards'%(os.getenv('CMSSW_BASE'))
+    cards_folder = '%s/datacards'%(utils.outputFolder)
     for iEta in range(1,nbinsEta+1):
         binEta = '%1i'%(iEta)
         effData_1D = ROOT.TH1D('effData_eta'+binEta,'',nbinsPt,array('d',list(ptBins)))
@@ -258,6 +308,8 @@ if __name__ == "__main__":
 
     effData_2D = ROOT.TH2D('effData','',nbinsPt,array('d',list(ptBins)),nbinsEta,array('d',list(etaBins)))
     effMC_2D = ROOT.TH2D('effMC','',nbinsPt,array('d',list(ptBins)),nbinsEta,array('d',list(etaBins)))
+    hfit = {}
+    fitSF = {}
     for iEta in range(1,nbinsEta+1):
         binEta = '%1i'%(iEta)
         effData_1D = ROOT.TH1D('effData_eta'+binEta,'',nbinsPt,array('d',list(ptBins)))
@@ -276,7 +328,7 @@ if __name__ == "__main__":
             effMC_2D.SetBinContent(iPt,iEta,effMC[binEta][iPt-1])
             effMC_2D.SetBinError(iPt,iEta,errMC[binEta][iPt-1])
             
-        PlotTagProbe(effData_1D,effMC_1D,era=era,channel=chan,binEta=binEta,ymin=ymin,ymax=ymax)
+        hfit[binEta],fitSF[binEta] = PlotTagProbe(effData_1D,effMC_1D,era=era,channel=chan,binEta=binEta,ymin=ymin,ymax=ymax)
 
 
     lepType = 'TauE'
@@ -288,4 +340,8 @@ if __name__ == "__main__":
     outputFile.cd('')
     effData_2D.Write('effData')
     effMC_2D.Write('effMC')
+    for h in hfit:
+        hfit[h].Write('hfit_binEta'+h)
+        fitSF[h].Write('fitFunc_binEta'+h)
+
     outputFile.Close()

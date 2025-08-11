@@ -1,13 +1,13 @@
 #! /usr/bin/env python3
 # Author: Alexei Raspereza (December 2024)
-# Plotting macro for Z->tautau  selection
+# Plotting macro for Z->ll  selection
 import ROOT
 import math
 from array import array
 import os
 
-import CPHiggs.IP.styles as styles
-import CPHiggs.IP.utils as utils
+import CPHiggs.Analysis.styles as styles
+import CPHiggs.Analysis.utils as utils
 
 XTitle = {
     'mm': {
@@ -34,14 +34,16 @@ XTitle = {
     }
 }
 
+    
 def Plot(hists,**kwargs):
 
-    era = kwargs.get('era','Run3_2022EE')
+    era = kwargs.get('era','Run3_2022')
     var = kwargs.get('var','m_vis')
     chan = kwargs.get('channel','mm')
     plotLegend = kwargs.get('plotLegend',True)
     ymin = kwargs.get('ymin',0.5)
     ymax = kwargs.get('ymax',1.5)
+    suffix = kwargs.get('suffix','_x')
     
     # histograms
     h_data = hists['data_'+var+'_os_iso_all'].Clone('h_data')
@@ -49,7 +51,7 @@ def Plot(hists,**kwargs):
     h_top = hists['top_'+var+'_os_iso_all'].Clone('h_top')
     h_vv = hists['vv_'+var+'_os_iso_all'].Clone('h_vv')
     h_wjets = hists['wjets_'+var+'_os_iso_all'].Clone('h_wjets')
-
+    
     styles.InitData(h_data)
 
     xtitle = XTitle[chan][var]
@@ -65,7 +67,13 @@ def Plot(hists,**kwargs):
     x_vv    = h_vv.GetSumOfWeights() 
     x_wjets = h_wjets.GetSumOfWeights()
     x_tot   = x_zll + x_top + x_vv + x_wjets
-
+    
+    scale = (x_data-x_top-x_wjets-x_vv)/x_zll
+    h_zll.Scale(scale)
+    x_zll   = h_zll.GetSumOfWeights() 
+    x_tot   = x_zll + x_top + x_vv + x_wjets
+    
+    
     print('')
     print('Yields ->')
     print('DY    : %7.0f'%(x_zll))
@@ -161,7 +169,8 @@ def Plot(hists,**kwargs):
     canvas.SetSelected(canvas)
     canvas.Update()
     print('')
-    outputGraphics = os.getenv('CMSSW_BASE') + '/src/CPHiggs/IP/figures/' + var + '_' + chan + '_' + era + '.png'    
+    basedir = '%s/figures'%(utils.outputFolder)
+    outputGraphics = '%s/%s_%s_%s%s.png'%(basedir,var,chan,era,suffix)
     canvas.Print(outputGraphics)
 
 if __name__ == "__main__":
@@ -171,7 +180,7 @@ if __name__ == "__main__":
 
     from argparse import ArgumentParser
     parser = ArgumentParser()
-    parser.add_argument('-era' ,'--era', dest='era', default='Run3_2022', choices=['Run3_2022','Run3_2022EE','Run3_2023','Run3_2023BPix'])
+    parser.add_argument('-era' ,'--era', dest='era', default='Run3_2022', choices=['Run3_2022','Run3_2023','Run3'])
     parser.add_argument('-channel','--channel', dest='channel', default='mt',choices=['mm','ee'])
     parser.add_argument('-variable' ,'--variable', dest='variable', default='m_vis')
     parser.add_argument('-nbins','--nbins', dest='nbins', type=int, default=40)
@@ -182,6 +191,7 @@ if __name__ == "__main__":
     parser.add_argument('-applyIP1','--applyIP1',dest='applyIP1',type=int,default=0)
     parser.add_argument('-applyIP2','--applyIP2',dest='applyIP2',type=int,default=0)
     parser.add_argument('-applySF', '--applySF', dest='applySF' ,type=int,default=0)
+    parser.add_argument('-generator', '--generator', dest='generator', default='amcatnlo',choices=['amcatnlo','MG','powheg'])
 
     args = parser.parse_args()
 
@@ -193,7 +203,8 @@ if __name__ == "__main__":
     xmax = args.xmax
     ymin = args.ymin
     ymax = args.ymax
-
+    generator = args.generator
+    
     plotLegend = True
     if var=='eta_1' or var=='eta_2':
         plotLegend = False
@@ -208,8 +219,8 @@ if __name__ == "__main__":
     for i in range(0,nbins+1):
         xb = xmin + width*float(i)
         bins.append(xb)
-
-    basedir = os.getenv('CMSSW_BASE')+'/src/CPHiggs/IP/selection'
+        
+    basedir = utils.outputFolder+'/selection'
 
     suffix_ip1 = ''
     suffix_ip2 = ''
@@ -221,7 +232,7 @@ if __name__ == "__main__":
     if applyIPSigPromptLepSF==1:
         suffix_prompt = '_promptSF'
 
-    suffix = suffix_ip1+suffix_ip2+suffix_prompt 
+    suffix = '_x'+suffix_ip1+suffix_ip2+suffix_prompt 
     
     inputFileName = '%s/%s_%s%s.root'%(basedir,chan,era,suffix)
     if os.path.isfile(inputFileName):        
@@ -235,7 +246,8 @@ if __name__ == "__main__":
         print('')
         exit()
     inputFile = ROOT.TFile(inputFileName,'read')
-    hists = utils.extractHistos(inputFile,var,bins)
-    Plot(hists,era=era,var=var,channel=chan,ymin=ymin,ymax=ymax,plotLegend=plotLegend)
+    hists = utils.extractHistos(inputFile,var,bins,generator,era)
+    suffixOut = suffix + '_' + generator
+    Plot(hists,era=era,var=var,channel=chan,ymin=ymin,ymax=ymax,plotLegend=plotLegend,suffix=suffixOut)
 
     

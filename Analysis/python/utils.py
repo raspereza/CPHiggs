@@ -22,66 +22,226 @@ ctau = 0.0087
 ##################################
 # folder where tuples are stored #
 ##################################
-tupleFolder='/eos/cms/store/group/phys_tau/ksavva/For_Aliaksei/files/testingzpt'
-tupleFolderNew='/eos/cms/store/group/phys_tau/lrussell/forAliaksei'
+tupleFolderMG='/eos/cms/store/group/phys_tau/ksavva/For_Aliaksei/files/testingzpt'
+tupleFolder='/eos/cms/store/group/phys_tau/ksavva/For_Aliaksei/files/production_22_06_2025'
+tupleFolderV1='/eos/cms/store/group/phys_tau/lrussell/forAliaksei/old/oldTuples'
+tupleFolderV2='/eos/cms/store/group/phys_tau/lrussell/forAliaksei'
 
+#########################################
+# folder with outputs (ROOT histograms) #
+#########################################
+outputFolder = '/afs/cern.ch/work/r/rasp/CPHiggs/Analysis'
 
-############################
-# base folder with outputs #
-############################
-baseFolder = '/afs/cern.ch/work/r/rasp/CPHiggs/IP'
-
-eras = ['Run3_2022','Run3_2022EE','Run3_2023','Run3_2023BPix','Run3_2022All','Run3_2023All','Run3']
+periods = {'Run3_2022preEE' : ['Run3_2022'] ,
+           'Run3_2022postEE' : ['Run3_2022EE'],
+           'Run3_2023preBPix' : ['Run3_2023'],
+           'Run3_2023postBPix' : ['Run3_2023BPix'],
+           'Run3_2022' : ['Run3_2022','Run3_2022EE'],
+           'Run3_2023' : ['Run3_2023','Run3_2023BPix'],
+           'Run3' : ['Run3_2022','Run3_2022EE','Run3_2023','Run3_2023BPix'],
+           }
     
 eraLumi = {
-    "Run3_2022"     : 7980.4,
-    "Run3_2022EE"   : 26671.7,
-    "Run3_2023"     : 17794.0,
-    "Run3_2023BPix" : 9451.0,
-    "Run3_2022All"  : 34652.1,
-    "Run3_2023All"  : 27245.0,
-    "Run3"          : 61897.1,
-    "Run3v2"        : 61897.1,
-    "Run3v3"        : 61897.1,
+    "Run3_2022preEE"    : 7980.4,
+    "Run3_2022postEE"   : 26671.7,
+    "Run3_2023preBPix"  : 17794.0,
+    "Run3_2023postBPix" : 9451.0,
+    "Run3_2022"  : 34652.1,
+    "Run3_2023"  : 27245.0,
+    "Run3"       : 61897.1,
 }
 
 ###############
 # MC samples ##
 ###############
 
-dy_samples = ['DYto2L_M_50_madgraphMLM','DYto2L_M_50_madgraphMLM_ext1','DYto2L_M_50_1J_madgraphMLM','DYto2L_M_50_2J_madgraphMLM','DYto2L_M_50_3J_madgraphMLM','DYto2L_M_50_4J_madgraphMLM']
-top_samples = ['TTto2L2Nu','TTto2L2Nu_ext1','TTtoLNu2Q','TTtoLNu2Q_ext1','TTto4Q','TTto4Q_ext1']
-vv_samples = ['WW','WZ','ZZ','ST_t_channel_top_4f_InclusiveDecays','ST_t_channel_antitop_4f_InclusiveDecays','ST_tW_top_2L2Nu','ST_tW_top_2L2Nu_ext1','ST_tW_antitop_2L2Nu','ST_tW_antitop_2L2Nu_ext1','ST_tW_top_LNu2Q','ST_tW_top_LNu2Q_ext1','ST_tW_antitop_LNu2Q','ST_tW_antitop_LNu2Q_ext1']
-wjets_samples = ['WtoLNu_madgraphMLM','WtoLNu_madgraphMLM_ext1','WtoLNu_1J_madgraphMLM','WtoLNu_2J_madgraphMLM','WtoLNu_3J_madgraphMLM','WtoLNu_4J_madgraphMLM']
-odd_samples = ['GluGluHTo2Tau_UncorrelatedDecay_CPodd_Filtered_ProdAndDecay']
+zmm_powheg_samples = {
+    'Run3_2022'    : ['DYto2Mu_MLL_50to120_powheg','DYto2Mu_MLL_120to200_powheg'],
+    'Run3_2022EE'  : ['DYto2Mu_MLL_50to120_powheg','DYto2Mu_MLL_120to200_powheg'],
+    'Run3_2023'    : ['DYto2Mu_MLL_50to120_powheg','DYto2Mu_MLL_120to200_powheg'],
+    'Run3_2023BPix': ['DYto2Mu_MLL_50to120_powheg','DYto2Mu_MLL_120to200_powheg'],
+}
+
+zee_powheg_samples = {
+    'Run3_2022'    : ['DYto2E_MLL_50to120_powheg','DYto2E_MLL_120to200_powheg'],
+    'Run3_2022EE'  : ['DYto2E_MLL_50to120_powheg','DYto2E_MLL_120to200_powheg'],
+    'Run3_2023'    : ['DYto2E_MLL_50to120_powheg','DYto2E_MLL_120to200_powheg'],
+    'Run3_2023BPix': ['DYto2E_MLL_50to120_powheg','DYto2E_MLL_120to200_powheg'],
+}
+
+ztt_powheg_samples = {
+    'Run3_2022'    : ['DYto2Tau_MLL_50to120_powheg','DYto2Tau_MLL_120to200_powheg'],
+    'Run3_2022EE'  : ['DYto2Tau_MLL_50to120_powheg','DYto2Tau_MLL_120to200_powheg'],
+    'Run3_2023'    : ['DYto2Tau_MLL_50to120_powheg','DYto2Tau_MLL_120to200_powheg'],
+    'Run3_2023BPix': ['DYto2Tau_MLL_50to120_powheg','DYto2Tau_MLL_120to200_powheg'],
+}
+
+dy_incl_MG_samples = {
+    'Run3_2022'    : ['DYto2L_M_50_madgraphMLM'],
+    'Run3_2022EE'  : ['DYto2L_M_50_madgraphMLM'],
+    'Run3_2023'    : ['DYto2L_M_50_madgraphMLM'],
+    'Run3_2023BPix': ['DYto2L_M_50_madgraphMLM'],
+}
+
+dy_ext_MG_samples = {
+    'Run3_2022'    : ['DYto2L_M_50_madgraphMLM_ext1'],
+    'Run3_2022EE'  : ['DYto2L_M_50_madgraphMLM_ext1'],
+    'Run3_2023'    : [],
+    'Run3_2023BPix': [],
+}
+
+dy_1j_MG_samples = {
+    'Run3_2022'    : ['DYto2L_M_50_1J_madgraphMLM'],
+    'Run3_2022EE'  : ['DYto2L_M_50_1J_madgraphMLM'],
+    'Run3_2023'    : ['DYto2L_M_50_1J_madgraphMLM'],
+    'Run3_2023BPix': ['DYto2L_M_50_1J_madgraphMLM'],
+}
+
+dy_2j_MG_samples = {
+    'Run3_2022'    : ['DYto2L_M_50_2J_madgraphMLM'],
+    'Run3_2022EE'  : ['DYto2L_M_50_2J_madgraphMLM'],
+    'Run3_2023'    : ['DYto2L_M_50_2J_madgraphMLM'],
+    'Run3_2023BPix': ['DYto2L_M_50_2J_madgraphMLM'],
+}
+
+dy_3j_MG_samples = {
+    'Run3_2022'    : ['DYto2L_M_50_3J_madgraphMLM'],
+    'Run3_2022EE'  : ['DYto2L_M_50_3J_madgraphMLM'],
+    'Run3_2023'    : ['DYto2L_M_50_3J_madgraphMLM'],
+    'Run3_2023BPix': ['DYto2L_M_50_3J_madgraphMLM'],
+}
+
+dy_4j_MG_samples = {
+    'Run3_2022'    : ['DYto2L_M_50_4J_madgraphMLM'],
+    'Run3_2022EE'  : ['DYto2L_M_50_4J_madgraphMLM'],
+    'Run3_2023'    : ['DYto2L_M_50_4J_madgraphMLM'],
+    'Run3_2023BPix': ['DYto2L_M_50_4J_madgraphMLM'],
+}
+
+
+zll_0j_samples = {
+    'Run3_2022'    : ['DYto2L_M_50_0J_amcatnloFXFX'],
+    'Run3_2022EE'  : ['DYto2L_M_50_0J_amcatnloFXFX'],
+    'Run3_2023'    : ['DYto2L_M_50_0J_amcatnloFXFX'],
+    'Run3_2023BPix': ['DYto2L_M_50_0J_amcatnloFXFX'],
+}
+
+zll_1j_samples = {
+    'Run3_2022'    : ['DYto2L_M_50_1J_amcatnloFXFX'],
+    'Run3_2022EE'  : ['DYto2L_M_50_1J_amcatnloFXFX'],
+    'Run3_2023'    : ['DYto2L_M_50_1J_amcatnloFXFX'],
+    'Run3_2023BPix': ['DYto2L_M_50_1J_amcatnloFXFX'],
+}
+
+zll_2j_samples = {
+    'Run3_2022'    : ['DYto2L_M_50_2J_amcatnloFXFX'],
+    'Run3_2022EE'  : ['DYto2L_M_50_2J_amcatnloFXFX'],
+    'Run3_2023'    : ['DYto2L_M_50_2J_amcatnloFXFX'],
+    'Run3_2023BPix': ['DYto2L_M_50_2J_amcatnloFXFX'],
+}
+
+zll_incl_samples = {
+    'Run3_2022'    : ['DYto2L_M_50_amcatnloFXFX'],
+    'Run3_2022EE'  : ['DYto2L_M_50_amcatnloFXFX'],
+    'Run3_2023'    : ['DYto2L_M_50_amcatnloFXFX'],
+    'Run3_2023BPix': ['DYto2L_M_50_amcatnloFXFX'],
+}
+
+zll_ext_samples = {
+    'Run3_2022'    : ['DYto2L_M_50_amcatnloFXFX_ext1'],
+    'Run3_2022EE'  : ['DYto2L_M_50_amcatnloFXFX_ext1'],
+    'Run3_2023'    : [],
+    'Run3_2023BPix': [],
+    
+}
+
+ztt_0j_samples = {
+    'Run3_2022'    : ['DYto2Tau_MLL_50_0J_amcatnloFXFX'],
+    'Run3_2022EE'  : ['DYto2Tau_MLL_50_0J_amcatnloFXFX'],
+    'Run3_2023'    : ['DYto2Tau_MLL_50_0J_amcatnloFXFX'],
+    'Run3_2023BPix': ['DYto2Tau_MLL_50_0J_amcatnloFXFX'],
+}
+
+ztt_1j_samples = {
+    'Run3_2022'    : ['DYto2Tau_MLL_50_1J_amcatnloFXFX'],
+    'Run3_2022EE'  : ['DYto2Tau_MLL_50_1J_amcatnloFXFX'],
+    'Run3_2023'    : ['DYto2Tau_MLL_50_1J_amcatnloFXFX'],
+    'Run3_2023BPix': ['DYto2Tau_MLL_50_1J_amcatnloFXFX'],
+}
+
+ztt_2j_samples = {
+    'Run3_2022'    : ['DYto2Tau_MLL_50_2J_amcatnloFXFX'],
+    'Run3_2022EE'  : ['DYto2Tau_MLL_50_2J_amcatnloFXFX'],
+    'Run3_2023'    : ['DYto2Tau_MLL_50_2J_amcatnloFXFX'],
+    'Run3_2023BPix': ['DYto2Tau_MLL_50_2J_amcatnloFXFX'],
+}
+
+top_samples = {
+    'Run3_2022'    : ['TTto2L2Nu','TTto2L2Nu_ext1',
+                      'TTtoLNu2Q','TTtoLNu2Q_ext1',
+                      'TTto4Q','TTto4Q_ext1'],
+    'Run3_2022EE'  : ['TTto2L2Nu','TTto2L2Nu_ext1',
+                      'TTtoLNu2Q','TTtoLNu2Q_ext1',
+                      'TTto4Q','TTto4Q_ext1'],
+    'Run3_2023'    : ['TTto2L2Nu',
+                      'TTtoLNu2Q',
+                      'TTto4Q'],
+    'Run3_2023BPix': ['TTto2L2Nu',
+                      'TTtoLNu2Q',
+                      'TTto4Q'],
+}
+               
+vv_samples = {
+    'Run3_2022'    : ['WW','WZ','ZZ',
+                      'ST_t_channel_top_4f_InclusiveDecays',
+                      'ST_t_channel_antitop_4f_InclusiveDecays',
+                      'ST_tW_top_2L2Nu','ST_tW_top_2L2Nu_ext1',
+                      'ST_tW_antitop_2L2Nu','ST_tW_antitop_2L2Nu_ext1',
+                      'ST_tW_top_LNu2Q','ST_tW_top_LNu2Q_ext1',
+                      'ST_tW_antitop_LNu2Q','ST_tW_antitop_LNu2Q_ext1'],
+    'Run3_2022EE'  : ['WW','WZ','ZZ',
+                      'ST_t_channel_top_4f_InclusiveDecays',
+                      'ST_t_channel_antitop_4f_InclusiveDecays',
+                      'ST_tW_top_2L2Nu','ST_tW_top_2L2Nu_ext1',
+                      'ST_tW_antitop_2L2Nu','ST_tW_antitop_2L2Nu_ext1',
+                      'ST_tW_top_LNu2Q','ST_tW_top_LNu2Q_ext1',
+                      'ST_tW_antitop_LNu2Q','ST_tW_antitop_LNu2Q_ext1'],
+    'Run3_2023'    : ['WW','WZ','ZZ',
+                      'ST_t_channel_top_4f_InclusiveDecays',
+                      'ST_t_channel_antitop_4f_InclusiveDecays',
+                      'ST_tW_top_2L2Nu',
+                      'ST_tW_antitop_2L2Nu',
+                      'ST_tW_top_LNu2Q',
+                      'ST_tW_antitop_LNu2Q'],
+    'Run3_2023BPix': ['WW','WZ','ZZ',
+                      'ST_t_channel_top_4f_InclusiveDecays',
+                      'ST_t_channel_antitop_4f_InclusiveDecays',
+                      'ST_tW_top_2L2Nu',
+                      'ST_tW_antitop_2L2Nu',
+                      'ST_tW_top_LNu2Q',
+                      'ST_tW_antitop_LNu2Q'],
+}
+
+wjets_samples = {
+    'Run3_2022'    : ['WtoLNu_madgraphMLM','WtoLNu_madgraphMLM_ext1',
+                      'WtoLNu_1J_madgraphMLM','WtoLNu_2J_madgraphMLM',
+                      'WtoLNu_3J_madgraphMLM','WtoLNu_4J_madgraphMLM'],
+    'Run3_2022EE'  : ['WtoLNu_madgraphMLM','WtoLNu_madgraphMLM_ext1',
+                      'WtoLNu_1J_madgraphMLM','WtoLNu_2J_madgraphMLM',
+                      'WtoLNu_3J_madgraphMLM','WtoLNu_4J_madgraphMLM'],
+    'Run3_2023'    : ['WtoLNu_madgraphMLM',
+                      'WtoLNu_1J_madgraphMLM','WtoLNu_2J_madgraphMLM',
+                      'WtoLNu_3J_madgraphMLM','WtoLNu_4J_madgraphMLM'],
+    'Run3_2023BPix': ['WtoLNu_madgraphMLM',
+                      'WtoLNu_1J_madgraphMLM','WtoLNu_2J_madgraphMLM',
+                      'WtoLNu_3J_madgraphMLM','WtoLNu_4J_madgraphMLM'],
+}
+
 even_samples = ['GluGluHTo2Tau_UncorrelatedDecay_SM_Filtered_ProdAndDecay']
+odd_samples = ['GluGluHTo2Tau_UncorrelatedDecay_CPodd_Filtered_ProdAndDecay']
+maxmix_samples = ['GluGluHTo2Tau_UncorrelatedDecay_MM_Filtered_ProdAndDecay']
 higgs_samples = ['GluGluHTo2Tau_UncorrelatedDecay_SM_Filtered_ProdAndDecay']
 
-def samplesEra(era,dy_samples,top_samples,vv_samples,wjets_samples):
-    
-    dy = dy_samples
-    top = top_samples
-    vv  = vv_samples
-    wjets = wjets_samples
-
-    if era in ["Run3_2023", "Run3_2023BPix"]:
-        dy.remove('DYto2L_M_50_madgraphMLM_ext1')
-        top.remove('TTto2L2Nu_ext1')
-        top.remove('TTtoLNu2Q_ext1')
-        top.remove('TTto4Q_ext1')
-        vv.remove('ST_tW_top_2L2Nu_ext1')
-        vv.remove('ST_tW_antitop_2L2Nu_ext1')
-        vv.remove('ST_tW_top_LNu2Q_ext1')
-        if era == "Run3_2023":
-            vv.remove('ST_tW_antitop_LNu2Q')
-            vv.remove('ST_tW_antitop_LNu2Q_ext1')
-            wjets.remove('WtoLNu_madgraphMLM_ext1')
-        if era == "Run3_2023BPix":
-            vv.remove('ST_tW_antitop_LNu2Q_ext1')
-            wjets.remove('WtoLNu_madgraphMLM_ext1')
-    
-    return dy,top,vv,wjets
-    
 ################
 # Data samples #
 ################
@@ -183,7 +343,26 @@ lib_histos = {
     'jpt_2' : [60,0.,300.],
     'mjj' : [200,0.,2000.],
     'jdeta' : [80,0.,8.],
+}
 
+lib_datacards_histos = {
+    'bdt_tautau' : [20,0.0,1.0],
+    'bdt_jetFakes': [20,0.0,1.0],
+    'bdt_signal': [20,0.0,1.0],
+}
+lib_datacards_1Dhistos = {
+    'bdt_tautau' : [20,0.0,1.0],
+    'bdt_jetFakes': [20,0.0,1.0],
+    'bdt_signal': [20,0.0,1.0],
+}
+lib_datacards_2Dhistos = {
+    'lep_pi'    : [20,0.0,1.0,40,0,360],
+    'lep_rho'   : [20,0.0,1.0,40,0,360],
+    'lep_a1_1pr': [20,0.0,1.0,40,0,360],
+    'lep_a1_3pr': [20,0.0,1.0,40,0,360],
+}
+
+lib_phiCP_histos = {    
     'alpha_lep_pi': [90,0.,90.],
     'alpha_lep_rho': [90,0.,90.],
     'alpha_lep_a1': [90,0.,90.],
@@ -246,17 +425,16 @@ lib_histos = {
 #    'aco_rho_a1': [8,0.,360.],
 #    'aco_rho_a1DP': [8,0.,360.],
 #    'aco_rho_a1PV': [8,0.,360.],
-
 #    'aco_a1_a1': [8,0.,360.]
     
 }
 
-# (pt,eta) binning for scale factors of IPSig cut 
+# (pt,eta) binning for scale factors of IP significance cut 
 ptbins = {
-    'ee' : [25.,30.,35.,40.,60.,80.,100000.],
-    'mm' : [21.,30.,35.,40.,60.,80.,100000.],
-    'et' : [25.,35.,40.,50.,        100000.],
-    'mt' : [21.,30.,35.,40.,50.,    100000.]
+    'ee' : [30.,35.,40.,50.,60.,80.,110.,    150.],
+    'mm' : [25.,30.,35.,40.,50.,60.,80.,110.,150.],
+    'et' : [24.,30.,35.,40.,50.,80.,         150.],
+    'mt' : [21.,25.,30.,35.,40.,50.,80.,     150.],
 }
 
 etabins = {
@@ -407,8 +585,24 @@ def copyHist(inputHist,outputHist):
         outputHist.SetBinError(ib,inputHist.GetBinError(ib))
 
 # extracting Tag-and-Probe histos from ROOT file created by RunSelection.py macro
-def extractTagProbeHistos(f,bins):
-    samples = ['data','dy','top','vv','wjets']
+def extractTagProbeHistos(f,bins,generator,era,isSecond):
+    var = 'm_vis'
+    if isSecond:
+        var += '_2'
+    is2022 = era=='Run3_2022preEE' or era=='Run3_2022postEE' or era=='Run3_2022'
+    samples = ['data','dy']
+    dy_samples = ['zll_0j','zll_1j','zll_2j','ztt_0j','ztt_1j','ztt_2j']
+    if is2022:
+        dy_samples.append('zll_ext')
+    dy_base = 'zll_incl'
+    if generator=='MG':
+        dy_samples = ['dy_1j','dy_2j','dy_3j','dy_4j']
+        if is2022:
+            dy_samples.append('dy_ext')
+        dy_base = 'dy_incl'
+    if generator=='powheg':
+        dy_samples = []
+        dy_base = 'zll_powheg'
     sign_labels = ['os','ss']
     iso_labels = ['iso','antiiso']
     typ_labels = ['lep','tau','had','all']
@@ -427,9 +621,20 @@ def extractTagProbeHistos(f,bins):
                         for binEta in range(1,nbinsEta+1):
                             label = '%1i_%1i'%(binPt,binEta)
                             for region in region_labels:
-                                name = '%s_m_vis_%s_%s_%s_%s_%s'%(sample,region,label,sign,iso,typ)
-                                histo = f.Get(name)
-                                hists[name] = rebinHisto(histo,bins,'rebinned')
+                                if sample=='dy':
+                                    name = 'dy_m_vis_%s_%s_%s_%s_%s'%(region,label,sign,iso,typ)
+                                    nameInput = '%s_%s_%s_%s_%s_%s_%s'%(dy_base,var,region,label,sign,iso,typ)
+                                    histo = f.Get(nameInput).Clone(name)
+                                    for dy_sample in dy_samples:
+                                        dy_name = '%s_%s_%s_%s_%s_%s_%s'%(dy_sample,var,region,label,sign,iso,typ)
+                                        dy_histo = f.Get(dy_name)
+                                        histo.Add(histo,dy_histo,1.,1.)
+                                    hists[name] = rebinHisto(histo,bins,'rebinned')
+                                else:
+                                    name = '%s_m_vis_%s_%s_%s_%s_%s'%(sample,region,label,sign,iso,typ)
+                                    nameInput = '%s_%s_%s_%s_%s_%s_%s'%(sample,var,region,label,sign,iso,typ)
+                                    histo = f.Get(nameInput).Clone(name)
+                                    hists[name] = rebinHisto(histo,bins,'rebinned')
 #                                for unc in unc_labels:
 #                                    name = '%s_m_vis_%s_%s_%s_%s_%s_%s'%(sample,unc,region,label,sign,iso,typ)
 #                                    histo = f.Get(name)
@@ -437,8 +642,25 @@ def extractTagProbeHistos(f,bins):
     return hists
 
 # extracting histos from ROOT file created by RunSelection.py 
-def extractHistos(f,var,bins):
+def extractHistos(f,var,bins,generator,era,channel):
+    is2022 = era=='Run3_2022preEE' or era=='Run3_2022postEE' or era=='Run3_2022'
     samples = ['data','dy','top','vv','wjets']
+    dy_samples = []
+    dy_base = ''
+    if generator=='amcatnlo':
+        dy_samples.extend(['zll_0j','zll_1j','zll_2j','ztt_0j','ztt_1j','ztt_2j'])
+        if is2022:
+            dy_samples.append('zll_ext')
+        dy_base = 'zll_incl'
+    if generator=='MG':
+        dy_samples.extend(['dy_1j','dy_2j','dy_3j','dy_4j'])
+        if is2022:
+            dy_samples.append('dy_ext')
+        dy_base = 'dy_incl'
+    if generator=='powheg':
+        if channel=='mt' or channel=='et':
+            dy_samples.append('ztt_powheg')
+        dy_base = 'zll_powheg'
     sign_labels = ['os','ss']
     iso_labels = ['iso','antiiso']
     typ_labels = ['lep','tau','had','all']
@@ -447,8 +669,18 @@ def extractHistos(f,var,bins):
         for sign in sign_labels:
             for iso in iso_labels:
                 for typ in typ_labels:
-                    name = '%s_%s_%s_%s_%s'%(sample,var,sign,iso,typ)
-                    histo = f.Get(name)
-                    hists[name] = rebinHisto(histo,bins,'rebinned')
+                    if sample=='dy':
+                        name = 'dy_%s_%s_%s_%s'%(var,sign,iso,typ)
+                        nameInput = '%s_%s_%s_%s_%s'%(dy_base,var,sign,iso,typ)
+                        histo = f.Get(nameInput).Clone(name)
+                        for dy_sample in dy_samples:
+                            dy_name = '%s_%s_%s_%s_%s'%(dy_sample,var,sign,iso,typ)
+                            dy_histo = f.Get(dy_name)
+                            histo.Add(histo,dy_histo,1.,1.)
+                        hists[name] = rebinHisto(histo,bins,'rebinned')
+                    else:
+                        name = '%s_%s_%s_%s_%s'%(sample,var,sign,iso,typ)
+                        histo = f.Get(name)
+                        hists[name] = rebinHisto(histo,bins,'rebinned')
     return hists
 

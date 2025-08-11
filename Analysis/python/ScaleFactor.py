@@ -26,6 +26,17 @@ class ScaleFactor:
         print('maxPt    = %2.0f'%(self.maxPt))
         print('minEta   = %4.2f'%(self.minEta))
         print('maxEta   = %4.2f'%(self.maxEta))
+        self.hfits = {}
+        for i in range(1,self.nbinsEta+1):
+            istr = '%1i'%(i)
+            self.hfits[i] = self.sfFile.Get('hfit_binEta'+istr)
+        
+    def getSF(self,pt,eta):
+        Eta = ROOT.TMath.Min(ROOT.TMath.Abs(eta),self.maxEta-0.001)
+        Pt = ROOT.TMath.Max(self.minPt+0.01,ROOT.TMath.Min(pt,self.maxPt-0.01))
+        binEta = self.eff_data.GetYaxis().FindBin(Eta)
+        sf = self.hfits[binEta].GetBinContent(self.hfits[binEta].FindBin(Pt))
+        return sf
         
     def getEffData(self,pt,eta):
         ptX = pt
@@ -47,7 +58,7 @@ class ScaleFactor:
         eff = self.eff_mc.GetBinContent(self.eff_mc.FindBin(ptX,etaX))
         return eff
 
-    def getSF(self,pt,eta):
+    def getBinnedSF(self,pt,eta):
         ptX = pt
         etaX = abs(eta)
         if ptX<self.minPt: ptX = self.minPt+0.01

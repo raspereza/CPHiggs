@@ -6,8 +6,8 @@ import math
 from array import array
 import os
 
-import CPHiggs.IP.styles as styles
-import CPHiggs.IP.utils as utils
+import CPHiggs.Analysis.styles as styles
+import CPHiggs.Analysis.utils as utils
 
 XTitle = {
     'mt': {
@@ -45,6 +45,59 @@ XTitle = {
         'jdeta': "#Delta#eta(j,j)"
     }
 }
+
+def calibrateVJets(hists):
+    
+    hist_data = hists['data_mt_1_os_iso_all'].Clone('h_data')
+    hist_top  = hists['top_mt_1_os_iso_all'].Clone('h_top')
+    hist_vv   = hists['vv_mt_1_os_iso_all'].Clone('h_vv')
+    hist_dy   = hists['dy_mt_1_os_iso_all'].Clone('h_dy')
+    hist_wj   = hists['wjets_mt_1_os_iso_all'].Clone('h_wj')
+    hist_zll  = hists['dy_mt_1_os_iso_lep'].Clone('h_zll')
+    hist_ztt  = hists['dy_mt_1_os_iso_tau'].Clone('h_ztt')
+    
+    hist_qcd  = hists['data_mt_1_ss_iso_all'].Clone('h_qcd')
+    hist_top_ss  = hists['top_mt_1_ss_iso_all']
+    hist_vv_ss   = hists['vv_mt_1_ss_iso_all']
+    hist_dy_ss   = hists['dy_mt_1_ss_iso_all']
+    hist_wj_ss   = hists['wjets_mt_1_ss_iso_all']
+
+    hist_qcd.Add(hist_qcd,hist_top_ss,1.,-1.)
+    hist_qcd.Add(hist_qcd,hist_vv_ss,1.,-1.)
+    hist_qcd.Add(hist_qcd,hist_dy_ss,1.,-1.)
+    hist_qcd.Add(hist_qcd,hist_wj_ss,1.,-1.)
+
+    x_wj = 0.
+    x_bkg = 0.
+    x_data = 0.
+
+    y_ztt = 0.
+    y_bkg = 0.
+    y_data = 0.
+    
+    nbins = hist_data.GetNbinsX()
+    for i in range(1,nbins+1):
+        x = hist_data.GetXaxis().GetBinCenter(i)
+        if x>70.:
+            x_data += hist_data.GetBinContent(i)
+            x_wj   += hist_wj.GetBinContent(i)
+            x_bkg  += hist_top.GetBinContent(i)
+            x_bkg  += hist_vv.GetBinContent(i)
+            x_bkg  += hist_dy.GetBinContent(i)
+            x_bkg  += hist_qcd.GetBinContent(i)
+        else:
+            y_data += hist_data.GetBinContent(i)
+            y_ztt  += hist_ztt.GetBinContent(i)
+            y_bkg  += hist_top.GetBinContent(i)
+            y_bkg  += hist_vv.GetBinContent(i)
+            y_bkg  += hist_wj.GetBinContent(i)
+            y_bkg  += hist_qcd.GetBinContent(i)
+            y_bkg  += hist_zll.GetBinContent(i)
+            
+    scaleWJ = (x_data-x_bkg)/x_wj
+    scaleZTT = (y_data-y_bkg)/y_ztt
+    return scaleZTT,scaleWJ
+            
 
 def QCDEstimate(hists,perbin):
     histIsoSS = hists['iso_SS']
@@ -94,6 +147,8 @@ def Plot(hists,**kwargs):
     suffix = kwargs.get('suffix','')
     per_process = kwargs.get('per_process',True)
     plotLegend = kwargs.get('plotLegend',True)
+    scaleWJ = kwargs.get('scaleWJ',1.0)
+    scaleZTT = kwargs.get('scaleZTT',1.0)
     ymin = kwargs.get('ymin',0.701)
     ymax = kwargs.get('ymax',1.299)
 
@@ -105,6 +160,8 @@ def Plot(hists,**kwargs):
     h_top = hists['top_'+var+'_os_iso_all'].Clone('h_top')
     h_vv = hists['vv_'+var+'_os_iso_all'].Clone('h_vv')
     h_wjets = hists['wjets_'+var+'_os_iso_all'].Clone('h_wjets')
+    #h_wjets.Scale(scaleWJ)
+    #h_ztt.Scale(scaleZTT)
 
     h_lep = hists['dy_'+var+'_os_iso_lep'].Clone('h_lep')
     h_tau = hists['dy_'+var+'_os_iso_tau'].Clone('h_tau')
@@ -305,9 +362,7 @@ def Plot(hists,**kwargs):
     canvas.SetSelected(canvas)
     canvas.Update()
     print('')
-    typ_suffix = 'typ'
-    if per_process: typ_suffix = 'proc' 
-    outputGraphics = os.getenv('CMSSW_BASE') + '/src/CPHiggs/IP/figures/' + var + '_' + chan + '_' + era + '_' + typ_suffix + suffix + '.png'    
+    outputGraphics = '%s/figures/%s_%s_%s_%s.png'%(utils.outputFolder,var,chan,era,suffix)
     canvas.Print(outputGraphics)
 
 if __name__ == "__main__":
@@ -317,21 +372,25 @@ if __name__ == "__main__":
 
     from argparse import ArgumentParser
     parser = ArgumentParser()
-    parser.add_argument('-era' ,'--era', dest='era', default='Run3_2022', choices=['Run3_2022','Run3_2022EE','Run3_2023','Run3_2023BPix','Run3_2022All','Run3_2023All'])
-    parser.add_argument('-variable' ,'--variable', dest='variable', default='m_vis')
-    parser.add_argument('-channel','--channel', dest='channel', default='mt',choices=['mt','et'])
-    parser.add_argument('-perType','--perType', dest='perType', action='store_true')
-    parser.add_argument('-useCrossTrigger','--useCrossTrigger', dest='useCrossTrigger',type=int,default=0)
+    parser.add_argument('-era','--era',dest='era',default='Run3_2022',choices=['Run3_2022','Run3_2023','Run3'])
+    parser.add_argument('-variable','--variable',dest='variable',default='m_vis')
+    parser.add_argument('-channel','--channel',dest='channel',default='mt',choices=['mt','et'])
+    parser.add_argument('-perType','--perType',dest='perType',action='store_true')
+    parser.add_argument('-useCrossTrigger','--useCrossTrigger',dest='useCrossTrigger',type=int,default=0)
     parser.add_argument('-mtCut','--mtCut',dest='mtCut',type=int,default=0)
-    parser.add_argument('-nbins','--nbins', dest='nbins', type=int, default=48)
-    parser.add_argument('-xmin','--xmin', dest='xmin', type=float, default=0.0)
-    parser.add_argument('-xmax','--xmax', dest='xmax', type=float, default=240.)
-    parser.add_argument('-ymin','--ymin', dest='ymin', type=float, default=0.701)
-    parser.add_argument('-ymax','--ymax', dest='ymax', type=float, default=1.299)
+    parser.add_argument('-nbins','--nbins', dest='nbins',type=int,default=50)
+    parser.add_argument('-xmin','--xmin',dest='xmin',type=float,default=0.0)
+    parser.add_argument('-xmax','--xmax',dest='xmax',type=float,default=250.)
+    parser.add_argument('-ymin','--ymin',dest='ymin',type=float,default=0.701)
+    parser.add_argument('-ymax','--ymax',dest='ymax',type=float,default=1.299)
     parser.add_argument('-applyIP','--applyIP',dest='applyIP',type=int,default=0)
-    parser.add_argument('-applySF', '--applySF', dest='applySF' ,type=int,default=0)
+    parser.add_argument('-applySF','--applySF',dest='applySF',type=int,default=0)
+    parser.add_argument('-generator','--generator',dest='generator',default='amcatnlo',choices=['amcatnlo','MG','powheg'])
+    parser.add_argument('-calibrWJ','--calibrWJ',dest='calibrWJ',type=int,default=0) # calibrate WJ in high mT region
+    parser.add_argument('-calibrDY','--calibrDY',dest='calibrDY',type=int,default=0) # calibrate DY in low mT region
     
     args = parser.parse_args()
+
     era = args.era
     applyMTCut = args.mtCut
     useCrossTrigger = args.useCrossTrigger
@@ -344,6 +403,15 @@ if __name__ == "__main__":
     ymax = args.ymax
     applyIP = args.applyIP
     applySF = args.applySF
+    generator=args.generator
+
+    applyCalibrationWJ = False
+    if args.calibrWJ==1:        
+        applyCalibrationWJ = True
+    
+    applyCalibrationDY = False
+    if args.calibrDY==1:        
+        applyCalibrationDY = True
     
     plotLegend = True
     if var=='eta_1' or var=='eta_2':
@@ -358,6 +426,9 @@ if __name__ == "__main__":
         xb = xmin + width*float(i)
         bins.append(xb)
 
+    binsMT = [0.,70.,250.]
+    
+    basedir = utils.outputFolder+'/selection'
     suffix_mt = ''
     suffix_xtrig = ''
     suffix_ip = ''
@@ -371,9 +442,8 @@ if __name__ == "__main__":
     if applySF==1:
         suffix_sf = '_promptSF_tauSF'
 
-    suffix = '%s%s%s%s'%(suffix_mt,suffix_xtrig,suffix_ip,suffix_sf)
-    basename = '%s/src/CPHiggs/IP'%(os.getenv('CMSSW_BASE'))
-    inputFileName = '%s/selection/%s_%s%s.root'%(basename,chan,era,suffix)
+    suffix = 'x%s%s%s%s'%(suffix_mt,suffix_xtrig,suffix_ip,suffix_sf)
+    inputFileName = '%s/%s_%s_%s.root'%(basedir,chan,era,suffix)
     if os.path.isfile(inputFileName):
         print('')
         print('Loading ROOT file %s'%(inputFileName))
@@ -384,6 +454,22 @@ if __name__ == "__main__":
         print('quitting')
         print('')
     inputFile = ROOT.TFile(inputFileName,'read')
-    hists = utils.extractHistos(inputFile,var,bins)
-    Plot(hists,era=era,var=var,channel=chan,per_process=proc,suffix=suffix,ymin=ymin,ymax=ymax,plotLegend=plotLegend)
+    hists = utils.extractHistos(inputFile,var,bins,generator,era,chan)
+    scaleWJ = 1.0
+    scaleZTT = 1.0
+    if applyCalibrationWJ or applyCalibrationDY:
+        if var=='mt_1':
+            scale_ZTT,scale_WJ = calibrateVJets(hists)
+        else:
+            hists_mt = utils.extractHistos(inputFile,'mt_1',binsMT,generator,era,chan)
+            scale_ZTT,scale_WJ = calibrateVJets(hists_mt)
+        if applyCalibrationWJ:
+            scaleWJ = scale_WJ
+        if applyCalibrationDY:
+            scaleZTT = scale_ZTT 
+    suffixOut = suffix + '_' + generator
+    Plot(hists,era=era,var=var,channel=chan,per_process=proc,
+         suffix=suffixOut,ymin=ymin,ymax=ymax,
+         plotLegend=plotLegend,
+         scaleWJ=scaleWJ,scaleZTT=scaleZTT)
     

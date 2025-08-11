@@ -1,14 +1,21 @@
 #! /usr/bin/env python3
 # Author: Alexei Raspereza (December 2024)
-# Tag-and-Probe measurement of SF with Z->ee(mumu) samples
-#
+# Tag-and-Probe measurement of SF with
+# Z->ee(mumu) samples
+# ########################################
 import ROOT
 import math
 from array import array
 import os
 
-import CPHiggs.IP.styles as styles
-import CPHiggs.IP.utils as utils
+import CPHiggs.Analysis.styles as styles
+import CPHiggs.Analysis.utils as utils
+
+def FitFuncSF(x,par):
+    b = par[0]+par[1]*x[0]+par[2]*x[0]*x[0]
+    if x[0]>110.:
+        b = par[3]
+    return b
 
 def FitFunc(x,par):
     a = (x[0]-par[1])/par[2]
@@ -66,6 +73,8 @@ def PlotTagProbe(eff_data,eff_mc,**kwargs):
     binEta = kwargs.get('binEta','1')
     ymin = kwargs.get('ymin',0.5)
     ymax = kwargs.get('ymax',1.5)
+    secondLep = kwargs.get('secondLep',False)
+    generator = kwargs.get('generator','amcatnlo')
     
     header = 'prompt #mu, |#eta|<1.0'
     if chan=='mm':
@@ -95,6 +104,11 @@ def PlotTagProbe(eff_data,eff_mc,**kwargs):
 
     sf = eff_data.Clone('sf')
     nbins = sf.GetNbinsX()
+    fmin = sf.GetXaxis().GetBinLowEdge(1)
+    fmax = sf.GetXaxis().GetBinLowEdge(nbins+1)
+
+    print('fmin=%2.0f  fmax=%3.0f'%(fmin,fmax))
+    
     for ib in range(1,nbins+1):
         xdata = eff_data.GetBinContent(ib)
         edata = eff_data.GetBinError(ib)
@@ -111,13 +125,56 @@ def PlotTagProbe(eff_data,eff_mc,**kwargs):
     eff_data.GetYaxis().SetRangeUser(0.,1.1)
     eff_data.GetXaxis().SetLabelSize(0)
     eff_data.GetYaxis().SetTitle('Efficiency')
+    eff_data.GetXaxis().SetRangeUser(fmin,fmax)
+    
     sf.GetYaxis().SetTitle('SF')
     sf.GetXaxis().SetTitle('p_{T} (GeV)')
     sf.GetYaxis().SetRangeUser(ymin,ymax)
+    sf.GetXaxis().SetRangeUser(fmin,fmax)
     styles.InitRatioHist(sf)
+
+    print 
+    fitSF = ROOT.TF1('fitFuncSF',FitFuncSF,fmin,fmax,4)
+    fitSF.SetLineColor(4)
+    fitSF.SetLineWidth(2)
+    fitSF.SetParName(0,'a0')
+    fitSF.SetParName(1,'a1')
+    fitSF.SetParName(2,'a2')
+    fitSF.SetParName(3,'const')
+    fitSF.SetParameter(0,1.)
+    fitSF.SetParameter(1,0.)
+    fitSF.SetParameter(2,0.)
+    fitSF.SetParameter(3,1.)
+    
+    xtit = ''
+    ytit = 'SF (IP sig. cut)'
+    if chan=='mm':
+        xtit = 'muon p_{T} (GeV)'
+    else:
+        ytit = 'electron p_{T} (GeV)'
+    postfix = 'binEta%s'%(binEta)
+    if secondLep:
+        postfix += '_2'
+    dummy = styles.MakeCanvas('dummy_'+postfix,'',400,400)
+    sf.Fit(fitSF,"R")
+    hfit = ROOT.TH1D("hfit_"+postfix,"",200,fmin,fmax)
+    ROOT.TVirtualFitter.GetFitter().GetConfidenceIntervals(hfit,0.68)
+    styles.InitModel(hfit,xtit,ytit,4)
+    hfit.SetFillColor(ROOT.kCyan)
+    hfit.SetFillStyle(1001)
+    hfit.SetLineWidth(0)
+    hfit.SetLineColor(4)
+    hfit.SetMarkerSize(0)
+    hfit.SetMarkerStyle(0)
+    if chan=='mm':
+        hfit.GetXaxis().SetTitle("muon p_{T} [GeV]")
+    else:
+        hfit.GetXaxis().SetTitle("electron p_{T} [GeV]")
+    hfit.GetYaxis().SetTitle("scale factor (IP sig.)")
+
     
     # canvas and pads
-    canvas = styles.MakeCanvas("canv","",600,700)
+    canvas = styles.MakeCanvas("canv_"+postfix,"",600,700)
     # upper pad
     upper = ROOT.TPad("upper", "pad",0,0.31,1,1)
     upper.Draw()
@@ -137,6 +194,7 @@ def PlotTagProbe(eff_data,eff_mc,**kwargs):
 
     styles.CMS_label(upper,era=era)
 
+    upper.SetLogx(True)
     upper.Draw("SAME")
     upper.RedrawAxis()
     upper.Modified()
@@ -150,6 +208,8 @@ def PlotTagProbe(eff_data,eff_mc,**kwargs):
     styles.InitLowerPad(lower)
 
     sf.Draw('e1')
+    hfit.Draw('e2same')
+    sf.Draw('e1same')
 
     xmin = sf.GetXaxis().GetBinLowEdge(1)    
     xmax = sf.GetXaxis().GetBinLowEdge(nbins+1)
@@ -158,6 +218,7 @@ def PlotTagProbe(eff_data,eff_mc,**kwargs):
     line.SetLineWidth(2)
     line.SetLineColor(4)
     line.Draw()
+    lower.SetLogx(True)
     lower.Modified()
     lower.RedrawAxis()
 
@@ -168,9 +229,12 @@ def PlotTagProbe(eff_data,eff_mc,**kwargs):
     canvas.Update()
 
     print('')
-    outputGraphics = '%s/src/CPHiggs/IP/figures/SF_%s_binEta%s_%s.png'%(os.getenv('CMSSW_BASE'),chan,binEta,era)    
+    suffix = generator
+    if secondLep:
+        suffix += '_2'
+    outputGraphics = '%s/figures/SF_%s_binEta%s_%s_%s.png'%(utils.outputFolder,chan,binEta,era,suffix)    
     canvas.Print(outputGraphics)
-
+    return hfit
     
 def ComputeYield(hist):
 
@@ -189,7 +253,7 @@ def ComputeYield(hist):
 
 def RunTagProbe(hists,**kwargs):
 
-    era = kwargs.get('era','Run3_2022EE')
+    era = kwargs.get('era','Run3_2022')
     chan = kwargs.get('channel','mm')
     plotLegend = kwargs.get('plotLegend',True)
     xmin = kwargs.get('xmin',60.)
@@ -198,10 +262,14 @@ def RunTagProbe(hists,**kwargs):
     binEta = kwargs.get('binEta','1')
     sample = kwargs.get('sample','data')
     region = kwargs.get('region','pass')
+    secondLep = kwargs.get('secondLep',False)
     if sample not in ['data','dy']:
         print('Unknow sample %s : quitting'%(sample))
         exit()
-    
+
+    postfixLep = ''
+    if secondLep:
+        postfixLep = '_2'
     # histogram name
     name = '%s_m_vis_%s_%s_%s_os_iso_all'%(sample,region,binPt,binEta)
     hist = hists[name].Clone(name+'_fit')    
@@ -264,7 +332,8 @@ def RunTagProbe(hists,**kwargs):
     fitFuncAlt.SetParameter(8,bAlt)
     
     # canvas and pads
-    canvas = styles.MakeCanvas("canv","",700,600)
+    postfix = '%s_%s_%s_%s'%(region,binPt,binEta,sample)
+    canvas = styles.MakeCanvas("canv_"+postfix,"",700,600)
     sigFunc = ROOT.TF1('sigFunc',SignalFunc,xmin,xmax,7)
     hist.Fit('fitFuncAlt','LR')
     for npar in range(0,7):
@@ -292,8 +361,8 @@ def RunTagProbe(hists,**kwargs):
     canvas.Modified()
     canvas.Update()
     print('')
-    outputGraphics = os.getenv('CMSSW_BASE') + '/src/CPHiggs/IP/figures/' + sample + '_' + chan + '_ptBin' + binPt + '_etaBin' + binEta + '_' + era + '_' + region + '.png'
-    # canvas.Print(outputGraphics)
+    outputGraphics = utils.outputFolder + '/figures/' + sample + '_' + chan + '_ptBin' + binPt + '_etaBin' + binEta + '_' + era + '_' + region + '.png'
+    canvas.Print(outputGraphics)
 
     del canvas
     return nCount,nIntegral,eIntegral
@@ -305,13 +374,17 @@ if __name__ == "__main__":
 
     from argparse import ArgumentParser
     parser = ArgumentParser()
-    parser.add_argument('-era' ,'--era', dest='era', default='Run3_2022', choices=['Run3_2022','Run3_2022EE','Run3_2023','Run3_2023BPix','Run3_2022All','Run3_2023All'])
-    parser.add_argument('-channel','--channel', dest='channel', default='mm',choices=['mm','ee'])
+    parser.add_argument('-era' ,'--era', dest='era', default='Run3_2022', choices=['Run3_2022','Run3_2023'])
+    parser.add_argument('-channel','--channel', dest='channel',default='mm',choices=['mm','ee'])
+    parser.add_argument('-secondLep','--secondLep', dest='secondLep',action='store_true')
     parser.add_argument('-nbins','--nbins', dest='nbins', type=int, default=60)
     parser.add_argument('-xmin','--xmin', dest='xmin', type=float, default=60.0)
     parser.add_argument('-xmax','--xmax', dest='xmax', type=float, default=120.)
-    parser.add_argument('-ymin','--ymin', dest='ymin', type=float, default=0.701)
-    parser.add_argument('-ymax','--ymax', dest='ymax', type=float, default=1.299)
+    parser.add_argument('-ymin','--ymin', dest='ymin', type=float, default=0.501)
+    parser.add_argument('-ymax','--ymax', dest='ymax', type=float, default=1.499)
+    parser.add_argument('-binEta','--binEta',dest='binEta',default='1',choices=['1','2','3'])
+    parser.add_argument('-generator', '--generator',dest='generator',default='amcatnlo',choices=['amcatnlo','MG','powheg'])
+    
     args = parser.parse_args()
 
     labels = {
@@ -326,8 +399,9 @@ if __name__ == "__main__":
     xmax = args.xmax
     ymin = args.ymin
     ymax = args.ymax
-
-    basedir = '%s/src/CPHiggs/IP'%(os.getenv('CMSSW_BASE'))
+    generator = args.generator
+    secondLep = args.secondLep
+    binEta = args.binEta
     
     bins = []
     width = (xmax-xmin)/float(nbins)
@@ -335,95 +409,101 @@ if __name__ == "__main__":
         xb = xmin + width*float(i)
         bins.append(xb)
 
-    inputFileName = '%s/selection/%s_%s.root'%(basedir,chan,era)
+    inputFileName = '%s/selection/%s_%s_x.root'%(utils.outputFolder,chan,era)
     inputFile = ROOT.TFile(inputFileName,'read')
     print('')
     print(inputFile)
     print('')
-    hists = utils.extractTagProbeHistos(inputFile,bins)
+    hists = utils.extractTagProbeHistos(inputFile,bins,generator,era,secondLep)
     histPtBins = inputFile.Get('ptBins')
     histEtaBins = inputFile.Get('etaBins')
     nbinsPt = histPtBins.GetNbinsX()
     nbinsEta = histEtaBins.GetNbinsX()
 
     ptBins = []
-    for iPt in range(1,nbinsPt+1):
+    for iPt in range(1,nbinsPt+2):
         ptBins.append(histPtBins.GetBinLowEdge(iPt))
-    ptBins.append(100.)
-
+        
     etaBins = []
     for iEta in range(1,nbinsEta+2):
         etaBins.append(histEtaBins.GetBinLowEdge(iEta))
 
-    print('ptBins',ptBins)
-    print('etaBins',etaBins)
+    print('nbinsPt',nbinsPt,'ptBins',ptBins)
+    print('nbinsEta',nbinsEta,'etaBins',etaBins)
         
     effData_2D = ROOT.TH2D('effData','',nbinsPt,array('d',list(ptBins)),nbinsEta,array('d',list(etaBins)))
     effMC_2D = ROOT.TH2D('effMC','',nbinsPt,array('d',list(ptBins)),nbinsEta,array('d',list(etaBins)))
 
-    for iEta in range(1,nbinsEta+1):
-        binEta = '%1i'%(iEta)
-        effData_1D = ROOT.TH1D('effData_eta'+binEta,'',nbinsPt,array('d',list(ptBins)))
-        effMC_1D = ROOT.TH1D('effMC_eta'+binEta,'',nbinsPt,array('d',list(ptBins)))
-        for iPt in range(1,nbinsPt+1):
-            binPt = '%1i'%(iPt)
-            # tag-and-probe data
-            nPassData,xPassData,ePassData = RunTagProbe(hists,
-                                                        era=era,
-                                                        channel=chan,
-                                                        xmin=xmin,
-                                                        xmax=xmax,
-                                                        binPt=binPt,
-                                                        binEta=binEta,
-                                                        sample='data',
-                                                        region='pass')
-            nFailData,xFailData,eFailData = RunTagProbe(hists,
-                                                        era=era,
-                                                        channel=chan,
-                                                        xmin=xmin,
-                                                        xmax=xmax,
-                                                        binPt=binPt,
-                                                        binEta=binEta,
-                                                        sample='data',
-                                                        region='fail')
-            
-            effData,effErrData = ComputeEff(nPassData,xPassData,ePassData,
-                                            nFailData,xFailData,eFailData)
-            print('pass : %1.0f (%1.0f) +/- %1.0f - fail : %1.0f (%1.0f) +/- %1.0f'%(nPassData,xPassData,ePassData,nFailData,xFailData,eFailData))
-            effData_1D.SetBinContent(iPt,effData)
-            effData_1D.SetBinError(iPt,effErrData)
-            effData_2D.SetBinContent(iPt,iEta,effData)
-            effData_2D.SetBinError(iPt,iEta,effErrData)
+    hfit = {}
+    effData_1D = ROOT.TH1D('effData_eta'+binEta,'',nbinsPt,array('d',list(ptBins)))
+    effMC_1D = ROOT.TH1D('effMC_eta'+binEta,'',nbinsPt,array('d',list(ptBins)))
+    for iPt in range(1,nbinsPt+1):
+        binPt = '%1i'%(iPt)
+        # tag-and-probe data
+        nPassData,xPassData,ePassData = RunTagProbe(hists,
+                                                    era=era,
+                                                    channel=chan,
+                                                    xmin=xmin,
+                                                    xmax=xmax,
+                                                    binPt=binPt,
+                                                    binEta=binEta,
+                                                    sample='data',
+                                                    region='pass')
+        nFailData,xFailData,eFailData = RunTagProbe(hists,
+                                                    era=era,
+                                                    channel=chan,
+                                                    xmin=xmin,
+                                                    xmax=xmax,
+                                                    binPt=binPt,
+                                                    binEta=binEta,
+                                                    sample='data',
+                                                    region='fail')
+        
+        effData,effErrData = ComputeEff(nPassData,xPassData,ePassData,
+                                        nFailData,xFailData,eFailData)
+        print('pass : %1.0f (%1.0f) +/- %1.0f - fail : %1.0f (%1.0f) +/- %1.0f'%(nPassData,xPassData,ePassData,nFailData,xFailData,eFailData))
+        effData_1D.SetBinContent(iPt,effData)
+        effData_1D.SetBinError(iPt,effErrData)
+        effData_2D.SetBinContent(iPt,iEta,effData)
+        effData_2D.SetBinError(iPt,iEta,effErrData)
 
-            nPassMC,xPassMC,ePassMC = RunTagProbe(hists,
-                                                  era=era,
-                                                  channel=chan,
-                                                  xmin=xmin,
-                                                  xmax=xmax,
-                                                  binPt=binPt,
-                                                  binEta=binEta,
-                                                  sample='dy',
-                                                  region='pass')
-            nFailMC,xFailMC,eFailMC = RunTagProbe(hists,
-                                                  era=era,
-                                                  channel=chan,
-                                                  xmin=xmin,
-                                                  xmax=xmax,
-                                                  binPt=binPt,
-                                                  binEta=binEta,
-                                                  sample='dy',
-                                                  region='fail')
-            effMC,effErrMC = ComputeEff(nPassMC,xPassMC,ePassMC,
-                                        nFailMC,xFailMC,eFailMC)
-            effMC_1D.SetBinContent(iPt,effMC)
-            effMC_1D.SetBinError(iPt,effErrMC)
-            effMC_2D.SetBinContent(iPt,iEta,effMC)
-            effMC_2D.SetBinError(iPt,iEta,effErrMC)
-        PlotTagProbe(effData_1D,effMC_1D,era=era,channel=chan,binEta=binEta,ymin=ymin,ymax=ymax)
+        nPassMC,xPassMC,ePassMC = RunTagProbe(hists,
+                                              era=era,
+                                              channel=chan,
+                                              xmin=xmin,
+                                              xmax=xmax,
+                                              binPt=binPt,
+                                              binEta=binEta,
+                                              sample='dy',
+                                              region='pass')
+        nFailMC,xFailMC,eFailMC = RunTagProbe(hists,
+                                              era=era,
+                                              channel=chan,
+                                              xmin=xmin,
+                                              xmax=xmax,
+                                              binPt=binPt,
+                                              binEta=binEta,
+                                              sample='dy',
+                                              region='fail')
+        effMC,effErrMC = ComputeEff(nPassMC,xPassMC,ePassMC,
+                                    nFailMC,xFailMC,eFailMC)
+        effMC_1D.SetBinContent(iPt,effMC)
+        effMC_1D.SetBinError(iPt,effErrMC)
+        effMC_2D.SetBinContent(iPt,iEta,effMC)
+        effMC_2D.SetBinError(iPt,iEta,effErrMC)
+    hfit[binEta] = PlotTagProbe(effData_1D,effMC_1D,era=era,channel=chan,binEta=binEta,ymin=ymin,ymax=ymax,generator=generator,)
 
-    outputFileName = '%s/ScaleFactors/SF_%s_%s.root'%(basedir,labels[chan],era)
+    suffix = generator
+    if secondLep:
+        suffix += '_2'
+    outputFileName = '%s/ScaleFactors/SF_%s_%s_%s_%s.root'%(utils.outputFolder,labels[chan],binEta,era,suffix)
     outputFile = ROOT.TFile(outputFileName,'recreate')
     outputFile.cd('')
-    effData_2D.Write('effData')
-    effMC_2D.Write('effMC')
+    postfixLep = ''
+    if secondLep:
+        postfixLep = '_2'
+    effData_2D.Write('effData'+postfixLep)
+    effMC_2D.Write('effMC'+postfixLep)
+    for h in hfit:
+        hfit[h].Write('hfit_binEta'+h+postfixLep)
     outputFile.Close()

@@ -4,8 +4,7 @@ import math
 from array import array
 import numpy as np
 import os
-import CPHiggs.IP.utils as utils
-from CPHiggs.IP.ScaleFactor import ScaleFactor
+import CPHiggs.Analysis.utils as utils
 from CPHiggs.PolarimetricVector.PolarimetricA1 import PolarimetricA1
 
 ####################################################################
