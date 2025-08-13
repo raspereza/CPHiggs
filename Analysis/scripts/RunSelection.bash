@@ -26,13 +26,14 @@ promptSF=$8
 tauSF=$9
 
 folder=/afs/cern.ch/work/r/rasp/CPHiggs/Analysis
+suffix=${era}_${channel}_${sample}_${analysisType}_${xtrig}_${ipcut1}_${ipcut2}_${promptSF}_${tauSF}
 
-cat > ${folder}/condor/job_${era}_${channel}_${sample}.submit <<EOF
+cat > ${folder}/condor/job_${suffix}.submit <<EOF
 universe = vanilla
-executable = /afs/cern.ch/work/r/rasp/CPHiggs/Analysis/condor/job_${era}_${channel}_${sample}.sh
-output = /afs/cern.ch/work/r/rasp/CPHiggs/Analysis/condor/job_${era}_${channel}_${sample}.out
-error = /afs/cern.ch/work/r/rasp/CPHiggs/Analysis/condor/job_${era}_${channel}_${sample}.err
-log = /afs/cern.ch/work/r/rasp/CPHiggs/Analysis/condor/job_${era}_${channel}_${sample}.log
+executable = /afs/cern.ch/work/r/rasp/CPHiggs/Analysis/condor/job_${suffix}.sh
+output = /afs/cern.ch/work/r/rasp/CPHiggs/Analysis/condor/job_${suffix}.out
+error = /afs/cern.ch/work/r/rasp/CPHiggs/Analysis/condor/job_${suffix}.err
+log = /afs/cern.ch/work/r/rasp/CPHiggs/Analysis/condor/job_${suffix}.log
 notification = Never
 initialdir = /afs/cern.ch/work/r/rasp/CMSSW_14_1_0_pre4/src/CPHiggs/Analysis
 +MaxRuntime = 20000
@@ -41,15 +42,16 @@ MY.WantOS = el9
 queue
 EOF
 
-cat > /afs/cern.ch/work/r/rasp/CPHiggs/Analysis/condor/job_${era}_${channel}_${sample}.sh <<EOF1
-#!/bin/bash
+cat > /afs/cern.ch/work/r/rasp/CPHiggs/Analysis/condor/job_${suffix}.sh <<EOF1
+#!/bin/tcsh
 cd /afs/cern.ch/work/r/rasp/CMSSW_14_1_0_pre4/src
-echo $PWD
+setenv SCRAM_ARCH el9_amd64_gcc10
 export SCRAM_ARCH=el9_amd64_gcc10
 cmsenv
 cd CPHiggs/Analysis
-./scripts/RunSelection.py --era ${era} --channel ${channel} --sample ${sample} --analysisType ${analysisType} --useCrossTrigger ${xtrig} --applyIPSigLep1Cut ${ipcut1} --applyIPSigLep2Cut ${ipcut1} --applyIPSigPromptLepSF ${promptSF} --applyIPSigTauLepSF ${tauSF}
+echo $PWD
+./scripts/RunSelection.py --era ${era} --channel ${channel} --sample ${sample} --analysisType ${analysisType} --useCrossTrigger ${xtrig} --applyIPSigLep1Cut ${ipcut1} --applyIPSigLep2Cut ${ipcut2} --applyIPSigPromptLepSF ${promptSF} --applyIPSigTauLepSF ${tauSF}
 EOF1
 
-chmod u+x /afs/cern.ch/work/r/rasp/CPHiggs/Analysis/condor/job_${era}_${channel}_${sample}.sh
-condor_submit /afs/cern.ch/work/r/rasp/CPHiggs/Analysis/condor/job_${era}_${channel}_${sample}.submit
+chmod u+x /afs/cern.ch/work/r/rasp/CPHiggs/Analysis/condor/job_${suffix}.sh
+condor_submit /afs/cern.ch/work/r/rasp/CPHiggs/Analysis/condor/job_${suffix}.submit

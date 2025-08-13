@@ -341,10 +341,12 @@ class analysisSample:
                                     name = 'm_vis_2_%s_%s_%s_%s_%s'%(region,label,sign,iso,typ)
                                     histname = self.sampleName+'_'+ name
                                     hists[name] = ROOT.TH1D(histname,"",nbins,array('d',list(xbins)))
+                                    """
                                     for unc in self.scale_unc:
                                         name = 'm_vis_%s_%s_%s_%s_%s_%s'%(unc,region,label,sign,iso,typ)
                                         histname = self.sampleName+'_'+ name
                                         hists[name] = ROOT.TH1D(histname,"",nbins,array('d',list(xbins)))
+                                    """
 
 
         if analysisType=='datacards':
@@ -999,6 +1001,10 @@ class analysisSample:
                     hists[name].Fill(variables['m_vis'],Weight)
                     name = 'm_vis_%s_%s_%s_%s_all'%(region_label,bin_label,sign_label,iso_label)
                     hists[name].Fill(variables['m_vis'],Weight)
+                    name = 'm_vis_2_%s_%s_%s_%s_%s'%(region_label,bin_label,sign_label,iso_label,lep_label)
+                    hists[name].Fill(variables['m_vis'],Weight)
+                    name = 'm_vis_2_%s_%s_%s_%s_all'%(region_label,bin_label,sign_label,iso_label)
+                    hists[name].Fill(variables['m_vis'],Weight)
                 
                     # lep2 ->
                     bin_label,binPt,binEta = self.GetPtEtaBinLabels(pt_2[0],eta_2[0])
@@ -1015,6 +1021,7 @@ class analysisSample:
                 # ###############################################
                 if channel=='mt' or channel=='et':
                     # scale uncertainties ->
+                    """
                     mvis_unc = {}
                     
                     # lepton scale ->
@@ -1049,6 +1056,7 @@ class analysisSample:
                         mvis_unc['tauDown'] = variables['m_vis']
                         mvis_unc['lfakeUp'] = variables['m_vis']
                         mvis_unc['lfakeDown'] = variables['m_vis']
+                 """
                         
                     # lep1 ->
                     bin_label,binPt,binEta = self.GetPtEtaBinLabels(pt_1[0],eta_1[0])
@@ -1058,41 +1066,48 @@ class analysisSample:
                     hists[name].Fill(variables['m_vis'],Weight)
                     name = 'm_vis_%s_%s_%s_%s_all'%(region_label,bin_label,sign_label,iso_label)
                     hists[name].Fill(variables['m_vis'],Weight)
+                    """
                     for unc in mvis_unc:
                         name = 'm_vis_%s_%s_%s_%s_%s_%s'%(unc,region_label,bin_label,sign_label,iso_label,lep_label)
                         hists[name].Fill(mvis_unc[unc],Weight)
                         name = 'm_vis_%s_%s_%s_%s_%s_all'%(unc,region_label,bin_label,sign_label,iso_label)
                         hists[name].Fill(mvis_unc[unc],Weight)
+                    """
                 
                     if variables['ipsig_1']>cuts.ipsigLepCut:
+                        # print('passed')
                         # passing probes
                         WeightSF = 1.0
                         if lep_label=='lep' and self.ismc and ipSigPromptLepSF!=None:
                             WeightSF *= ipSigPromptLepSF.getSF(pt_1[0],eta_1[0])
-                            region_label = 'pass'
-                            name = 'm_vis_%s_%s_%s_%s_%s'%(region_label,bin_label,sign_label,iso_label,lep_label)
-                            hists[name].Fill(variables['m_vis'],Weight*WeightSF)
-                            name = 'm_vis_%s_%s_%s_%s_all'%(region_label,bin_label,sign_label,iso_label)
-                            hists[name].Fill(variables['m_vis'],Weight*WeightSF)
+                        region_label = 'pass'
+                        name = 'm_vis_%s_%s_%s_%s_%s'%(region_label,bin_label,sign_label,iso_label,lep_label)
+                        hists[name].Fill(variables['m_vis'],Weight*WeightSF)
+                        name = 'm_vis_%s_%s_%s_%s_all'%(region_label,bin_label,sign_label,iso_label)
+                        hists[name].Fill(variables['m_vis'],Weight*WeightSF)
+                        """
                             for unc in mvis_unc:
                                 name = 'm_vis_%s_%s_%s_%s_%s_%s'%(unc,region_label,bin_label,sign_label,iso_label,lep_label)
                                 hists[name].Fill(mvis_unc[unc],Weight*WeightSF)
                                 name = 'm_vis_%s_%s_%s_%s_%s_all'%(unc,region_label,bin_label,sign_label,iso_label)
                                 hists[name].Fill(mvis_unc[unc],Weight*WeightSF)
-                        
+                            """
 
                     else:
                         # failing probes
+                        # print('failed')
                         region_label = 'fail'
                         name = 'm_vis_%s_%s_%s_%s_%s'%(region_label,bin_label,sign_label,iso_label,lep_label)
                         hists[name].Fill(variables['m_vis'],Weight)
                         name = 'm_vis_%s_%s_%s_%s_all'%(region_label,bin_label,sign_label,iso_label)
                         hists[name].Fill(variables['m_vis'],Weight)
+                        """
                         for unc in mvis_unc:
                             name = 'm_vis_%s_%s_%s_%s_%s_%s'%(unc,region_label,bin_label,sign_label,iso_label,lep_label)
                             hists[name].Fill(mvis_unc[unc],Weight)
                             name = 'm_vis_%s_%s_%s_%s_%s_all'%(unc,region_label,bin_label,sign_label,iso_label)
                             hists[name].Fill(mvis_unc[unc],Weight)
+                        """
 
             ####################################
             ## phi(CP) studies with signal MC ##

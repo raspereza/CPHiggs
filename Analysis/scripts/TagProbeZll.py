@@ -257,12 +257,13 @@ def RunTagProbe(hists,**kwargs):
     chan = kwargs.get('channel','mm')
     plotLegend = kwargs.get('plotLegend',True)
     xmin = kwargs.get('xmin',60.)
-    xmax = kwargs.get('xmax',130.)
+    xmax = kwargs.get('xmax',120.)
     binPt = kwargs.get('binPt','1')
     binEta = kwargs.get('binEta','1')
     sample = kwargs.get('sample','data')
     region = kwargs.get('region','pass')
     secondLep = kwargs.get('secondLep',False)
+    generator = kwargs.get('generator','amcatnlo')
     if sample not in ['data','dy']:
         print('Unknow sample %s : quitting'%(sample))
         exit()
@@ -361,7 +362,11 @@ def RunTagProbe(hists,**kwargs):
     canvas.Modified()
     canvas.Update()
     print('')
-    outputGraphics = utils.outputFolder + '/figures/' + sample + '_' + chan + '_ptBin' + binPt + '_etaBin' + binEta + '_' + era + '_' + region + '.png'
+
+    suffix = generator
+    if secondLep:
+        suffix += '_2'
+    outputGraphics = utils.outputFolder + '/figures/tag_probe/' + sample + '_' + chan + '_ptBin' + binPt + '_etaBin' + binEta + '_' + era + '_' + region + '_' + suffix + '.png'
     canvas.Print(outputGraphics)
 
     del canvas
@@ -414,7 +419,7 @@ if __name__ == "__main__":
     print('')
     print(inputFile)
     print('')
-    hists = utils.extractTagProbeHistos(inputFile,bins,generator,era,secondLep)
+    hists = utils.extractTagProbeHistos(inputFile,bins,generator,era,chan,secondLep)
     histPtBins = inputFile.Get('ptBins')
     histEtaBins = inputFile.Get('etaBins')
     nbinsPt = histPtBins.GetNbinsX()
@@ -448,7 +453,9 @@ if __name__ == "__main__":
                                                     binPt=binPt,
                                                     binEta=binEta,
                                                     sample='data',
-                                                    region='pass')
+                                                    region='pass',
+                                                    generator=generator,
+                                                    secondLep=secondLep)
         nFailData,xFailData,eFailData = RunTagProbe(hists,
                                                     era=era,
                                                     channel=chan,
@@ -457,7 +464,10 @@ if __name__ == "__main__":
                                                     binPt=binPt,
                                                     binEta=binEta,
                                                     sample='data',
-                                                    region='fail')
+                                                    region='fail',
+                                                    generator=generator,
+                                                    secondLep=secondLep
+                                                    )
         
         effData,effErrData = ComputeEff(nPassData,xPassData,ePassData,
                                         nFailData,xFailData,eFailData)
@@ -475,7 +485,9 @@ if __name__ == "__main__":
                                               binPt=binPt,
                                               binEta=binEta,
                                               sample='dy',
-                                              region='pass')
+                                              region='pass',
+                                              generator=generator,
+                                              secondLep=secondLep)
         nFailMC,xFailMC,eFailMC = RunTagProbe(hists,
                                               era=era,
                                               channel=chan,
@@ -484,14 +496,16 @@ if __name__ == "__main__":
                                               binPt=binPt,
                                               binEta=binEta,
                                               sample='dy',
-                                              region='fail')
+                                              region='fail',
+                                              generator=generator,
+                                              secondLep=secondLep)
         effMC,effErrMC = ComputeEff(nPassMC,xPassMC,ePassMC,
                                     nFailMC,xFailMC,eFailMC)
         effMC_1D.SetBinContent(iPt,effMC)
         effMC_1D.SetBinError(iPt,effErrMC)
         effMC_2D.SetBinContent(iPt,iEta,effMC)
         effMC_2D.SetBinError(iPt,iEta,effErrMC)
-    hfit[binEta] = PlotTagProbe(effData_1D,effMC_1D,era=era,channel=chan,binEta=binEta,ymin=ymin,ymax=ymax,generator=generator,)
+    hfit[binEta] = PlotTagProbe(effData_1D,effMC_1D,era=era,channel=chan,binEta=binEta,ymin=ymin,ymax=ymax,generator=generator,secondLep=secondLep)
 
     suffix = generator
     if secondLep:

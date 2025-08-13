@@ -236,6 +236,7 @@ if __name__ == "__main__":
     parser = ArgumentParser()
     parser.add_argument('-era' ,'--era', dest='era', default='Run3_2022', choices=['Run3_2022','Run3_2023','Run3'])
     parser.add_argument('-channel','--channel', dest='channel', default='mt',choices=['mt','et'])
+    parser.add_argument('-useCrossTrigger','--useCrossTrigger',dest='useCrossTrigger',action='store_true')
     parser.add_argument('-ymin','--ymin', dest='ymin', type=float, default=0.701)
     parser.add_argument('-ymax','--ymax', dest='ymax', type=float, default=1.299)
     args = parser.parse_args()
@@ -246,8 +247,12 @@ if __name__ == "__main__":
     ymax = args.ymax
     
     basedir = '%s'%(utils.outputFolder)
+    suffix = 'x'
+    if args.useCrossTrigger:
+        suffix += '_xtrig'
+    suffix += '_promptSF'
     
-    inputFileName = '%s/selection/%s_%s_x_promptSF.root'%(basedir,chan,era)
+    inputFileName = '%s/selection/%s_%s_%s.root'%(basedir,chan,era,suffix)
     inputFile = ROOT.TFile(inputFileName,'read')
     print('')
     print(inputFile)
@@ -258,9 +263,8 @@ if __name__ == "__main__":
     nbinsEta = histEtaBins.GetNbinsX()
 
     ptBins = []
-    for iPt in range(1,nbinsPt+1):
+    for iPt in range(1,nbinsPt+2):
         ptBins.append(histPtBins.GetBinLowEdge(iPt))
-    ptBins.append(150.)
 
     etaBins = []
     for iEta in range(1,nbinsEta+2):

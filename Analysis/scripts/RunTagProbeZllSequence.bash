@@ -2,7 +2,7 @@
 
 n=$#
 if [[ $n -ne 3 ]]; then
-    echo usage : RunTagProbeZllSeq.bash [ERA] [CHANNEL] [GENERATOR]
+    echo usage : RunTagProbeZllSequence.bash [ERA] [CHANNEL] [GENERATOR]
     echo ERA = [Run3_2022, Run3_2023]
     echo CHANNEL = [mm,ee]
     echo GENERATOR = [amcatnlo,MG,powheg]
@@ -24,3 +24,4 @@ do
 done
 
 
+ 

@@ -23,31 +23,31 @@ ipcut2=$6
 promptSF=$7
 tauSF=$8
 
-for sample in data top vv wjets ztt_0j ztt_1j ztt_2j zll_0j zll_1j zll_2j zll_incl dy_1j dy_2j dy_3j dy_4j dy_incl zll_powheg 
+for sample in data ztt_0j ztt_1j ztt_2j zll_0j zll_1j zll_2j zll_incl wjets top vv ggH qqH HWplus HWminus ZH
 do
     ./scripts/RunSelection.bash ${era} ${chan} ${sample} ${analysisType} ${xtrig} ${ipcut1} ${ipcut2} ${promptSF} ${tauSF}
 done
 
-if [ ${chan} == 'mt']
-then
-    for sample in ztt_powheg
-    do
-	./scripts/RunSelection.bash ${era} ${chan} ${sample} ${analysisType} ${xtrig} ${ipcut1} ${ipcut2} ${promptSF} ${tauSF}
-    done
-fi
-
-if [ ${chan} == 'et']
-then
-    for sample in ztt_powheg
-    do
-	./scripts/RunSelection.bash ${era} ${chan} ${sample} ${analysisType} ${xtrig} ${ipcut1} ${ipcut2} ${promptSF} ${tauSF}
-    done
-fi
+#if [ ${chan} == 'mt' ]
+#then
+#    for sample in ztt_powheg
+#    do
+#	./scripts/RunSelection.bash ${era} ${chan} ${sample} ${analysisType} ${xtrig} ${ipcut1} ${ipcut2} ${promptSF} ${tauSF}
+#    done
+#fi
+#
+#if [ ${chan} == 'et' ]
+#then
+#    for sample in ztt_powheg
+#    do
+#	./scripts/RunSelection.bash ${era} ${chan} ${sample} ${analysisType} ${xtrig} ${ipcut1} ${ipcut2} ${promptSF} ${tauSF}
+#    done
+#fi
 
 
 if [ ${era} == 'Run3_2022preEE' ]
 then
-    for sample in dy_ext zll_ext
+    for sample in zll_ext
     do	
 	./scripts/RunSelection.bash ${era} ${chan} ${sample} ${analysisType} ${xtrig} ${ipcut1} ${ipcut2} ${promptSF} ${tauSF}
     done
@@ -55,7 +55,7 @@ fi
 
 if [ ${era} == 'Run3_2022postEE' ]
 then
-    for sample in dy_ext zll_ext
+    for sample in zll_ext
     do
 	./scripts/RunSelection.bash ${era} ${chan} ${sample} ${analysisType} ${xtrig} ${ipcut1} ${ipcut2} ${promptSF} ${tauSF}
     done

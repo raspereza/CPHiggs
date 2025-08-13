@@ -1,10 +1,17 @@
 #!/bin/bash
 # $1 - era
 # $2 - chan
+n=$#
+if [[ $n -ne 2 ]]; then
+    echo usage : RunFit.bash [ERA] [CHANNEL]
+    echo ERA = [Run3_2022, Run3_2023]
+    echo CHANNEL = [mt,et]
+fi
+
 era=$1
 chan=$2
 cd /afs/cern.ch/work/r/rasp/CPHiggs/Analysis/datacards
-for pt in 1 2 3 4 5 6
+for pt in 1 2 3 4 5 6 7
 do
     for eta in 1 2 3
     do

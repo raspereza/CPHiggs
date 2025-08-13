@@ -44,6 +44,7 @@ def Plot(hists,**kwargs):
     ymin = kwargs.get('ymin',0.5)
     ymax = kwargs.get('ymax',1.5)
     suffix = kwargs.get('suffix','_x')
+    calibrDY = kwargs.get('calibrDY',False)
     
     # histograms
     h_data = hists['data_'+var+'_os_iso_all'].Clone('h_data')
@@ -69,7 +70,8 @@ def Plot(hists,**kwargs):
     x_tot   = x_zll + x_top + x_vv + x_wjets
     
     scale = (x_data-x_top-x_wjets-x_vv)/x_zll
-    h_zll.Scale(scale)
+    if calibrDY:
+        h_zll.Scale(scale)
     x_zll   = h_zll.GetSumOfWeights() 
     x_tot   = x_zll + x_top + x_vv + x_wjets
     
@@ -195,6 +197,8 @@ if __name__ == "__main__":
 
     args = parser.parse_args()
 
+    calibrDY = True
+    
     era = args.era
     chan = args.channel
     var = args.variable
@@ -246,8 +250,10 @@ if __name__ == "__main__":
         print('')
         exit()
     inputFile = ROOT.TFile(inputFileName,'read')
-    hists = utils.extractHistos(inputFile,var,bins,generator,era)
+    hists = utils.extractHistos(inputFile,var,bins,generator,era,chan)
     suffixOut = suffix + '_' + generator
-    Plot(hists,era=era,var=var,channel=chan,ymin=ymin,ymax=ymax,plotLegend=plotLegend,suffix=suffixOut)
+    if calibrDY:
+        suffixOut = suffix + '_' + generator + '_calibrDY'
+    Plot(hists,era=era,var=var,channel=chan,ymin=ymin,ymax=ymax,plotLegend=plotLegend,suffix=suffixOut,calibrDY=calibrDY)
 
     

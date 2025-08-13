@@ -23,7 +23,7 @@ ctau = 0.0087
 # folder where tuples are stored #
 ##################################
 tupleFolderMG='/eos/cms/store/group/phys_tau/ksavva/For_Aliaksei/files/testingzpt'
-tupleFolder='/eos/cms/store/group/phys_tau/ksavva/For_Aliaksei/files/production_22_06_2025'
+tupleFolderPOWHEG='/eos/cms/store/group/phys_tau/ksavva/For_Aliaksei/files/production_22_06_2025'
 tupleFolderV1='/eos/cms/store/group/phys_tau/lrussell/forAliaksei/old/oldTuples'
 tupleFolderV2='/eos/cms/store/group/phys_tau/lrussell/forAliaksei'
 
@@ -237,10 +237,13 @@ wjets_samples = {
                       'WtoLNu_3J_madgraphMLM','WtoLNu_4J_madgraphMLM'],
 }
 
-even_samples = ['GluGluHTo2Tau_UncorrelatedDecay_SM_Filtered_ProdAndDecay']
-odd_samples = ['GluGluHTo2Tau_UncorrelatedDecay_CPodd_Filtered_ProdAndDecay']
-maxmix_samples = ['GluGluHTo2Tau_UncorrelatedDecay_MM_Filtered_ProdAndDecay']
-higgs_samples = ['GluGluHTo2Tau_UncorrelatedDecay_SM_Filtered_ProdAndDecay']
+ggH_even_samples = ['GluGluHTo2Tau_UncorrelatedDecay_SM_Filtered_ProdAndDecay']
+ggH_odd_samples = ['GluGluHTo2Tau_UncorrelatedDecay_CPodd_Filtered_ProdAndDecay']
+ggH_maxmix_samples = ['GluGluHTo2Tau_UncorrelatedDecay_MM_Filtered_ProdAndDecay']
+qqH_samples = ['VBFHToTauTau_UncorrelatedDecay_Filtered']
+HWplus_samples = ['WplusHToTauTau_UncorrelatedDecay_Filtered']
+HWminus_samples = ['WminusHToTauTau_UncorrelatedDecay_Filtered']
+ZH_samples = ['ZHToTauTau_UncorrelatedDecay_Filtered']
 
 ################
 # Data samples #
@@ -585,12 +588,16 @@ def copyHist(inputHist,outputHist):
         outputHist.SetBinError(ib,inputHist.GetBinError(ib))
 
 # extracting Tag-and-Probe histos from ROOT file created by RunSelection.py macro
-def extractTagProbeHistos(f,bins,generator,era,isSecond):
+def extractTagProbeHistos(f,bins,generator,era,channel,isSecond):
     var = 'm_vis'
     if isSecond:
         var += '_2'
     is2022 = era=='Run3_2022preEE' or era=='Run3_2022postEE' or era=='Run3_2022'
     samples = ['data','dy']
+    if channel=='mt' or channel=='et':
+        samples.append('top')
+        samples.append('vv')
+        samples.append('wjets')
     dy_samples = ['zll_0j','zll_1j','zll_2j','ztt_0j','ztt_1j','ztt_2j']
     if is2022:
         dy_samples.append('zll_ext')
@@ -607,7 +614,6 @@ def extractTagProbeHistos(f,bins,generator,era,isSecond):
     iso_labels = ['iso','antiiso']
     typ_labels = ['lep','tau','had','all']
     region_labels = ['pass','fail','incl']
-    unc_labels = ['lepUp','lepDown','tauUp','tauDown','lfakeUp','lfakeDown']
     hists = {}
     histPtBins = f.Get('ptBins')
     histEtaBins = f.Get('etaBins')

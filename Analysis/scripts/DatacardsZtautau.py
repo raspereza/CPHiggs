@@ -160,21 +160,21 @@ if __name__ == "__main__":
     parser.add_argument('-channel','--channel', dest='channel', default='mt',choices=['mt','et'])
     parser.add_argument('-useCrossTrigger','--useCrossTrigger', dest='useCrossTrigger',action='store_true')
     parser.add_argument('-applyMTCut','--applyMTCut', dest='applyMTCut', action='store_true')
-    parser.add_argument('-applyIPSigPromptLepSF','--applyIPSigPromptLepSF',dest='applyIPSigPromptLepSF',action='store_true')
-    parser.add_argument('-nbins','--nbins', dest='nbins', type=int, default=20)
+    parser.add_argument('-nbins','--nbins', dest='nbins', type=int, default=21)
     parser.add_argument('-xmin','--xmin', dest='xmin', type=float, default=40.)
-    parser.add_argument('-xmax','--xmax', dest='xmax', type=float, default=240.)
+    parser.add_argument('-xmax','--xmax', dest='xmax', type=float, default=250.)
+    parser.add_argument('-generator','--generator',dest='generator',default='amcatnlo',choices=['amcatnlo','MG'])
     
     args = parser.parse_args()
     era = args.era
     applyMTCut = args.applyMTCut
     useCrossTrigger = args.useCrossTrigger
-    applyIPSigPromptLepSF = args.applyIPSigPromptLepSF
     chan = args.channel
     var = args.variable
     nbins = args.nbins
     xmin = args.xmin
     xmax = args.xmax
+    generator = args.generator
     
     bins = []
     width = (xmax-xmin)/float(nbins)
@@ -189,10 +189,8 @@ if __name__ == "__main__":
         suffix_xtrig = '_xtrig'
     if applyMTCut:
         suffix_mt = '_mtcut'
-    if applyIPSigPromptLepSF:
-        suffix_prompt = '_promptSF'
 
-    suffix = '_x'+suffix_mt+suffix_xtrig+suffix_prompt
+    suffix = '_x'+suffix_mt+suffix_xtrig+'_promptSF'
     basedir = utils.outputFolder
     inputFileName = '%s/selection/%s_%s%s.root'%(basedir,chan,era,suffix)
     if os.path.isfile(inputFileName):
@@ -204,16 +202,16 @@ if __name__ == "__main__":
         print('Quitting')
         exit()
     inputFile = ROOT.TFile(inputFileName,'read')
-    hists = utils.extractTagProbeHistos(inputFile,bins)
+    isSecond = False
+    hists = utils.extractTagProbeHistos(inputFile,bins,generator,era,chan,isSecond)
     histPtBins = inputFile.Get('ptBins')
     histEtaBins = inputFile.Get('etaBins')
     nbinsPt = histPtBins.GetNbinsX()
     nbinsEta = histEtaBins.GetNbinsX()
 
     ptBins = []
-    for iPt in range(1,nbinsPt+1):
+    for iPt in range(1,nbinsPt+2):
         ptBins.append(histPtBins.GetBinLowEdge(iPt))
-    ptBins.append(100.)
 
     etaBins = []
     for iEta in range(1,nbinsEta+2):
