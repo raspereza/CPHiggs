@@ -23,7 +23,7 @@ ipcut2=$6
 promptSF=$7
 tauSF=$8
 
-for sample in data ztt_0j ztt_1j ztt_2j zll_0j zll_1j zll_2j zll_incl wjets top vv ggH qqH HWplus HWminus ZH
+for sample in data ztt_0j ztt_1j ztt_2j zll_0j zll_1j zll_2j zll_incl wjets top vv # ggH qqH HWplus HWminus ZH
 do
     ./scripts/RunSelection.bash ${era} ${chan} ${sample} ${analysisType} ${xtrig} ${ipcut1} ${ipcut2} ${promptSF} ${tauSF}
 done
