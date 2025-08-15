@@ -10,8 +10,6 @@ import os
 def FitFuncSF(x,par):
     a = 0.1*(x[0]-20.)
     b = par[0]+par[1]*a+par[2]*a*a
-    if x[0]>80.:
-        b = par[3]
     return b
 
 import CPHiggs.Analysis.styles as styles
@@ -131,15 +129,13 @@ def PlotTagProbe(eff_data,eff_mc,**kwargs):
     fmax = sf.GetXaxis().GetBinLowEdge(nbins+1)
     print('fmin=%2.0f  fmax=%3.0f'%(fmin,fmax))
     
-    fitSF = ROOT.TF1('fitFuncSF',FitFuncSF,fmin,fmax,4)
+    fitSF = ROOT.TF1('fitFuncSF',FitFuncSF,fmin,fmax,3)
     fitSF.SetParameter(0,1.0)
     fitSF.SetParameter(1,0.0)
     fitSF.SetParameter(2,0.0)
-    fitSF.SetParameter(3,1.0)
     fitSF.SetParName(0,'a0')
     fitSF.SetParName(1,'a1')
     fitSF.SetParName(2,'a2')
-    fitSF.SetParName(3,'const')
 
     dummy = styles.MakeCanvas('dummy','',400,400)
     sf.Fit(fitSF,"R")
@@ -317,8 +313,8 @@ if __name__ == "__main__":
             print('binPt%s_binEta%s -> Data : %4.2f+/-%4.2f : MC = %4.2f'%(binPt,binEta,xData,eData,xMC))
             inputFile.Close()
 
-    effData_2D = ROOT.TH2D('effData','',nbinsPt,array('d',list(ptBins)),nbinsEta,array('d',list(etaBins)))
-    effMC_2D = ROOT.TH2D('effMC','',nbinsPt,array('d',list(ptBins)),nbinsEta,array('d',list(etaBins)))
+    effData_2D = ROOT.TH2D('effData','',nbinsPtX,array('d',list(ptBins)),nbinsEta,array('d',list(etaBins)))
+    effMC_2D = ROOT.TH2D('effMC','',nbinsPtX,array('d',list(ptBins)),nbinsEta,array('d',list(etaBins)))
     hfit = {}
     fitSF = {}
     for iEta in range(1,nbinsEta+1):
