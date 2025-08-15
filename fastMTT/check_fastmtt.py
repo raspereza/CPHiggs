@@ -134,10 +134,10 @@ dpt2 = np.where(cols['genPart_pt_2']>0.001,pt2/cols['genPart_pt_2'],0.0001)
 dpt2_BW = np.where(cols['genPart_pt_2']>0.001,pt2_BW/cols['genPart_pt_2'],0.0001) 
 dpt2_cons = np.where(cols['genPart_pt_2']>0.001,pt2_cons/cols['genPart_pt_2'],0.0001) 
     
-outputFile="%s.root"%(args.sample)
+outputFile="%s_%s_%s.root"%(args.sample,args.era,args.channel)
 f = ROOT.TFile(outputFile,"recreate")
 f.cd('')
-hist_mvis = ROOT.TH1D("mvis","mvis",40,0.,200.)
+hist_mvis = ROOT.TH1D("mvis","mvis",60,0.,300.)
 hist_mtt = ROOT.TH1D("mtt","mtt",60,0.,300.)
 hist_mtt_nom = ROOT.TH1D("mtt_nom","mtt",60,0.,300.)
 

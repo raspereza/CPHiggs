@@ -227,8 +227,9 @@ map<string, py::array_t<double>> fastmtt_cpp(unsigned int N,
 	double I_m_nunu_2 = (m_vis/m_shift) * (m_vis/m_shift) * I_x2 - (x2_max - x2_min);
 	I_tot += I_m_nunu_2;
       }
-      double mass_likelihood = 1.0E9 * J * I_tot;
-	
+      //      double mass_likelihood = 1.0E9 * J * I_tot;
+      double mass_likelihood = 1.0E9 * I_tot;
+      
       // calculate MET transfer function 
       double residual_x = met_x - nu_test_px;
       double residual_y = met_y - nu_test_py;
@@ -288,7 +289,8 @@ map<string, py::array_t<double>> fastmtt_cpp(unsigned int N,
 	  double I_m_nunu_2 = (m_vis/m_shift) * (m_vis/m_shift) * I_x2 - (x2_max - x2_min);
 	  I_tot += I_m_nunu_2;
 	}
-	double mass_likelihood = 1.0E9 * J * I_tot;
+	//	double mass_likelihood = 1.0E9 * J * I_tot;
+	double mass_likelihood = 1.0E9 * I_tot;
 	
 	// calculate MET transfer function 
 	double residual_x = met_x - nu_test_px;
