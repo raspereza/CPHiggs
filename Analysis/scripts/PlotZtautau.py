@@ -139,6 +139,19 @@ def QCDEstimate(hists,perbin):
         
     return histQCD
 
+"""
+def PlotWithSignal(hists,**kwargs):
+
+    era = kwargs.get('era','Run3_2022EE')
+    var = kwargs.get('var','m_vis')
+    chan = kwargs.get('channel','mt')
+    suffix = kwargs.get('suffix','')
+    per_process = kwargs.get('per_process',True)
+    plotLegend = kwargs.get('plotLegend',True)
+    ymin = kwargs.get('ymin',0.701)
+    ymax = kwargs.get('ymax',1.299)
+"""
+
 def Plot(hists,**kwargs):
 
     era = kwargs.get('era','Run3_2022EE')
@@ -160,8 +173,8 @@ def Plot(hists,**kwargs):
     h_top = hists['top_'+var+'_os_iso_all'].Clone('h_top')
     h_vv = hists['vv_'+var+'_os_iso_all'].Clone('h_vv')
     h_wjets = hists['wjets_'+var+'_os_iso_all'].Clone('h_wjets')
-    #h_wjets.Scale(scaleWJ)
-    #h_ztt.Scale(scaleZTT)
+    h_wjets.Scale(scaleWJ)
+    h_ztt.Scale(scaleZTT)
 
     h_lep = hists['dy_'+var+'_os_iso_lep'].Clone('h_lep')
     h_tau = hists['dy_'+var+'_os_iso_tau'].Clone('h_tau')
@@ -364,6 +377,7 @@ def Plot(hists,**kwargs):
     print('')
     outputGraphics = '%s/figures/%s_%s_%s_%s.png'%(utils.outputFolder,var,chan,era,suffix)
     canvas.Print(outputGraphics)
+    return h_data, h_ztt
 
 if __name__ == "__main__":
 
@@ -372,7 +386,7 @@ if __name__ == "__main__":
 
     from argparse import ArgumentParser
     parser = ArgumentParser()
-    parser.add_argument('-era','--era',dest='era',default='Run3_2022',choices=['Run3_2022','Run3_2023','Run3'])
+    parser.add_argument('-era','--era',dest='era',default='Run3_2022',choices=['Run3_2022','Run3_2023','Run3_2022preEE','Run3_2022postEE','Run3_2023preBPix','Run3_2023postBPix','Run3'])
     parser.add_argument('-variable','--variable',dest='variable',default='m_vis')
     parser.add_argument('-channel','--channel',dest='channel',default='mt',choices=['mt','et'])
     parser.add_argument('-perType','--perType',dest='perType',action='store_true')
@@ -468,8 +482,13 @@ if __name__ == "__main__":
         if applyCalibrationDY:
             scaleZTT = scale_ZTT 
     suffixOut = suffix + '_' + generator
-    Plot(hists,era=era,var=var,channel=chan,per_process=proc,
-         suffix=suffixOut,ymin=ymin,ymax=ymax,
-         plotLegend=plotLegend,
-         scaleWJ=scaleWJ,scaleZTT=scaleZTT)
-    
+    print('scaleWJ = %4.2f     scaleDY = %4.2f'%(scaleWJ,scaleZTT))
+    h_data,h_bkg=Plot(hists,era=era,var=var,channel=chan,per_process=proc,
+                      suffix=suffixOut,ymin=ymin,ymax=ymax,
+                      plotLegend=plotLegend,
+                      scaleWJ=scaleWJ,scaleZTT=scaleZTT)
+#    histsWithSignal = {}
+#    histsWithSignal['h_data'] = h_data
+#    histsWithSignal['h_bkg'] = h_bkg
+#    histsWithSignal['h_ggH'] = hists['ggH_'+var+'_os_iso_all']
+#    histsWithSignal['h_qqH'] = hists['qqH_'+var+'_os_iso_all']

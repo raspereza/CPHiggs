@@ -9,7 +9,7 @@ suffix=$3
 n=$#
 if [[ $n -ne 3 ]]; then
     echo usage : RunSelectionSeq.bash [ERA] [CHANNEL] [SUFFIX]
-    echo ERA = [Run3_2022, Run3_2023]
+    echo ERA = [Run3_2022, Run3_2022preEE, Run3_2022postEE, Run3_2023, Run3_2023preBPix, Run3_2023postBPix]
     echo CHANNEL = [mt,et,mm,ee]
     echo SUFFIX = [x,x_xtrig,x_ipcut1,etc...]
     exit

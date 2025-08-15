@@ -182,7 +182,7 @@ if __name__ == "__main__":
 
     from argparse import ArgumentParser
     parser = ArgumentParser()
-    parser.add_argument('-era' ,'--era', dest='era', default='Run3_2022', choices=['Run3_2022','Run3_2023','Run3'])
+    parser.add_argument('-era','--era',dest='era',default='Run3_2022',choices=['Run3_2022','Run3_2023','Run3_2022preEE','Run3_2022postEE','Run3_2023preBPix','Run3_2023postBPix','Run3'])
     parser.add_argument('-channel','--channel', dest='channel', default='mt',choices=['mm','ee'])
     parser.add_argument('-variable' ,'--variable', dest='variable', default='m_vis')
     parser.add_argument('-nbins','--nbins', dest='nbins', type=int, default=40)
@@ -194,10 +194,13 @@ if __name__ == "__main__":
     parser.add_argument('-applyIP2','--applyIP2',dest='applyIP2',type=int,default=0)
     parser.add_argument('-applySF', '--applySF', dest='applySF' ,type=int,default=0)
     parser.add_argument('-generator', '--generator', dest='generator', default='amcatnlo',choices=['amcatnlo','MG','powheg'])
+    parser.add_argument('-calibrDY','--calibrDY',dest='calibrDY',type=int,default=0) # calibrate DY
 
     args = parser.parse_args()
 
-    calibrDY = True
+    applyCalibrDY = False
+    if args.calibrDY==1:
+        applyCalibrDY = True
     
     era = args.era
     chan = args.channel
@@ -252,8 +255,8 @@ if __name__ == "__main__":
     inputFile = ROOT.TFile(inputFileName,'read')
     hists = utils.extractHistos(inputFile,var,bins,generator,era,chan)
     suffixOut = suffix + '_' + generator
-    if calibrDY:
+    if applyCalibrDY:
         suffixOut = suffix + '_' + generator + '_calibrDY'
-    Plot(hists,era=era,var=var,channel=chan,ymin=ymin,ymax=ymax,plotLegend=plotLegend,suffix=suffixOut,calibrDY=calibrDY)
+    Plot(hists,era=era,var=var,channel=chan,ymin=ymin,ymax=ymax,plotLegend=plotLegend,suffix=suffixOut,calibrDY=applyCalibrDY)
 
     

@@ -13,8 +13,6 @@ import CPHiggs.Analysis.utils as utils
 
 def FitFuncSF(x,par):
     b = par[0]+par[1]*x[0]+par[2]*x[0]*x[0]
-    if x[0]>110.:
-        b = par[3]
     return b
 
 def FitFunc(x,par):
@@ -134,17 +132,15 @@ def PlotTagProbe(eff_data,eff_mc,**kwargs):
     styles.InitRatioHist(sf)
 
     print 
-    fitSF = ROOT.TF1('fitFuncSF',FitFuncSF,fmin,fmax,4)
+    fitSF = ROOT.TF1('fitFuncSF',FitFuncSF,fmin,fmax,3)
     fitSF.SetLineColor(4)
     fitSF.SetLineWidth(2)
     fitSF.SetParName(0,'a0')
     fitSF.SetParName(1,'a1')
     fitSF.SetParName(2,'a2')
-    fitSF.SetParName(3,'const')
     fitSF.SetParameter(0,1.)
     fitSF.SetParameter(1,0.)
     fitSF.SetParameter(2,0.)
-    fitSF.SetParameter(3,1.)
     
     xtit = ''
     ytit = 'SF (IP sig. cut)'
@@ -184,7 +180,7 @@ def PlotTagProbe(eff_data,eff_mc,**kwargs):
     eff_data.Draw('e')
     eff_mc.Draw('esame')
 
-    leg = ROOT.TLegend(0.25,0.55,0.45,0.8)
+    leg = ROOT.TLegend(0.25,0.5,0.5,0.75)
     styles.SetLegendStyle(leg)
     leg.SetTextSize(0.05)
     leg.SetHeader(header)

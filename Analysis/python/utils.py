@@ -24,7 +24,7 @@ ctau = 0.0087
 ##################################
 tupleFolderMG='/eos/cms/store/group/phys_tau/ksavva/For_Aliaksei/files/testingzpt'
 tupleFolderPOWHEG='/eos/cms/store/group/phys_tau/ksavva/For_Aliaksei/files/production_22_06_2025'
-tupleFolderV1='/eos/cms/store/group/phys_tau/lrussell/forAliaksei/old/oldTuples'
+tupleFolderPhiCP='/eos/cms/store/group/phys_tau/lrussell/forAliaksei/old/oldTuples'
 tupleFolderV2='/eos/cms/store/group/phys_tau/lrussell/forAliaksei'
 
 #########################################

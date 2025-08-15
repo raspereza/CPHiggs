@@ -10,7 +10,7 @@ import os
 def FitFuncSF(x,par):
     a = 0.1*(x[0]-20.)
     b = par[0]+par[1]*a+par[2]*a*a
-    if x[0]>70.:
+    if x[0]>80.:
         b = par[3]
     return b
 
@@ -263,8 +263,15 @@ if __name__ == "__main__":
     nbinsEta = histEtaBins.GetNbinsX()
 
     ptBins = []
-    for iPt in range(1,nbinsPt+2):
+    nfirst = 1
+    if chan=='et':
+        nfirst = 2
+    for iPt in range(nfirst,nbinsPt+2):
         ptBins.append(histPtBins.GetBinLowEdge(iPt))
+
+    nbinsPtX = nbinsPt
+    if chan=='et':
+        nbinsPtX = nbinsPt - 1
 
     etaBins = []
     for iEta in range(1,nbinsEta+2):
@@ -294,9 +301,9 @@ if __name__ == "__main__":
     cards_folder = '%s/datacards'%(utils.outputFolder)
     for iEta in range(1,nbinsEta+1):
         binEta = '%1i'%(iEta)
-        effData_1D = ROOT.TH1D('effData_eta'+binEta,'',nbinsPt,array('d',list(ptBins)))
-        effMC_1D = ROOT.TH1D('effMC_eta'+binEta,'',nbinsPt,array('d',list(ptBins)))
-        for iPt in range(1,nbinsPt+1):
+        effData_1D = ROOT.TH1D('effData_eta'+binEta,'',nbinsPtX,array('d',list(ptBins)))
+        effMC_1D = ROOT.TH1D('effMC_eta'+binEta,'',nbinsPtX,array('d',list(ptBins)))
+        for iPt in range(nfirst,nbinsPt+1):
             binPt = '%1i'%(iPt)
             # tag-and-probe data
             inputFileName = '%s/%s_%s_binPt%s_binEta%s_fit.root'%(cards_folder,chan,era,binPt,binEta)
@@ -316,9 +323,9 @@ if __name__ == "__main__":
     fitSF = {}
     for iEta in range(1,nbinsEta+1):
         binEta = '%1i'%(iEta)
-        effData_1D = ROOT.TH1D('effData_eta'+binEta,'',nbinsPt,array('d',list(ptBins)))
-        effMC_1D = ROOT.TH1D('effMC_eta'+binEta,'',nbinsPt,array('d',list(ptBins)))
-        for iPt in range(1,nbinsPt+1):
+        effData_1D = ROOT.TH1D('effData_eta'+binEta,'',nbinsPtX,array('d',list(ptBins)))
+        effMC_1D = ROOT.TH1D('effMC_eta'+binEta,'',nbinsPtX,array('d',list(ptBins)))
+        for iPt in range(1,nbinsPtX+1):
 
             effData_1D.SetBinContent(iPt,effData[binEta][iPt-1])
             effData_1D.SetBinError(iPt,errData[binEta][iPt-1])

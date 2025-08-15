@@ -140,16 +140,12 @@ def CreateCards(hists,**kwargs):
     f.write("xsec_tt      lnN   1.05     -     -  1.05     -     -     -     -\n")
     f.write("xsec_vv      lnN      -  1.07     -     -  1.07     -     -     -\n")
     f.write("xsec_dy      lnN      -     -  1.03     -     -  1.03     -     -\n")
-#    f.write("xsec_wj      lnN      -     -     -     -     -     -  1.04     -\n")
     f.write("tau_id       lnN   1.05  1.05  1.05  1.05  1.05     -     -     -\n")
     f.write("lep_fakes    lnN     -      -     -     -     -  1.30     -     -\n")
     f.write("ipsig_prompt lnN     -      -     -  1.03  1.03  1.03  1.03     -\n")
     f.write("qcd_norm     lnN     -      -     -     -     -     -     -  1.30\n")
     f.write("jet_fakes  rateParam  %s  WJ   1.0  [0.5,1.5]\n"%(region))
     f.write("* autoMCStats 0\n")
-    
-          
-
     
 if __name__ == "__main__":
 
