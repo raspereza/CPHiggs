@@ -1,8 +1,8 @@
 //////////////////////////////////////////////////////////
 // This class has been automatically generated on
-// Fri Aug 15 16:10:27 2025 by ROOT version 6.30/07
+// Fri Aug 15 16:11:28 2025 by ROOT version 6.30/07
 // from TTree ntuple/
-// found on file: root://eoscms.cern.ch//eos/cms/store/group/phys_tau/lrussell/forAliaksei/old/oldTuples/Run3_2022EE/mt/GluGluHTo2Tau_UncorrelatedDecay_UnFiltered/nominal/merged.root
+// found on file: root://eoscms.cern.ch//eos/cms/store/group/phys_tau/lrussell/forAliaksei/old/oldTuples/Run3_2022EE/et/GluGluHTo2Tau_UncorrelatedDecay_UnFiltered/nominal/merged.root
 //////////////////////////////////////////////////////////
 
 #ifndef ntuple_h
@@ -56,8 +56,8 @@ public :
    Double_t        met_covYY;
    Double_t        met_dphi_1;
    Double_t        met_dphi_2;
-   Bool_t          trg_singlemuon;
-   Bool_t          trg_mt_cross;
+   Bool_t          trg_singleelectron;
+   Bool_t          trg_et_cross;
    Long64_t        idDeepTau2018v2p5VSjet_2;
    Long64_t        idDeepTau2018v2p5VSmu_2;
    Long64_t        idDeepTau2018v2p5VSe_2;
@@ -104,11 +104,11 @@ public :
    Double_t        seeding_jpt_2;
    Double_t        seeding_jeta_2;
    Double_t        seeding_jphi_2;
-   Double_t        aco_mu_pi;
-   Double_t        aco_mu_rho;
-   Double_t        aco_mu_a1;
-   Double_t        alphaAngle_mu_pi_1;
-   Double_t        alphaAngle_mu_pi_2;
+   Double_t        aco_e_pi;
+   Double_t        aco_e_rho;
+   Double_t        aco_e_a1;
+   Double_t        alphaAngle_e_pi_1;
+   Double_t        alphaAngle_e_pi_2;
    Double_t        PV_x;
    Double_t        PV_y;
    Double_t        PV_z;
@@ -131,6 +131,24 @@ public :
    Double_t        sv_x_2;
    Double_t        sv_y_2;
    Double_t        sv_z_2;
+   Double_t        PVBS_cov00;
+   Double_t        PVBS_cov10;
+   Double_t        PVBS_cov11;
+   Double_t        PVBS_cov20;
+   Double_t        PVBS_cov21;
+   Double_t        PVBS_cov22;
+   Double_t        sv_cov00_1;
+   Double_t        sv_cov10_1;
+   Double_t        sv_cov11_1;
+   Double_t        sv_cov20_1;
+   Double_t        sv_cov21_1;
+   Double_t        sv_cov22_1;
+   Double_t        sv_cov00_2;
+   Double_t        sv_cov10_2;
+   Double_t        sv_cov11_2;
+   Double_t        sv_cov20_2;
+   Double_t        sv_cov21_2;
+   Double_t        sv_cov22_2;
    Double_t        pi_pt_1;
    Double_t        pi_eta_1;
    Double_t        pi_phi_1;
@@ -188,7 +206,6 @@ public :
    Double_t        pi0_pdgId_2;
    Double_t        pi0_Energy_2;
    Double_t        leadTkPtOverTauPt_2;
-   Double_t        strip_pt_2;
    Double_t        weight;
    Double_t        genWeight;
    Double_t        LHEReweightingWeight_SM;
@@ -253,8 +270,8 @@ public :
    Double_t        w_Tau_e_FakeRate;
    Double_t        w_Tau_mu_FakeRate;
    Double_t        w_Trigger;
-   Double_t        w_SingleMuon_leg1;
-   Double_t        w_CrossTrigger_Muon_leg1;
+   Double_t        w_SingleElectron_leg1;
+   Double_t        w_CrossTrigger_Electron_leg1;
    Double_t        w_CrossTrigger_Tau_leg2;
    Double_t        iso_1;
 
@@ -293,8 +310,8 @@ public :
    TBranch        *b_met_covYY;   //!
    TBranch        *b_met_dphi_1;   //!
    TBranch        *b_met_dphi_2;   //!
-   TBranch        *b_trg_singlemuon;   //!
-   TBranch        *b_trg_mt_cross;   //!
+   TBranch        *b_trg_singleelectron;   //!
+   TBranch        *b_trg_et_cross;   //!
    TBranch        *b_idDeepTau2018v2p5VSjet_2;   //!
    TBranch        *b_idDeepTau2018v2p5VSmu_2;   //!
    TBranch        *b_idDeepTau2018v2p5VSe_2;   //!
@@ -341,11 +358,11 @@ public :
    TBranch        *b_seeding_jpt_2;   //!
    TBranch        *b_seeding_jeta_2;   //!
    TBranch        *b_seeding_jphi_2;   //!
-   TBranch        *b_aco_mu_pi;   //!
-   TBranch        *b_aco_mu_rho;   //!
-   TBranch        *b_aco_mu_a1;   //!
-   TBranch        *b_alphaAngle_mu_pi_1;   //!
-   TBranch        *b_alphaAngle_mu_pi_2;   //!
+   TBranch        *b_aco_e_pi;   //!
+   TBranch        *b_aco_e_rho;   //!
+   TBranch        *b_aco_e_a1;   //!
+   TBranch        *b_alphaAngle_e_pi_1;   //!
+   TBranch        *b_alphaAngle_e_pi_2;   //!
    TBranch        *b_PV_x;   //!
    TBranch        *b_PV_y;   //!
    TBranch        *b_PV_z;   //!
@@ -368,6 +385,24 @@ public :
    TBranch        *b_sv_x_2;   //!
    TBranch        *b_sv_y_2;   //!
    TBranch        *b_sv_z_2;   //!
+   TBranch        *b_PVBS_cov00;   //!
+   TBranch        *b_PVBS_cov10;   //!
+   TBranch        *b_PVBS_cov11;   //!
+   TBranch        *b_PVBS_cov20;   //!
+   TBranch        *b_PVBS_cov21;   //!
+   TBranch        *b_PVBS_cov22;   //!
+   TBranch        *b_sv_cov00_1;   //!
+   TBranch        *b_sv_cov10_1;   //!
+   TBranch        *b_sv_cov11_1;   //!
+   TBranch        *b_sv_cov20_1;   //!
+   TBranch        *b_sv_cov21_1;   //!
+   TBranch        *b_sv_cov22_1;   //!
+   TBranch        *b_sv_cov00_2;   //!
+   TBranch        *b_sv_cov10_2;   //!
+   TBranch        *b_sv_cov11_2;   //!
+   TBranch        *b_sv_cov20_2;   //!
+   TBranch        *b_sv_cov21_2;   //!
+   TBranch        *b_sv_cov22_2;   //!
    TBranch        *b_pi_pt_1;   //!
    TBranch        *b_pi_eta_1;   //!
    TBranch        *b_pi_phi_1;   //!
@@ -425,7 +460,6 @@ public :
    TBranch        *b_pi0_pdgId_2;   //!
    TBranch        *b_pi0_Energy_2;   //!
    TBranch        *b_leadTkPtOverTauPt_2;   //!
-   TBranch        *b_strip_pt_2;   //!
    TBranch        *b_weight;   //!
    TBranch        *b_genWeight;   //!
    TBranch        *b_LHEReweightingWeight_SM;   //!
@@ -490,8 +524,8 @@ public :
    TBranch        *b_w_Tau_e_FakeRate;   //!
    TBranch        *b_w_Tau_mu_FakeRate;   //!
    TBranch        *b_w_Trigger;   //!
-   TBranch        *b_w_SingleMuon_leg1;   //!
-   TBranch        *b_w_CrossTrigger_Muon_leg1;   //!
+   TBranch        *b_w_SingleElectron_leg1;   //!
+   TBranch        *b_w_CrossTrigger_Electron_leg1;   //!
    TBranch        *b_w_CrossTrigger_Tau_leg2;   //!
    TBranch        *b_iso_1;   //!
 
@@ -514,9 +548,9 @@ ntuple::ntuple(TTree *tree) : fChain(0)
 // if parameter tree is not specified (or zero), connect the file
 // used to generate this class and read the Tree.
    if (tree == 0) {
-      TFile *f = (TFile*)gROOT->GetListOfFiles()->FindObject("root://eoscms.cern.ch//eos/cms/store/group/phys_tau/lrussell/forAliaksei/old/oldTuples/Run3_2022EE/mt/GluGluHTo2Tau_UncorrelatedDecay_UnFiltered/nominal/merged.root");
+      TFile *f = (TFile*)gROOT->GetListOfFiles()->FindObject("root://eoscms.cern.ch//eos/cms/store/group/phys_tau/lrussell/forAliaksei/old/oldTuples/Run3_2022EE/et/GluGluHTo2Tau_UncorrelatedDecay_UnFiltered/nominal/merged.root");
       if (!f || !f->IsOpen()) {
-         f = new TFile("root://eoscms.cern.ch//eos/cms/store/group/phys_tau/lrussell/forAliaksei/old/oldTuples/Run3_2022EE/mt/GluGluHTo2Tau_UncorrelatedDecay_UnFiltered/nominal/merged.root");
+         f = new TFile("root://eoscms.cern.ch//eos/cms/store/group/phys_tau/lrussell/forAliaksei/old/oldTuples/Run3_2022EE/et/GluGluHTo2Tau_UncorrelatedDecay_UnFiltered/nominal/merged.root");
       }
       f->GetObject("ntuple",tree);
 
@@ -599,8 +633,8 @@ void ntuple::Init(TTree *tree)
    fChain->SetBranchAddress("met_covYY", &met_covYY, &b_met_covYY);
    fChain->SetBranchAddress("met_dphi_1", &met_dphi_1, &b_met_dphi_1);
    fChain->SetBranchAddress("met_dphi_2", &met_dphi_2, &b_met_dphi_2);
-   fChain->SetBranchAddress("trg_singlemuon", &trg_singlemuon, &b_trg_singlemuon);
-   fChain->SetBranchAddress("trg_mt_cross", &trg_mt_cross, &b_trg_mt_cross);
+   fChain->SetBranchAddress("trg_singleelectron", &trg_singleelectron, &b_trg_singleelectron);
+   fChain->SetBranchAddress("trg_et_cross", &trg_et_cross, &b_trg_et_cross);
    fChain->SetBranchAddress("idDeepTau2018v2p5VSjet_2", &idDeepTau2018v2p5VSjet_2, &b_idDeepTau2018v2p5VSjet_2);
    fChain->SetBranchAddress("idDeepTau2018v2p5VSmu_2", &idDeepTau2018v2p5VSmu_2, &b_idDeepTau2018v2p5VSmu_2);
    fChain->SetBranchAddress("idDeepTau2018v2p5VSe_2", &idDeepTau2018v2p5VSe_2, &b_idDeepTau2018v2p5VSe_2);
@@ -647,11 +681,11 @@ void ntuple::Init(TTree *tree)
    fChain->SetBranchAddress("seeding_jpt_2", &seeding_jpt_2, &b_seeding_jpt_2);
    fChain->SetBranchAddress("seeding_jeta_2", &seeding_jeta_2, &b_seeding_jeta_2);
    fChain->SetBranchAddress("seeding_jphi_2", &seeding_jphi_2, &b_seeding_jphi_2);
-   fChain->SetBranchAddress("aco_mu_pi", &aco_mu_pi, &b_aco_mu_pi);
-   fChain->SetBranchAddress("aco_mu_rho", &aco_mu_rho, &b_aco_mu_rho);
-   fChain->SetBranchAddress("aco_mu_a1", &aco_mu_a1, &b_aco_mu_a1);
-   fChain->SetBranchAddress("alphaAngle_mu_pi_1", &alphaAngle_mu_pi_1, &b_alphaAngle_mu_pi_1);
-   fChain->SetBranchAddress("alphaAngle_mu_pi_2", &alphaAngle_mu_pi_2, &b_alphaAngle_mu_pi_2);
+   fChain->SetBranchAddress("aco_e_pi", &aco_e_pi, &b_aco_e_pi);
+   fChain->SetBranchAddress("aco_e_rho", &aco_e_rho, &b_aco_e_rho);
+   fChain->SetBranchAddress("aco_e_a1", &aco_e_a1, &b_aco_e_a1);
+   fChain->SetBranchAddress("alphaAngle_e_pi_1", &alphaAngle_e_pi_1, &b_alphaAngle_e_pi_1);
+   fChain->SetBranchAddress("alphaAngle_e_pi_2", &alphaAngle_e_pi_2, &b_alphaAngle_e_pi_2);
    fChain->SetBranchAddress("PV_x", &PV_x, &b_PV_x);
    fChain->SetBranchAddress("PV_y", &PV_y, &b_PV_y);
    fChain->SetBranchAddress("PV_z", &PV_z, &b_PV_z);
@@ -674,6 +708,24 @@ void ntuple::Init(TTree *tree)
    fChain->SetBranchAddress("sv_x_2", &sv_x_2, &b_sv_x_2);
    fChain->SetBranchAddress("sv_y_2", &sv_y_2, &b_sv_y_2);
    fChain->SetBranchAddress("sv_z_2", &sv_z_2, &b_sv_z_2);
+   fChain->SetBranchAddress("PVBS_cov00", &PVBS_cov00, &b_PVBS_cov00);
+   fChain->SetBranchAddress("PVBS_cov10", &PVBS_cov10, &b_PVBS_cov10);
+   fChain->SetBranchAddress("PVBS_cov11", &PVBS_cov11, &b_PVBS_cov11);
+   fChain->SetBranchAddress("PVBS_cov20", &PVBS_cov20, &b_PVBS_cov20);
+   fChain->SetBranchAddress("PVBS_cov21", &PVBS_cov21, &b_PVBS_cov21);
+   fChain->SetBranchAddress("PVBS_cov22", &PVBS_cov22, &b_PVBS_cov22);
+   fChain->SetBranchAddress("sv_cov00_1", &sv_cov00_1, &b_sv_cov00_1);
+   fChain->SetBranchAddress("sv_cov10_1", &sv_cov10_1, &b_sv_cov10_1);
+   fChain->SetBranchAddress("sv_cov11_1", &sv_cov11_1, &b_sv_cov11_1);
+   fChain->SetBranchAddress("sv_cov20_1", &sv_cov20_1, &b_sv_cov20_1);
+   fChain->SetBranchAddress("sv_cov21_1", &sv_cov21_1, &b_sv_cov21_1);
+   fChain->SetBranchAddress("sv_cov22_1", &sv_cov22_1, &b_sv_cov22_1);
+   fChain->SetBranchAddress("sv_cov00_2", &sv_cov00_2, &b_sv_cov00_2);
+   fChain->SetBranchAddress("sv_cov10_2", &sv_cov10_2, &b_sv_cov10_2);
+   fChain->SetBranchAddress("sv_cov11_2", &sv_cov11_2, &b_sv_cov11_2);
+   fChain->SetBranchAddress("sv_cov20_2", &sv_cov20_2, &b_sv_cov20_2);
+   fChain->SetBranchAddress("sv_cov21_2", &sv_cov21_2, &b_sv_cov21_2);
+   fChain->SetBranchAddress("sv_cov22_2", &sv_cov22_2, &b_sv_cov22_2);
    fChain->SetBranchAddress("pi_pt_1", &pi_pt_1, &b_pi_pt_1);
    fChain->SetBranchAddress("pi_eta_1", &pi_eta_1, &b_pi_eta_1);
    fChain->SetBranchAddress("pi_phi_1", &pi_phi_1, &b_pi_phi_1);
@@ -731,7 +783,6 @@ void ntuple::Init(TTree *tree)
    fChain->SetBranchAddress("pi0_pdgId_2", &pi0_pdgId_2, &b_pi0_pdgId_2);
    fChain->SetBranchAddress("pi0_Energy_2", &pi0_Energy_2, &b_pi0_Energy_2);
    fChain->SetBranchAddress("leadTkPtOverTauPt_2", &leadTkPtOverTauPt_2, &b_leadTkPtOverTauPt_2);
-   fChain->SetBranchAddress("strip_pt_2", &strip_pt_2, &b_strip_pt_2);
    fChain->SetBranchAddress("weight", &weight, &b_weight);
    fChain->SetBranchAddress("genWeight", &genWeight, &b_genWeight);
    fChain->SetBranchAddress("LHEReweightingWeight_SM", &LHEReweightingWeight_SM, &b_LHEReweightingWeight_SM);
@@ -796,8 +847,8 @@ void ntuple::Init(TTree *tree)
    fChain->SetBranchAddress("w_Tau_e_FakeRate", &w_Tau_e_FakeRate, &b_w_Tau_e_FakeRate);
    fChain->SetBranchAddress("w_Tau_mu_FakeRate", &w_Tau_mu_FakeRate, &b_w_Tau_mu_FakeRate);
    fChain->SetBranchAddress("w_Trigger", &w_Trigger, &b_w_Trigger);
-   fChain->SetBranchAddress("w_SingleMuon_leg1", &w_SingleMuon_leg1, &b_w_SingleMuon_leg1);
-   fChain->SetBranchAddress("w_CrossTrigger_Muon_leg1", &w_CrossTrigger_Muon_leg1, &b_w_CrossTrigger_Muon_leg1);
+   fChain->SetBranchAddress("w_SingleElectron_leg1", &w_SingleElectron_leg1, &b_w_SingleElectron_leg1);
+   fChain->SetBranchAddress("w_CrossTrigger_Electron_leg1", &w_CrossTrigger_Electron_leg1, &b_w_CrossTrigger_Electron_leg1);
    fChain->SetBranchAddress("w_CrossTrigger_Tau_leg2", &w_CrossTrigger_Tau_leg2, &b_w_CrossTrigger_Tau_leg2);
    fChain->SetBranchAddress("iso_1", &iso_1, &b_iso_1);
    Notify();
