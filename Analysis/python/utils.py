@@ -331,39 +331,28 @@ decayProngCuts = {
 }
 
 lib_histos = {
-    'm_vis' : [240,0.,240.],
-    'mt_1'  : [250,0.,250.],
-    'met'   : [250,0.,250.],
-    'pt_1'  : [200,0.,200.],
-    'pt_2'  : [200,0.,200.],
-    'eta_1' : [50,-2.5,2.5],
-    'eta_2' : [50,-2.5,2.5],
+    'm_vis' :   [240,0.,240.],
+    'mt_1'  :   [250,0.,250.],
+    'met'   :   [250,0.,250.],
+    'pt_1'  :  [200,0.,200.],
+    'pt_2'  :  [200,0.,200.],
+    'eta_1' :  [50,-2.5,2.5],
+    'eta_2' :  [50,-2.5,2.5],
     'ipsig_1': [200,0.,10.],
     'ipsig_2': [200,0.,10.],
     'n_jets' : [10,-0.5,9.5],
-    'n_bjets' : [10,-0.5,9.5],
-    'jpt_1' : [60,0.,300.],
+    'n_bjets': [10,-0.5,9.5],
+    'jpt_1' :   [60,0.,300.],
     'jpt_2' : [60,0.,300.],
-    'mjj' : [200,0.,2000.],
+    'jeta_1': [60,-6.0,6.0],
+    'jeta_2': [60,-6.0,6.0],
+    'mjj'   : [200,0.,2000.],
     'jdeta' : [80,0.,8.],
 }
 
-lib_datacards_histos = {
-    'bdt_tautau' : [20,0.0,1.0],
-    'bdt_jetFakes': [20,0.0,1.0],
-    'bdt_signal': [20,0.0,1.0],
-}
-lib_datacards_1Dhistos = {
-    'bdt_tautau' : [20,0.0,1.0],
-    'bdt_jetFakes': [20,0.0,1.0],
-    'bdt_signal': [20,0.0,1.0],
-}
-lib_datacards_2Dhistos = {
-    'lep_pi'    : [20,0.0,1.0,40,0,360],
-    'lep_rho'   : [20,0.0,1.0,40,0,360],
-    'lep_a1_1pr': [20,0.0,1.0,40,0,360],
-    'lep_a1_3pr': [20,0.0,1.0,40,0,360],
-}
+lib_datacards_1Dhistos = ['bdt_ditau','bdt_fakes','bdt_signal']
+
+lib_datacards_2Dhistos = ['lep_pi','lep_rho','lep_a1_1pr','lep_a1_3pr']
 
 lib_phiCP_histos = {    
     'alpha_lep_pi': [90,0.,90.],
@@ -581,6 +570,60 @@ def rebinHisto(hist,bins,suffix):
         newhist.SetBinError(bin_id,e_update)
     return newhist
 
+def slice2DHisto(hist,xmin,xmax,bins,suffix):
+    nbinsX = hist.GetNbinsX()
+    nbinsY = hist.GetNbinsY()
+    newbins = len(bins)-1
+    name = hist.GetName()+'_'+suffix
+    newhist = ROOT.TH1D(name,"",newbins,array('d',list(bins)))
+    for xb in range(1,nbinsX+1):
+        for yb in range(1,nbinsY+1):
+            xcenter = hist.GetXaxis().GetBinCenter(xb)
+            if xcenter>xmin and xcenter<xmax:
+                ycenter = hist.GetYaxis().GetBinCenter(yb)
+                bin_id = newhist.GetXaxis().FindBin(ycenter)
+                xnew = newhist.GetBinContent(bin_id)
+                enew = newhist.GetBinError(bin_id)
+                xbin = hist.GetBinContent(xb,yb)
+                ebin = hist.GetBinError(xb,yb)
+                x_update = xnew + xbin
+                e_update = math.sqrt(enew*enew+ebin*ebin)
+                newhist.SetBinContent(bin_id,x_update)
+                newhist.SetBinError(bin_id,e_update)
+    return newhist
+                
+
+def rebin2DHisto(hist,binsX,binsY,suffix):
+    nbinsX = hist.GetNbinsX()
+    nbinsY = hist.GetNbinsY()
+    newbinsX = len(binsX)-1
+    newbinsY = len(binsY)-1
+    name = hist.GetName()+"_"+suffix
+    newhist = ROOT.TH2D(name,"",newbinsX,array('d',list(binsX)),newbinsY,array('d',list(binsY)))
+    for xb in range(1,nbinsX+1):
+        for yb in range(1,nbinsY+1):
+            xcenter = hist.GetXaxis().GetBinCenter(xb)
+            ycenter = hist.GetYaxis().GetBinCenter(yb)
+            binx = newhist.GetXaxis().FindBin(xcenter)
+            biny = newhist.GetYaxis().FindBin(ycenter)
+            xbin = hist.GetBinContent(xb,yb)
+            ebin = hist.GetBinError(xb,yb)
+            xnew = newhist.GetBinContent(binx,biny)
+            enew = newhist.GetBinError(binx,biny)
+            x_update = xbin + xnew;
+            e_update = math.sqrt(ebin*ebin + enew*enew);
+            newhist.SetBinContent(binx,biny,x_update)
+            newhist.SetBinError(binx,biny,e_update)
+    return newhist
+
+def ReplicaHist(hist,name):
+    nbins = hist.GetNbinsX()
+    xbins = []
+    for ib in range(1,nbins+2):
+        xbins.append(hist.GetXaxis().GetBinLowEdge(ib))
+    histOutput = ROOT.TH1D(name,'',nbins,array('d',list(xbins)))
+    return histOutput
+
 def copyHist(inputHist,outputHist):
     nbins = inputHist.GetNbinsX()
     for ib in range(1,nbins+1):
@@ -649,7 +692,7 @@ def extractTagProbeHistos(f,bins,generator,era,channel,isSecond):
 
 # extracting histos from ROOT file created by RunSelection.py 
 def extractHistos(f,var,bins,generator,era,channel):
-    is2022 = era=='Run3_2022preEE' or era=='Run3_2022postEE' or era=='Run3_2022'
+    is2022 = era=='Run3_2022preEE' or era=='Run3_2022postEE' or era=='Run3_2022' or era=='Run3'
     samples = ['data','dy','top','vv','wjets']
     dy_samples = []
     dy_base = ''
@@ -677,8 +720,10 @@ def extractHistos(f,var,bins,generator,era,channel):
                 for typ in typ_labels:
                     if sample=='dy':
                         name = 'dy_%s_%s_%s_%s'%(var,sign,iso,typ)
+                        
                         nameInput = '%s_%s_%s_%s_%s'%(dy_base,var,sign,iso,typ)
                         histo = f.Get(nameInput).Clone(name)
+#                        print(nameInput,histo)
                         for dy_sample in dy_samples:
                             dy_name = '%s_%s_%s_%s_%s'%(dy_sample,var,sign,iso,typ)
                             dy_histo = f.Get(dy_name)
@@ -687,6 +732,7 @@ def extractHistos(f,var,bins,generator,era,channel):
                     else:
                         name = '%s_%s_%s_%s_%s'%(sample,var,sign,iso,typ)
                         histo = f.Get(name)
+#                        print(name,histo)
                         hists[name] = rebinHisto(histo,bins,'rebinned')
     return hists
 
