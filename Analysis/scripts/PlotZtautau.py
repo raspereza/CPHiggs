@@ -457,7 +457,7 @@ if __name__ == "__main__":
         suffix_sf = '_promptSF_tauSF'
 
     suffix = 'x%s%s%s%s'%(suffix_mt,suffix_xtrig,suffix_ip,suffix_sf)
-    inputFileName = '%s/%s_%s_%s.root'%(basedir,chan,era,suffix)
+    inputFileName = '%s/baseline/%s_%s_%s.root'%(basedir,chan,era,suffix)
     if os.path.isfile(inputFileName):
         print('')
         print('Loading ROOT file %s'%(inputFileName))

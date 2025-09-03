@@ -11,11 +11,37 @@ import os
 import CPHiggs.Analysis.styles as styles
 import CPHiggs.Analysis.utils as utils
 
-def FitFuncSF(x,par):
+# Fit function (SF vs pT) : pol2
+def FitFunc(x,par):
     b = par[0]+par[1]*x[0]+par[2]*x[0]*x[0]
     return b
 
-def FitFunc(x,par):
+# uncertainty band
+def Band(x,par):
+    W = 0
+    xx = 1
+    for i in range(0,5):
+        W += par[i]*xx
+        xx *= x[0]
+    return ROOT.TMath.Sqrt(W)
+
+# upper uncertainty 
+def FitFuncPlus(x,par):
+    parBand = []
+    # shift index parameter by 3
+    for i in range(0,5):
+        parBand.append(par[i+3])
+    return FitFunc(x,par)+Band(x,parBand)
+
+# lower uncertainty 
+def FitFuncMinus(x,par):
+    parBand = []
+    # shift index parameter by 2
+    for i in range(0,5):
+        parBand.append(par[i+3])
+    return FitFunc(x,par)-Band(x,parBand)
+
+def FitFuncMass(x,par):
     a = (x[0]-par[1])/par[2]
     b = (x[0]-par[1])/par[3]
     if x[0]>par[1]:
@@ -131,8 +157,8 @@ def PlotTagProbe(eff_data,eff_mc,**kwargs):
     sf.GetXaxis().SetRangeUser(fmin,fmax)
     styles.InitRatioHist(sf)
 
-    print 
-    fitSF = ROOT.TF1('fitFuncSF',FitFuncSF,fmin,fmax,3)
+    print('') 
+    fitSF = ROOT.TF1('fitFunc',FitFunc,fmin,fmax,3)
     fitSF.SetLineColor(4)
     fitSF.SetLineWidth(2)
     fitSF.SetParName(0,'a0')
@@ -152,7 +178,43 @@ def PlotTagProbe(eff_data,eff_mc,**kwargs):
     if secondLep:
         postfix += '_2'
     dummy = styles.MakeCanvas('dummy_'+postfix,'',400,400)
-    sf.Fit(fitSF,"R")
+    fitRes = sf.Fit(fitSF,"S")
+    cov = fitRes.GetCovarianceMatrix()
+    err_par0 = fitSF.GetParError(0)
+    err_par1 = fitSF.GetParError(1)
+    err_par2 = fitSF.GetParError(2)
+    corr00 = cov(0,0)/(err_par0*err_par0)
+    corr01 = cov(0,1)/(err_par0*err_par1)
+    corr02 = cov(0,2)/(err_par0*err_par2)
+    corr11 = cov(1,1)/(err_par1*err_par1)
+    corr12 = cov(1,2)/(err_par1*err_par2)
+    corr22 = cov(2,2)/(err_par2*err_par2)
+
+    # upper uncertainty
+    # 3 + 5 = 8 parameters
+    fitSF_up = ROOT.TF1('FitFuncPlus',FitFuncPlus,fmin,fmax,8)
+    fitSF_up.SetLineColor(ROOT.kRed)
+    fitSF_up.SetParameter(0,fitSF.GetParameter(0))
+    fitSF_up.SetParameter(1,fitSF.GetParameter(1))
+    fitSF_up.SetParameter(2,fitSF.GetParameter(2))
+    fitSF_up.SetParameter(3,cov(0,0))
+    fitSF_up.SetParameter(4,2*cov(0,1))
+    fitSF_up.SetParameter(5,2*cov(0,2)+cov(1,1))
+    fitSF_up.SetParameter(6,2*cov(1,2))
+    fitSF_up.SetParameter(7,cov(2,2))
+    
+    # lower uncertainty
+    fitSF_down = ROOT.TF1('FitFuncMinus',FitFuncMinus,fmin,fmax,8)
+    fitSF_down.SetLineColor(ROOT.kRed)
+    for i in range(0,8):
+        fitSF_down.SetParameter(i,fitSF_up.GetParameter(i))
+    
+    print('')    
+    print('Correlation matrix ->')
+    print('%8.5f  %8.5f  %8.5f'%(corr00,corr01,corr02))
+    print('%8.5f  %8.5f  %8.5f'%(corr01,corr11,corr12))
+    print('%8.5f  %8.5f  %8.5f'%(corr02,corr12,corr22))
+    
     hfit = ROOT.TH1D("hfit_"+postfix,"",200,fmin,fmax)
     ROOT.TVirtualFitter.GetFitter().GetConfidenceIntervals(hfit,0.68)
     styles.InitModel(hfit,xtit,ytit,4)
@@ -180,9 +242,11 @@ def PlotTagProbe(eff_data,eff_mc,**kwargs):
     eff_data.Draw('e')
     eff_mc.Draw('esame')
 
-    leg = ROOT.TLegend(0.25,0.5,0.5,0.75)
+    leg = ROOT.TLegend(0.20,0.6,0.45,0.87)
+    if chan=='ee':
+        leg = ROOT.TLegend(0.45,0.05,0.7,0.32)
     styles.SetLegendStyle(leg)
-    leg.SetTextSize(0.05)
+    leg.SetTextSize(0.06)
     leg.SetHeader(header)
     leg.AddEntry(eff_data,'data','lp')
     leg.AddEntry(eff_mc,'simulation','lp')
@@ -230,7 +294,7 @@ def PlotTagProbe(eff_data,eff_mc,**kwargs):
         suffix += '_2'
     outputGraphics = '%s/figures/SF_%s_binEta%s_%s_%s.png'%(utils.outputFolder,chan,binEta,era,suffix)    
     canvas.Print(outputGraphics)
-    return hfit
+    return hfit,fitSF,fitSF_up,fitSF_down
     
 def ComputeYield(hist):
 
@@ -283,7 +347,7 @@ def RunTagProbe(hists,**kwargs):
     hist.GetXaxis().SetTitle(xtitle)
     hist.GetYaxis().SetTitle('Events')
 
-    fitFunc = ROOT.TF1('fitFunc',FitFunc,xmin,xmax,9)
+    fitFunc = ROOT.TF1('fitFuncMass',FitFuncMass,xmin,xmax,9)
     fitFunc.SetLineColor(2)
     # initialize parameters
     # background exponent
@@ -336,7 +400,7 @@ def RunTagProbe(hists,**kwargs):
     for npar in range(0,7):
         sigFunc.SetParameter(npar,fitFuncAlt.GetParameter(npar))
     nCount = sigFunc.Integral(70.,110.)
-    hist.Fit('fitFunc','LR')
+    hist.Fit('fitFuncMass','LR')
     for npar in range(0,7):
         sigFunc.SetParameter(npar,fitFunc.GetParameter(npar))
     nIntegral = sigFunc.Integral(70.,110.)
@@ -381,8 +445,8 @@ if __name__ == "__main__":
     parser.add_argument('-nbins','--nbins', dest='nbins', type=int, default=60)
     parser.add_argument('-xmin','--xmin', dest='xmin', type=float, default=60.0)
     parser.add_argument('-xmax','--xmax', dest='xmax', type=float, default=120.)
-    parser.add_argument('-ymin','--ymin', dest='ymin', type=float, default=0.501)
-    parser.add_argument('-ymax','--ymax', dest='ymax', type=float, default=1.499)
+    parser.add_argument('-ymin','--ymin', dest='ymin', type=float, default=0.701)
+    parser.add_argument('-ymax','--ymax', dest='ymax', type=float, default=1.299)
     parser.add_argument('-binEta','--binEta',dest='binEta',default='1',choices=['1','2','3'])
     parser.add_argument('-generator', '--generator',dest='generator',default='amcatnlo',choices=['amcatnlo','MG','powheg'])
     
@@ -410,7 +474,7 @@ if __name__ == "__main__":
         xb = xmin + width*float(i)
         bins.append(xb)
 
-    inputFileName = '%s/selection/%s_%s_x.root'%(utils.outputFolder,chan,era)
+    inputFileName = '%s/selection/ipSig/%s_%s_x.root'%(utils.outputFolder,chan,era)
     inputFile = ROOT.TFile(inputFileName,'read')
     print('')
     print(inputFile)
@@ -436,6 +500,9 @@ if __name__ == "__main__":
     effMC_2D = ROOT.TH2D('effMC','',nbinsPt,array('d',list(ptBins)),nbinsEta,array('d',list(etaBins)))
 
     hfit = {}
+    fitSF = {}
+    fitSF_up = {}
+    fitSF_down = {}
     effData_1D = ROOT.TH1D('effData_eta'+binEta,'',nbinsPt,array('d',list(ptBins)))
     effMC_1D = ROOT.TH1D('effMC_eta'+binEta,'',nbinsPt,array('d',list(ptBins)))
     for iPt in range(1,nbinsPt+1):
@@ -501,7 +568,7 @@ if __name__ == "__main__":
         effMC_1D.SetBinError(iPt,effErrMC)
         effMC_2D.SetBinContent(iPt,iEta,effMC)
         effMC_2D.SetBinError(iPt,iEta,effErrMC)
-    hfit[binEta] = PlotTagProbe(effData_1D,effMC_1D,era=era,channel=chan,binEta=binEta,ymin=ymin,ymax=ymax,generator=generator,secondLep=secondLep)
+    hfit[binEta],fitSF[binEta],fitSF_up[binEta],fitSF_down[binEta] = PlotTagProbe(effData_1D,effMC_1D,era=era,channel=chan,binEta=binEta,ymin=ymin,ymax=ymax,generator=generator,secondLep=secondLep)
 
     suffix = generator
     if secondLep:
@@ -516,4 +583,7 @@ if __name__ == "__main__":
     effMC_2D.Write('effMC'+postfixLep)
     for h in hfit:
         hfit[h].Write('hfit_binEta'+h+postfixLep)
+        fitSF[h].Write('fitFunc_binEta'+h+postfixLep+'_central')
+        fitSF_up[h].Write('fitFunc_binEta'+h+postfixLep+'_up')
+        fitSF_down[h].Write('fitFunc_binEta'+h+postfixLep+'_down')
     outputFile.Close()

@@ -11,7 +11,6 @@ import CPHiggs.Analysis.utils as utils
 
 XTitle = {
     'mm': {
-        'mt_1'  : "m_{T} (GeV)",
         'pt_1'  : "leading #mu p_{T} (GeV)",
         'eta_1' : "leading #mu #eta",
         'pt_2'  : "trailing #mu p_{T} (GeV)",
@@ -19,10 +18,15 @@ XTitle = {
         'met': "E_{T}^{mis} (GeV)",
         'm_vis': "m_{#mu#mu} (GeV)",
         'ipsig_1': "leading #mu IP sig",
-        'ipsig_2': "trailing #mu IP sig"
+        'ipsig_2': "trailing #mu IP sig",
+        'jpt_1': "leading jet p_{T} (GeV)",
+        'jpt_2': "trailing jet p_{T} (GeV)",
+        'jeta_1': "leading jet #eta",
+        'jeta_2': "trailing jet #eta",
+        'n_jets': "Number of jets",
+        'n_bjets': "Number of b-tagged jets"
     },
     'ee': {
-        'mt_1'  : "m_{T} (GeV)",
         'pt_1'  : "leading elec p_{T} (GeV)",
         'eta_1' : "leading elec #eta",
         'pt_2'  : "trailing elec p_{T} (GeV)",
@@ -30,7 +34,13 @@ XTitle = {
         'met': "E_{T}^{mis} (GeV)",
         'm_vis': "m_{ee} (GeV)",
 	'ipsig_1': "leading elec IP sig",
-        'ipsig_2': "trailing elec IP sig"
+        'ipsig_2': "trailing elec IP sig",
+        'jpt_1': "leading jet p_{T} (GeV)",
+        'jpt_2': "trailing jet p_{T} (GeV)",
+        'jeta_1': "leading jet #eta",
+        'jeta_2': "trailing jet #eta",
+        'n_jets': "Number of jets",
+        'n_bjets': "Number of b-tagged jets"
     }
 }
 
@@ -44,7 +54,7 @@ def Plot(hists,**kwargs):
     ymin = kwargs.get('ymin',0.5)
     ymax = kwargs.get('ymax',1.5)
     suffix = kwargs.get('suffix','_x')
-    calibrDY = kwargs.get('calibrDY',False)
+    calibrDY = kwargs.get('calibrDY',1.0)
     
     # histograms
     h_data = hists['data_'+var+'_os_iso_all'].Clone('h_data')
@@ -70,8 +80,8 @@ def Plot(hists,**kwargs):
     x_tot   = x_zll + x_top + x_vv + x_wjets
     
     scale = (x_data-x_top-x_wjets-x_vv)/x_zll
-    if calibrDY:
-        h_zll.Scale(scale)
+    
+    h_zll.Scale(calibrDY)
     x_zll   = h_zll.GetSumOfWeights() 
     x_tot   = x_zll + x_top + x_vv + x_wjets
     
@@ -170,7 +180,7 @@ def Plot(hists,**kwargs):
     canvas.cd()
     canvas.SetSelected(canvas)
     canvas.Update()
-    print('')
+    print('variable %s is plotted,   DY scale factor = %6.4f'%(var,scale))
     basedir = '%s/figures'%(utils.outputFolder)
     outputGraphics = '%s/%s_%s_%s%s.png'%(basedir,var,chan,era,suffix)
     canvas.Print(outputGraphics)
@@ -194,13 +204,12 @@ if __name__ == "__main__":
     parser.add_argument('-applyIP2','--applyIP2',dest='applyIP2',type=int,default=0)
     parser.add_argument('-applySF', '--applySF', dest='applySF' ,type=int,default=0)
     parser.add_argument('-generator', '--generator', dest='generator', default='amcatnlo',choices=['amcatnlo','MG','powheg'])
-    parser.add_argument('-calibrDY','--calibrDY',dest='calibrDY',type=int,default=0) # calibrate DY
+    parser.add_argument('-analysisType', '--analysisType', dest='analysisType', default='baseline',choices=['baseline','ipSig','datacardsPhiCP'])
+    parser.add_argument('-calibrDY','--calibrDY',dest='calibrDY',type=float,default=1.0) # calibrate DY
 
     args = parser.parse_args()
 
-    applyCalibrDY = False
-    if args.calibrDY==1:
-        applyCalibrDY = True
+    calibrDY = args.calibrDY
     
     era = args.era
     chan = args.channel
@@ -211,6 +220,7 @@ if __name__ == "__main__":
     ymin = args.ymin
     ymax = args.ymax
     generator = args.generator
+    analysisType = args.analysisType
     
     plotLegend = True
     if var=='eta_1' or var=='eta_2':
@@ -227,7 +237,7 @@ if __name__ == "__main__":
         xb = xmin + width*float(i)
         bins.append(xb)
         
-    basedir = utils.outputFolder+'/selection'
+    basedir = utils.outputFolder+'/selection/'+analysisType
 
     suffix_ip1 = ''
     suffix_ip2 = ''
@@ -255,8 +265,6 @@ if __name__ == "__main__":
     inputFile = ROOT.TFile(inputFileName,'read')
     hists = utils.extractHistos(inputFile,var,bins,generator,era,chan)
     suffixOut = suffix + '_' + generator
-    if applyCalibrDY:
-        suffixOut = suffix + '_' + generator + '_calibrDY'
-    Plot(hists,era=era,var=var,channel=chan,ymin=ymin,ymax=ymax,plotLegend=plotLegend,suffix=suffixOut,calibrDY=applyCalibrDY)
+    Plot(hists,era=era,var=var,channel=chan,ymin=ymin,ymax=ymax,plotLegend=plotLegend,suffix=suffixOut,calibrDY=calibrDY)
 
     
