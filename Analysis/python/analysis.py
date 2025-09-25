@@ -23,7 +23,7 @@ class AnalysisCuts:
         self.ptLep2Cut = kwargs.get('ptLep2Cut',20.)
 
         self.ptSingleLepTrigger  = kwargs.get('ptSingleLepTrigger',26.) # 31 for single-e
-        self.etaSingleLepTrigger = kwargs.get('etaSingleLepTrigger',2.4) # 2.4 for single-e
+        self.etaSingleLepTrigger = kwargs.get('etaSingleLepTrigger',2.4) # 2.1 for single-e
 
         self.ptLepCrossTrigger  = kwargs.get('ptLepCrossTrigger',21.)  # 25 for e-tau
         self.etaLepCrossTrigger = kwargs.get('etaLepCrossTrigger',2.1) # 2.1 for e-tau
@@ -363,13 +363,13 @@ class analysisSample:
         # datacard production
         if analysisType=='datacardsPhiCP':
             # BDT variable : binning
-            nbins_bdt = 50
+            nbins_bdt = 100
             xmin_bdt = 0.0
             xmax_bdt = 1.0
             width_bdt = (xmax_bdt-xmin_bdt)/float(nbins_bdt)
             xbins_bdt = []
             for ib in range(0,nbins_bdt+1):
-                xb = xmin_bdt + width*float(ib)
+                xb = xmin_bdt + width_bdt*float(ib)
                 xbins_bdt.append(xb)
             
             nbins_phicp = 40
@@ -1009,10 +1009,10 @@ class analysisSample:
             ## total weight ##
             ##################
             Weight = weight[0]
-            if self.ismc:
-                if channel=='mm':
-                    trg_weight = max(0.1,w_Trigger[0])
-                    Weight /= trg_weight
+#            if self.ismc:
+#                if channel=='mm':
+#                    trg_weight = max(0.1,w_Trigger[0])
+#                    Weight /= trg_weight
 
             # prevent large weights
             if ROOT.TMath.Abs(Weight)>10.0:
