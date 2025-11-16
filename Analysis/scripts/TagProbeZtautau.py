@@ -293,7 +293,7 @@ if __name__ == "__main__":
 
     from argparse import ArgumentParser
     parser = ArgumentParser()
-    parser.add_argument('-era' ,'--era', dest='era', default='Run3_2022', choices=['Run3_2022','Run3_2023','Run3'])
+    parser.add_argument('-era' ,'--era', dest='era', default='Run3', choices=['Run3_2022','Run3_2023','Run3'])
     parser.add_argument('-channel','--channel', dest='channel', default='mt',choices=['mt','et'])
     parser.add_argument('-useCrossTrigger','--useCrossTrigger',dest='useCrossTrigger',action='store_true')
     parser.add_argument('-ymin','--ymin', dest='ymin', type=float, default=0.601)
@@ -322,15 +322,9 @@ if __name__ == "__main__":
     nbinsEta = histEtaBins.GetNbinsX()
 
     ptBins = []
-    nfirst = 1
-    if chan=='et':
-        nfirst = 2
-    for iPt in range(nfirst,nbinsPt+2):
+    for iPt in range(1,nbinsPt+1):
         ptBins.append(histPtBins.GetBinLowEdge(iPt))
-
-    nbinsPtX = nbinsPt
-    if chan=='et':
-        nbinsPtX = nbinsPt - 1
+    ptBins.append(120.)
 
     etaBins = []
     for iEta in range(1,nbinsEta+2):
@@ -360,9 +354,9 @@ if __name__ == "__main__":
     cards_folder = '%s/datacardsIpSig'%(utils.outputFolder)
     for iEta in range(1,nbinsEta+1):
         binEta = '%1i'%(iEta)
-        effData_1D = ROOT.TH1D('effData_eta'+binEta,'',nbinsPtX,array('d',list(ptBins)))
-        effMC_1D = ROOT.TH1D('effMC_eta'+binEta,'',nbinsPtX,array('d',list(ptBins)))
-        for iPt in range(nfirst,nbinsPt+1):
+        effData_1D = ROOT.TH1D('effData_eta'+binEta,'',nbinsPt,array('d',list(ptBins)))
+        effMC_1D = ROOT.TH1D('effMC_eta'+binEta,'',nbinsPt,array('d',list(ptBins)))
+        for iPt in range(1,nbinsPt+1):
             binPt = '%1i'%(iPt)
             # tag-and-probe data
             inputFileName = '%s/%s_%s_binPt%s_binEta%s_fit.root'%(cards_folder,chan,era,binPt,binEta)
@@ -376,17 +370,17 @@ if __name__ == "__main__":
             print('binPt%s_binEta%s -> Data : %4.2f+/-%4.2f : MC = %4.2f'%(binPt,binEta,xData,eData,xMC))
             inputFile.Close()
 
-    effData_2D = ROOT.TH2D('effData','',nbinsPtX,array('d',list(ptBins)),nbinsEta,array('d',list(etaBins)))
-    effMC_2D = ROOT.TH2D('effMC','',nbinsPtX,array('d',list(ptBins)),nbinsEta,array('d',list(etaBins)))
+    effData_2D = ROOT.TH2D('effData','',nbinsPt,array('d',list(ptBins)),nbinsEta,array('d',list(etaBins)))
+    effMC_2D = ROOT.TH2D('effMC','',nbinsPt,array('d',list(ptBins)),nbinsEta,array('d',list(etaBins)))
     hfit = {}
     fitSF = {}
     fitSF_up = {}
     fitSF_down = {}
     for iEta in range(1,nbinsEta+1):
         binEta = '%1i'%(iEta)
-        effData_1D = ROOT.TH1D('effData_eta'+binEta,'',nbinsPtX,array('d',list(ptBins)))
-        effMC_1D = ROOT.TH1D('effMC_eta'+binEta,'',nbinsPtX,array('d',list(ptBins)))
-        for iPt in range(1,nbinsPtX+1):
+        effData_1D = ROOT.TH1D('effData_eta'+binEta,'',nbinsPt,array('d',list(ptBins)))
+        effMC_1D = ROOT.TH1D('effMC_eta'+binEta,'',nbinsPt,array('d',list(ptBins)))
+        for iPt in range(1,nbinsPt+1):
 
             effData_1D.SetBinContent(iPt,effData[binEta][iPt-1])
             effData_1D.SetBinError(iPt,errData[binEta][iPt-1])

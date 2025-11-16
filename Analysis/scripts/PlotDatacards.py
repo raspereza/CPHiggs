@@ -38,8 +38,11 @@ def Plot(hists,**kwargs):
     blindData = kwargs.get('blindData',False)
     smooth = kwargs.get('smooth',False)
     xtitle = kwargs.get('xtitle','BDT_{sig}')
-    ymin = kwargs.get('ymin',0.401)
-    ymax = kwargs.get('ymax',1.599)
+    ymin = kwargs.get('ymin',0.601)
+    ymax = kwargs.get('ymax',1.399)
+    YAxisScale = kwargs.get('YAxisScale',20.)
+    sb_threshold = kwargs.get('sb_threshold',0.05)
+    plotCPodd = kwargs.get('plotCPodd',False)
 
     # histograms
     h_data = hists['data_obs'].Clone('h_data')
@@ -56,7 +59,8 @@ def Plot(hists,**kwargs):
     h_ps.Scale(h_sm.GetSumOfWeights()/h_ps.GetSumOfWeights())
     
     styles.InitData(h_data)
-
+    h_data.SetLineColor(ROOT.kBlack)
+    
     if smooth:     
         Flatten(h_ztt)
         Flatten(h_zll)
@@ -75,8 +79,8 @@ def Plot(hists,**kwargs):
     styles.InitModel(h_sm,"","",2)
     styles.InitModel(h_ps,"","",4)
 
-    h_sm_bkg = h_sm.Clone('h_sm_ratio')
-    h_ps_bkg = h_ps.Clone('h_ps_ratio')
+    h_sm_bkg = h_sm.Clone('h_sm_bkg')
+    h_ps_bkg = h_ps.Clone('h_ps_bkg')
     
     x_data = h_data.GetSumOfWeights()
     
@@ -111,15 +115,15 @@ def Plot(hists,**kwargs):
 
     h_tot = h_ztt.Clone("total")
 
+    nbins = h_data.GetNbinsX()
     if blindData:
-        nbins = h_data.GetNbinsX()
         for ib in range(1,nbins+1):
             xbkg = h_tot.GetBinContent(ib)
             xsm = h_sm.GetBinContent(ib)
             xps = h_ps.GetBinContent(ib)
             xsig = 0.5*(xsm+xps)
             xratio = xsig/xbkg
-            if xratio>0.05:
+            if xratio>sb_threshold:
                 h_data.SetBinContent(ib,10000000.)
                 h_data.SetBinError(ib,0.)
                 
@@ -127,15 +131,58 @@ def Plot(hists,**kwargs):
     
     h_ratio = utils.histoRatio(h_data,h_tot,'ratio')
     h_tot_ratio = utils.createUnitHisto(h_tot,'tot_ratio')
-    h_sm_bkg.Add(h_sm_bkg,h_tot,1.,1.) 
-    h_ps_bkg.Add(h_ps_bkg,h_tot,1.,1.) 
-    h_sm_ratio = utils.histoRatio(h_sm_bkg,h_tot,'ratio')
-    h_ps_ratio = utils.histoRatio(h_ps_bkg,h_tot,'ratio')
+    h_sm_bkg.Add(h_sm_bkg,h_ztt,1.,1.) 
+    h_ps_bkg.Add(h_ps_bkg,h_ztt,1.,1.) 
+    h_sm_ratio = utils.histoRatio(h_sm_bkg,h_tot,'h_sm_ratio')
+    h_ps_ratio = utils.histoRatio(h_ps_bkg,h_tot,'h_ps_ratio')
+
+    YMax = -1.
+    YMin = 10000000.
+    YMaxRatio = -1.
+    YMinRatio = 10000000.
+    for ib in range(1,nbins+1):
+        xx = h_sm.GetBinContent(ib)
+        if xx<YMin and xx>0.5:
+            YMin = xx
+        xx = h_ps.GetBinContent(ib)
+        if xx<YMin and xx>0.5:
+            YMin = xx
+        # ratio distribution
+        sig = 0.5*(h_sm.GetBinContent(ib)+h_ps.GetBinContent(ib))
+        bkg = h_tot.GetBinContent(ib)
+        sb_ratio = sig/bkg
+        xx = h_sm_ratio.GetBinContent(ib)
+        if xx>YMaxRatio:
+            YMaxRatio = xx
+        xx = h_ps_ratio.GetBinContent(ib)
+        if xx>YMaxRatio:
+            YMaxRatio =	xx
+        xx = h_tot.GetBinContent(ib)
+        if xx>YMax:
+            YMax = xx
+        condition = blindData and sb_ratio>sb_threshold        
+        if not condition: 
+            xratio = h_ratio.GetBinContent(ib)
+            if xratio>YMaxRatio:
+                YMaxRatio = xratio
+            if xratio<YMinRatio:
+                YMinRatio = xratio
+            xx = h_data.GetBinContent(ib)
+            if xx>YMax:
+                YMax = xx
+
+    YMaxRatio = 0.1*int(10*YMinRatio)+0.1
+    YMinRatio = 0.1*int(10*YMinRatio)-0.1
+    if YMinRatio<0:
+        YMinRatio = 0
+
+    YMinRatio = ymin
+    YMaxRatio = ymax
     
     styles.InitRatioHist(h_ratio)
-    h_ratio.GetYaxis().SetRangeUser(ymin,ymax)
+    h_ratio.GetYaxis().SetRangeUser(YMinRatio,YMaxRatio)
     styles.InitRatioHist(h_tot_ratio)
-    h_tot_ratio.GetYaxis().SetRangeUser(ymin,ymax)
+    h_tot_ratio.GetYaxis().SetRangeUser(YMinRatio,YMaxRatio)
     
     utils.zeroBinErrors(h_ztt)
     utils.zeroBinErrors(h_zll)
@@ -145,12 +192,10 @@ def Plot(hists,**kwargs):
 
     utils.zeroBinErrors(h_sm)
     utils.zeroBinErrors(h_ps)
-    utils.zeroBinErrors(h_sm_bkg)
-    utils.zeroBinErrors(h_ps_bkg)
+    utils.zeroBinErrors(h_sm_ratio)
+    utils.zeroBinErrors(h_ps_ratio)
     
-    YMax = h_tot.GetMaximum()
-    
-    h_ztt.GetYaxis().SetRangeUser(0.5,5*YMax)
+    h_ztt.GetYaxis().SetRangeUser(0.3*YMin,YAxisScale*YMax)
     h_ztt.GetXaxis().SetLabelSize(0)
     h_ztt.GetYaxis().SetTitle("events")
     h_tot_ratio.GetYaxis().SetTitle("obs/exp")
@@ -169,7 +214,8 @@ def Plot(hists,**kwargs):
     h_top.Draw('hsame')
     h_data.Draw('e1same')
     h_tot.Draw('e2same')
-    h_ps.Draw('hsame')
+    if plotCPodd:
+        h_ps.Draw('hsame')
     h_sm.Draw('hsame')
     
     leg1 = ROOT.TLegend(0.20,0.78,0.45,0.88)
@@ -187,9 +233,12 @@ def Plot(hists,**kwargs):
     leg3 = ROOT.TLegend(0.50,0.78,0.75,0.88)
     styles.SetLegendStyle(leg3)
     leg3.SetTextSize(0.036)
-    leg3.AddEntry(h_sm,'H#rightarrow#tau#tau (CP-even)','l')
-    leg3.AddEntry(h_ps,'H#rightarrow#tau#tau (CP-odd)','l')
-
+    if plotCPodd:
+        leg3.AddEntry(h_sm,'H#rightarrow#tau#tau (CP-even)','l')
+        leg3.AddEntry(h_ps,'H#rightarrow#tau#tau (CP-odd)','l')
+    else:
+        leg3.AddEntry(h_sm,'H#rightarrow#tau#tau','l')
+        
     if plotLegend:
         leg1.Draw()
         leg2.Draw()
@@ -212,6 +261,8 @@ def Plot(hists,**kwargs):
 
     h_tot_ratio.Draw('e2')
     h_ratio.Draw('e1same')
+    h_sm_ratio.Draw('hsame')
+    h_ps_ratio.Draw('hsame')
 
     nbins = h_ratio.GetNbinsX()
     xmin = h_ratio.GetXaxis().GetBinLowEdge(1)    
@@ -252,7 +303,6 @@ if __name__ == "__main__":
 
     styles.InitROOT()
     styles.SetStyle()
-
     
     from argparse import ArgumentParser
     parser = ArgumentParser()
@@ -282,7 +332,7 @@ if __name__ == "__main__":
         'mt' : 'mu',
         'et' : 'e',
     }
-    nbdt_bins = 5
+    nbdt_bins = utils.nbins_bdt_signal[chan]
     cf = args.cf
     suffix_out = 'x'
     if bVeto:
@@ -339,7 +389,7 @@ if __name__ == "__main__":
             xtitle='BDT_{fakes}'
         yields = Plot(hists,era=era,channel=chan,cat=cat,suffix=suffix_out,
                       plotLegend=plotLegend,blindData=blindData,xtitle=xtitle,
-                      smooth=smooth,ymin=ymin,ymax=ymax)
+                      smooth=smooth)
         data[cat] = yields['data'] 
         ztt[cat] = yields['ztt'] 
         zll[cat] = yields['zll'] 
@@ -369,7 +419,7 @@ if __name__ == "__main__":
             smooth = True
             yields = Plot(hists,era=era,channel=chan,cat=cat,suffix=suffix_out,
                           plotLegend=plotLegend,blindData=blindData,xtitle=xtitle,
-                          smooth=smooth,ymin=ymin,ymax=ymax)
+                          smooth=smooth,plotCPodd=True)
             n_data += yields['data']
             n_ztt += yields['ztt']
             n_zll += yields['zll']

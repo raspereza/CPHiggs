@@ -6,8 +6,8 @@ import math
 from array import array
 import os
 
-import CPHiggs.IP.styles as styles
-import CPHiggs.IP.utils as utils
+import CPHiggs.Analysis.styles as styles
+import CPHiggs.Analysis.utils as utils
 
 def Plot(f,d,**kwargs):
 
@@ -173,7 +173,7 @@ def Plot(f,d,**kwargs):
     h_ratio.GetXaxis().SetTitle(xtitle)
 
     # canvas and pads
-    canvas = styles.MakeCanvas("canv","",600,700)
+    canvas = styles.MakeCanvas("canv_%s_%s"%(binPt,binEta),"",600,700)
     # upper pad
     upper = ROOT.TPad("upper", "pad",0,0.31,1,1)
     upper.Draw()
@@ -256,8 +256,8 @@ def Plot(f,d,**kwargs):
     print('')
     
     binPtEta = 'binPt%s_binEta%s'%(binPt,binEta)
-    basedir = '%s/src/CPHiggs/IP/figures'%(os.getenv('CMSSW_BASE'))
-    outputGraphics = '%s/TP_%s_%s_%s_%s_%s_%s.png'%(basedir,chan,era,binPtEta,region,fit_suffix,typ_suffix)    
+    basedir = '%s/figures/IPSigTP/'%(utils.outputFolder)
+    outputGraphics = '%s/%s_%s_%s_%s_%s_%s.png'%(basedir,chan,era,binPtEta,region,fit_suffix,typ_suffix)    
     canvas.Print(outputGraphics)
 
 if __name__ == "__main__":
@@ -267,7 +267,7 @@ if __name__ == "__main__":
 
     from argparse import ArgumentParser
     parser = ArgumentParser()
-    parser.add_argument('-era' ,'--era', dest='era', default='Run3_2022', choices=['Run3_2022','Run3_2022EE','Run3_2023','Run3_2023BPix'])
+    parser.add_argument('-era' ,'--era', dest='era', default='Run3', choices=['Run3','Run3_2022','Run3_2023'])
     parser.add_argument('-channel','--channel', dest='channel', default='mt',choices=['mt','et'])
     parser.add_argument('-perType','--perType', dest='perType', action='store_true')
     parser.add_argument('-ymin','--ymin', dest='ymin', type=float, default=0.501)
@@ -290,7 +290,7 @@ if __name__ == "__main__":
     nbinsEta = 2
     if chan=='mt': nbinsPt = 5
     region_labels = ['pass','fail']
-    basedir='%s/src/CPHiggs/IP/datacards'%(os.getenv('CMSSW_BASE'))
+    basedir='%s/datacardsIpSig/'%(utils.outputFolder)
     for iPt in range(1,nbinsPt+1):
         binPt='%1i'%(iPt)
         for iEta in range(1,nbinsEta+1):

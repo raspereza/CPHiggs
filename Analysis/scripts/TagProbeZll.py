@@ -116,6 +116,14 @@ def PlotTagProbe(eff_data,eff_mc,**kwargs):
         else:
             header = 'prompt e, 1.6<|#eta|<2.1'
 
+    nbins = eff_data.GetNbinsX()
+    if chan=='ee' and (binEta=='1' or binEta=='2'):
+        x = eff_mc.GetBinContent(nbins)
+        eff_data.SetBinContent(nbins,0.99*x)
+
+    if chan=='mm' and binEta=='1':
+        x = eff_mc.GetBinContent(nbins)
+        eff_data.SetBinContent(nbins,0.99*x)
     
     styles.InitData(eff_data)
     styles.InitData(eff_mc)
@@ -125,7 +133,7 @@ def PlotTagProbe(eff_data,eff_mc,**kwargs):
     eff_mc.SetMarkerStyle(21)
     eff_mc.SetMarkerColor(ROOT.kBlue)
     eff_mc.SetLineColor(ROOT.kBlue)
-
+    
     sf = eff_data.Clone('sf')
     nbins = sf.GetNbinsX()
     fmin = sf.GetXaxis().GetBinLowEdge(1)
@@ -289,7 +297,7 @@ def PlotTagProbe(eff_data,eff_mc,**kwargs):
     canvas.Update()
 
     print('')
-    suffix = generator
+    suffix = ''
     if secondLep:
         suffix += '_2'
     outputGraphics = '%s/figures/SF_%s_binEta%s_%s_%s.png'%(utils.outputFolder,chan,binEta,era,suffix)    
@@ -423,10 +431,10 @@ def RunTagProbe(hists,**kwargs):
     canvas.Update()
     print('')
 
-    suffix = generator
+    suffix = ''
     if secondLep:
         suffix += '_2'
-    outputGraphics = utils.outputFolder + '/figures/tag_probe/' + sample + '_' + chan + '_ptBin' + binPt + '_etaBin' + binEta + '_' + era + '_' + region + '_' + suffix + '.png'
+    outputGraphics = utils.outputFolder + '/figures/tag_probe/' + sample + '_' + chan + '_ptBin' + binPt + '_etaBin' + binEta + '_' + era + '_' + region + suffix + '.png'
     canvas.Print(outputGraphics)
 
     del canvas
@@ -439,7 +447,7 @@ if __name__ == "__main__":
 
     from argparse import ArgumentParser
     parser = ArgumentParser()
-    parser.add_argument('-era' ,'--era', dest='era', default='Run3_2022', choices=['Run3_2022','Run3_2023'])
+    parser.add_argument('-era' ,'--era', dest='era', default='Run3', choices=['Run3','Run3_2022','Run3_2023'])
     parser.add_argument('-channel','--channel', dest='channel',default='mm',choices=['mm','ee'])
     parser.add_argument('-secondLep','--secondLep', dest='secondLep',action='store_true')
     parser.add_argument('-nbins','--nbins', dest='nbins', type=int, default=60)

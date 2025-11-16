@@ -9,41 +9,28 @@ import os
 import CPHiggs.Analysis.styles as styles
 import CPHiggs.Analysis.utils as utils
 
-XTitle = {
-    'mm': {
-        'pt_1'  : "leading #mu p_{T} (GeV)",
-        'eta_1' : "leading #mu #eta",
-        'pt_2'  : "trailing #mu p_{T} (GeV)",
-        'eta_2' : "trailing #mu #eta",
-        'met': "E_{T}^{mis} (GeV)",
-        'm_vis': "m_{#mu#mu} (GeV)",
-        'ipsig_1': "leading #mu IP sig",
-        'ipsig_2': "trailing #mu IP sig",
-        'jpt_1': "leading jet p_{T} (GeV)",
-        'jpt_2': "trailing jet p_{T} (GeV)",
-        'jeta_1': "leading jet #eta",
-        'jeta_2': "trailing jet #eta",
-        'n_jets': "Number of jets",
-        'n_bjets': "Number of b-tagged jets"
-    },
-    'ee': {
-        'pt_1'  : "leading elec p_{T} (GeV)",
-        'eta_1' : "leading elec #eta",
-        'pt_2'  : "trailing elec p_{T} (GeV)",
-        'eta_2' : "trailing elec #eta",
-        'met': "E_{T}^{mis} (GeV)",
-        'm_vis': "m_{ee} (GeV)",
-	'ipsig_1': "leading elec IP sig",
-        'ipsig_2': "trailing elec IP sig",
-        'jpt_1': "leading jet p_{T} (GeV)",
-        'jpt_2': "trailing jet p_{T} (GeV)",
-        'jeta_1': "leading jet #eta",
-        'jeta_2': "trailing jet #eta",
-        'n_jets': "Number of jets",
-        'n_bjets': "Number of b-tagged jets"
-    }
-}
+# extracting histos from ROOT file created by RunSelection.py 
+def extractHistos(f,var,bins):
 
+    hists = {}
+    
+    for sample in utils.samples:
+        nameInput = '%s_%s_incl_os_iso_all'%(sample,var)
+        hists[sample] = utils.rebinHisto(f.Get(nameInput),bins,'rebinned')
+        
+    name = 'zll_incl'
+    nameout = 'zll'
+    hists[nameout] = hists[name].Clone(hists[name].GetName()+'_zll')
+    for s in ['zll_ext','zll_0j','zll_1j','zll_2j']:
+        hists[nameout].Add(hists[nameout],hists[s],1.,1.)
+        
+    name = 'ztt_0j'
+    nameout = 'ztt'
+    hists[nameout] = hists[name].Clone(hists[name].GetName()+'_ztt')
+    for s in ['ztt_1j','ztt_2j']:
+        hists[nameout].Add(hists[nameout],hists[s],1.,1.)
+        
+    return hists
     
 def Plot(hists,**kwargs):
 
@@ -57,15 +44,16 @@ def Plot(hists,**kwargs):
     calibrDY = kwargs.get('calibrDY',1.0)
     
     # histograms
-    h_data = hists['data_'+var+'_os_iso_all'].Clone('h_data')
-    h_zll = hists['dy_'+var+'_os_iso_all'].Clone('h_zll')
-    h_top = hists['top_'+var+'_os_iso_all'].Clone('h_top')
-    h_vv = hists['vv_'+var+'_os_iso_all'].Clone('h_vv')
-    h_wjets = hists['wjets_'+var+'_os_iso_all'].Clone('h_wjets')
-    
+    h_data = hists['data'].Clone('h_data')
+    h_zll = hists['zll'].Clone('h_zll')
+    h_zll.Add(h_zll,hists['ztt'],1.,1.)
+    h_top = hists['top'].Clone('h_top')
+    h_vv = hists['vv'].Clone('h_vv')
+    h_wjets = hists['wjets'].Clone('h_wjets')
+
     styles.InitData(h_data)
 
-    xtitle = XTitle[chan][var]
+    xtitle = utils.XTitle[chan][var]
     styles.InitHist(h_zll,"","",ROOT.TColor.GetColor(100,192,232),1001)
     styles.InitHist(h_top,"","",ROOT.TColor.GetColor("#9999CC"),1001)
     styles.InitHist(h_vv,"","",ROOT.TColor.GetColor("#DE5A6A"),1001)
@@ -79,12 +67,11 @@ def Plot(hists,**kwargs):
     x_wjets = h_wjets.GetSumOfWeights()
     x_tot   = x_zll + x_top + x_vv + x_wjets
     
-    scale = (x_data-x_top-x_wjets-x_vv)/x_zll
+    scale = 1.0 # (x_data-x_top-x_wjets-x_vv)/x_zll
     
     h_zll.Scale(calibrDY)
     x_zll   = h_zll.GetSumOfWeights() 
     x_tot   = x_zll + x_top + x_vv + x_wjets
-    
     
     print('')
     print('Yields ->')
@@ -92,9 +79,13 @@ def Plot(hists,**kwargs):
     print('Top   : %7.0f'%(x_top))
     print('VV    : %7.0f'%(x_vv))
     print('WJets : %7.0f'%(x_wjets))
-        
-    print('Total : %7.0f'%(x_tot))
-    print('Data  : %7.0f'%(x_data))
+
+    x_tot_lumi = x_tot/utils.eraLumi[era]
+    x_data_lumi = x_data/utils.eraLumi[era]
+    print('')
+    print('Lumi = %3.0f'%(utils.eraLumi[era]))
+    print('Total : %7.0f  ->  per pb-1 : %5.3f'%(x_tot,x_tot_lumi))
+    print('Data  : %7.0f  ->  per pb-1 : %5.3f'%(x_data,x_data_lumi))
     print('')
 
     h_vv.Add(h_vv,h_wjets,1.,1.)
@@ -203,6 +194,7 @@ if __name__ == "__main__":
     parser.add_argument('-applyIP1','--applyIP1',dest='applyIP1',type=int,default=0)
     parser.add_argument('-applyIP2','--applyIP2',dest='applyIP2',type=int,default=0)
     parser.add_argument('-applySF', '--applySF', dest='applySF' ,type=int,default=0)
+    parser.add_argument('-applyJsonSF', '--applyJsonSF', dest='applyJsonSF',type=int,default=1)
     parser.add_argument('-generator', '--generator', dest='generator', default='amcatnlo',choices=['amcatnlo','MG','powheg'])
     parser.add_argument('-analysisType', '--analysisType', dest='analysisType', default='baseline',choices=['baseline','ipSig','datacardsPhiCP'])
     parser.add_argument('-calibrDY','--calibrDY',dest='calibrDY',type=float,default=1.0) # calibrate DY
@@ -230,6 +222,7 @@ if __name__ == "__main__":
     applyIPSigLep1Cut = args.applyIP1
     applyIPSigLep2Cut = args.applyIP2
     applyIPSigPromptLepSF = args.applySF
+    applyIPSigJsonSF = args.applyJsonSF
     
     bins = []
     width = (xmax-xmin)/float(nbins)
@@ -239,18 +232,16 @@ if __name__ == "__main__":
         
     basedir = utils.outputFolder+'/selection/'+analysisType
 
-    suffix_ip1 = ''
-    suffix_ip2 = ''
-    suffix_prompt = ''
+    suffix = '_x'
     if applyIPSigLep1Cut==1:
-        suffix_ip1 = '_ipcut1'
+        suffix += '_ipcut1'
     if applyIPSigLep2Cut==1:
-        suffix_ip2 = '_ipcut2'
+        suffix += '_ipcut2'
     if applyIPSigPromptLepSF==1:
-        suffix_prompt = '_promptSF'
+        suffix += '_promptSF'
+    if applyIPSigJsonSF==1:
+        suffix += '_json'
 
-    suffix = '_x'+suffix_ip1+suffix_ip2+suffix_prompt 
-    
     inputFileName = '%s/%s_%s%s.root'%(basedir,chan,era,suffix)
     if os.path.isfile(inputFileName):        
         print('')

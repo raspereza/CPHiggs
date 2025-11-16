@@ -101,7 +101,7 @@ def CreateCards(hists,**kwargs):
     print('Data  = %7.0f'%(x_data))
     print('')
     
-    basedir = utils.outputFolder+'/datacards'
+    basedir = utils.outputFolder+'/datacardsIpSig'
 
     suffix = 'binPt'+binPt+'_binEta'+binEta
     outputFileName = '%s/%s_%s_%s_%s.root'%(basedir,chan,era,suffix,region)
@@ -151,7 +151,7 @@ if __name__ == "__main__":
 
     from argparse import ArgumentParser
     parser = ArgumentParser()
-    parser.add_argument('-era' ,'--era', dest='era', default='Run3_2022',choices=['Run3_2022','Run3_2023','Run3'])
+    parser.add_argument('-era' ,'--era', dest='era', default='Run3',choices=['Run3_2022','Run3_2023','Run3'])
     parser.add_argument('-variable' ,'--variable', dest='variable', default='m_vis')
     parser.add_argument('-channel','--channel', dest='channel', default='mt',choices=['mt','et'])
     parser.add_argument('-useCrossTrigger','--useCrossTrigger', dest='useCrossTrigger',action='store_true')
@@ -188,7 +188,7 @@ if __name__ == "__main__":
 
     suffix = '_x'+suffix_mt+suffix_xtrig+'_promptSF'
     basedir = utils.outputFolder
-    inputFileName = '%s/selection/%s_%s%s.root'%(basedir,chan,era,suffix)
+    inputFileName = '%s/selection/ipSig/%s_%s%s.root'%(basedir,chan,era,suffix)
     if os.path.isfile(inputFileName):
         print('')
         print('Loading ROOT file %s'%(inputFileName))

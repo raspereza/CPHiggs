@@ -1,31 +1,50 @@
 #! /usr/bin/env python3
 # Author: Alexei Raspereza (December 2024)
-# Plotting macro for Z->tautau  selection
+# Plotting phi(CP) variables
 import ROOT
 import math
 from array import array
 import os
 
-import CPHiggs.IP.styles as styles
-import CPHiggs.IP.utils as utils
+import CPHiggs.Analysis.styles as styles
+import CPHiggs.Analysis.utils as utils
+
+import yaml
+from yaml.loader import SafeLoader
 
 header = {
     'aco_mu_pi': '#mu+#pi',
     'aco_mu_rho': '#mu+#rho',
-    'aco_mu_a1': '#mu+a_{1}',
-    'aco_mu_a1_FASTMTT_NoMassConstraint': '#mu+a_{1}',
     'aco_mu_a1_FASTMTT_MassConstraint': '#mu+a_{1}',
     'aco_e_pi': 'e+#pi',
-    'aco_e_rho': 'e+#rho'    
+    'aco_e_rho': 'e+#rho',
+    'aco_e_a1_FASTMTT_MassConstraint' : 'e+a_{1}'    
 }
+
+varToChan = {
+    'aco_mu_pi' : 'mt',
+    'aco_mu_rho' : 'mt',
+    'aco_mu_a1_FASTMTT_MassConstraint' : 'mt',
+    'aco_e_pi' : 'et',
+    'aco_e_rho' : 'et',
+    'aco_e_a1_FASTMTT_MassConstraint' : 'et',
+}
+
+def symmetrize(hist):
+    nbins = hist.GetNbinsX()
+    bins2 = nbins//2
+    for ib in range(1,bins2+1):
+        ib2 = nbins + 1 - ib
+        x = 0.5*(hist.GetBinContent(ib)+hist.GetBinContent(ib2))
+        hist.SetBinContent(ib,x)
+        hist.SetBinContent(ib2,x)
 
 
 def Plot(hists,**kwargs):
 
-    era = kwargs.get('era','Run3_2022EE')
     var = kwargs.get('var','m_vis')
-    chan = kwargs.get('channel','mt')
     suffix = kwargs.get('suffix','')
+    asym = kwargs.get('asym',1.0)
     
     # histograms
     h_even = hists['even'].Clone('h_even')
@@ -46,26 +65,35 @@ def Plot(hists,**kwargs):
     h_even.GetYaxis().SetRangeUser(0.,1.4*YMax)
 
     # canvas and pads
-    canvas = styles.MakeCanvas("canv","",800,700)
+    canvas = styles.MakeCanvas("canv%s"%(suffix),"",800,700)
     
     h_even.Draw('h')
     h_odd.Draw('hsame')
-
-    leg = ROOT.TLegend(0.65,0.25,0.85,0.5)
+    legTitle = '%s  A = %5.3f'%(header[var],asym)
+    
+    leg = ROOT.TLegend(0.45,0.25,0.75,0.5)
     styles.SetLegendStyle(leg)
-    leg.SetHeader(header[var])
+    leg.SetHeader(legTitle)
     leg.SetTextSize(0.046)
     leg.AddEntry(h_even,'CP-even','l')
     leg.AddEntry(h_odd,'CP-odd','l')
     leg.Draw()
 
-    styles.CMS_label(canvas,era=era,extraText='Simulation')
-
+    txt = 'no IPsig cut'
+    if suffix=='_ip':
+        txt = 'IPSig(lep)>1.0'
+    text = ROOT.TText(0.3,0.8,txt)
+    text.SetNDC()
+    text.SetTextFont(42)
+    text.SetTextSize(0.05)
+    text.Draw()
+    styles.CMS_label(canvas,era='Run3_simulation',extraText='Simulation')
+    
     canvas.RedrawAxis()
     canvas.Modified()
     canvas.Update()
 
-    outputGraphics = os.getenv('CMSSW_BASE')+'/src/CPHiggs/IP/figures/'+var+'_'+chan+'_'+era+suffix+'.png'    
+    outputGraphics = utils.outputFolder+'/figures/signal/'+var+suffix+'.png'    
     canvas.Print(outputGraphics)
 
 if __name__ == "__main__":
@@ -76,105 +104,127 @@ if __name__ == "__main__":
     
     from argparse import ArgumentParser
     parser = ArgumentParser()
-    parser.add_argument('-era' ,'--era', dest='era', default='Run3_2022EE', choices=['Run3_2022','Run3_2022EE','Run3_2023','Run3_2023BPix'])
-    parser.add_argument('-variable' ,'--variable', dest='variable', default='aco_mu_rho')
-    parser.add_argument('-channel','--channel', dest='channel', default='mt',choices=['mt','et'])
-    parser.add_argument('-useCrossTrigger','--useCrossTrigger', dest='useCrossTrigger',type=int,default=0)
-    parser.add_argument('-mtCut','--mtCut',dest='mtCut',type=int,default=0)
+    parser.add_argument('-variable' ,'--variable', dest='variable', default='aco_mu_rho',choices=['aco_mu_pi','aco_mu_rho','aco_mu_a1_FASTMTT_MassConstraint','aco_e_pi','aco_e_rho','aco_e_a1_FASTMTT_MassConstraint'])
     parser.add_argument('-nbins','--nbins', dest='nbins', type=int, default=8)
     parser.add_argument('-xmin','--xmin', dest='xmin', type=float, default=0.0)
     parser.add_argument('-xmax','--xmax', dest='xmax', type=float, default=360.)
     parser.add_argument('-ymin','--ymin', dest='ymin', type=float, default=0.701)
     parser.add_argument('-ymax','--ymax', dest='ymax', type=float, default=1.299)
+    parser.add_argument('-noIpCutTau','--noIpCutTau',dest='noIpCutTau',action='store_true')
     
     args = parser.parse_args()
 
-    era = args.era
-    applyMTCut = args.mtCut
-    useCrossTrigger = args.useCrossTrigger
-    chan = args.channel
     var = args.variable
     nbins = args.nbins
     xmin = args.xmin
     xmax = args.xmax
     ymin = args.ymin
     ymax = args.ymax
-    
-    
-    bins = []
-    width = (xmax-xmin)/float(nbins)
-    for i in range(0,nbins+1):
-        xb = xmin + width*float(i)
-        bins.append(xb)
+    noIpCutTau = args.noIpCutTau
 
-
-    folder = '/eos/cms/store/group/phys_tau/ksavva/For_Aliaksei/files/testingzpt/%s/%s/'%(era,chan)
-    fileNameOdd  = '%s/GluGluHTo2Tau_UncorrelatedDecay_SM_Filtered_ProdAndDecay/nominal/merged.root'%(folder)
-    fileNameEven = '%s/GluGluHTo2Tau_UncorrelatedDecay_SM_Filtered_ProdAndDecay/nominal/merged.root'%(folder)
+    sample = 'GluGluHTo2Tau_UncorrelatedDecay_SM_Filtered_ProdAndDecay'
     
-    fileOdd = ROOT.TFile(fileNameOdd,'read')
-    fileEven = ROOT.TFile(fileNameEven,'read')
-
-    treeOdd = fileOdd.Get('ntuple')
-    treeEven = fileEven.Get('ntuple')
+    chan = varToChan[var]
+    bins = utils.createBins(nbins,xmin,xmax)
     
-    cutDeepTau1 = 'idDeepTau2018v2p5VSjet_1>=4&&idDeepTau2018v2p5VSe_1>=2&&idDeepTau2018v2p5VSmu_1>=1'
-    cutDeepTau2 = 'idDeepTau2018v2p5VSjet_2>=4&&idDeepTau2018v2p5VSe_2>=2&&idDeepTau2018v2p5VSmu_2>=1'
+    cutDeepTau = 'idDeepTau2018v2p5VSjet_2>=5&&idDeepTau2018v2p5VSe_2>=2&&idDeepTau2018v2p5VSmu_2>=4'
     
-    cutTau1 = 'pt_1>25&&fabs(eta_1)<2.4&&iso_1<0.15&&os>0.5'
-    cutTau2 = 'pt_2>20&&fabs(eta_2)<2.3'
+    cutLep = 'pt_1>25&&fabs(eta_1)<2.4&&iso_1<0.15&&os>0.5'
+    cutTau = 'pt_2>20&&fabs(eta_2)<2.3'
 
     if chan=='et':
-        cutTau1 = 'pt_1>31&&fabs(eta_1)<2.1&&iso_1<0.15&&os>0.5'
+        cutLep = 'pt_1>31&&fabs(eta_1)<2.1&&iso_1<0.15&&os>0.5'
 
     
     weightOdd = '(weight*wt_cp_ps)'
     weightEven = '(weight*wt_cp_sm)'
     weightOddCut = '((fabs%s)<1000.)'%(weightOdd)
     weightEvenCut = '((fabs%s)<1000.)'%(weightEven)
-    cutDM = 'decayModePNet_2==1'
-
 
     cutIP = 'fabs(ip_LengthSig_1)>1.0'
+    cutDM = 'decayModePNet_2==1&&decayMode_2==1&&pion_E_split_2>0.2'
+
     if var=='aco_e_pi' or var=='aco_mu_pi':
-        cutDM = 'decayModePNet_2==0'
-        cutIP = 'fabs(ip_LengthSig_1)>1.0&&fabs(ip_LengthSig_2)>1.0'
+        if noIpCutTau:
+            cutDM = 'decayModePNet_2==0'
+        else:
+            cutDM = 'decayModePNet_2==0&&fabs(ip_LengthSig_2)>1.25'
+            
+    if var=='aco_e_a1_FASTMTT_MassConstraint' or var=='aco_mu_a1_FASTMTT_MassConstraint':
+        cutDM = 'decayModePNet_2==10&&hasRefitSV_2'
 
-
-    if var=='aco_mu_a1' or var=='aco_mu_a1_FASTMTT_NoMassConstraint' or var=='aco_mu_a1_FASTMTT_MassConstraint':
-        cutDM = 'decayModePNet_2==10'
-
-    if var=='aco_e_a1' or var=='aco_e_a1_FASTMTT_NoMassConstraint' or var=='aco_e_a1_FASTMTT_MassConstraint':
-        cutDM = 'decayModePNet_2==10'
         
-    cutEven = '(%s&&%s&&%s&&%s&&%s)*%s'%(cutTau1,cutTau2,cutDeepTau2,cutDM,weightEvenCut,weightEven)
-    cutOdd  = '(%s&&%s&&%s&&%s&&%s)*%s'%(cutTau1,cutTau2,cutDeepTau2,cutDM,weightOddCut,weightOdd)
-    cutEvenIP = '(%s&&%s&&%s&&%s&&%s&&%s)*%s'%(cutTau1,cutTau2,cutDeepTau2,cutDM,cutIP,weightEvenCut,weightEven)
-    cutOddIP  = '(%s&&%s&&%s&&%s&&%s&&%s)*%s'%(cutTau1,cutTau2,cutDeepTau2,cutDM,cutIP,weightOddCut,weightOdd)
-
-    histEven = ROOT.TH1D('histEven','',nbins,array('d',list(bins)))
-    histOdd  = ROOT.TH1D('histOdd', '',nbins,array('d',list(bins)))
-    histEvenIP = ROOT.TH1D('histEvenIP','',nbins,array('d',list(bins)))
-    histOddIP  = ROOT.TH1D('histOddIP', '',nbins,array('d',list(bins)))
-
-    varToPlot = '(180.*(%s/TMath::Pi()))'%(var)
-
-
+    cutEven = '(%s&&%s&&%s&&%s&&%s)*%s'%(cutLep,cutTau,cutDeepTau,cutDM,weightEvenCut,weightEven)
+    cutOdd  = '(%s&&%s&&%s&&%s&&%s)*%s'%(cutLep,cutTau,cutDeepTau,cutDM,weightOddCut,weightOdd)
+    cutEvenIP = '(%s&&%s&&%s&&%s&&%s&&%s)*%s'%(cutLep,cutTau,cutDeepTau,cutDM,cutIP,weightEvenCut,weightEven)
+    cutOddIP  = '(%s&&%s&&%s&&%s&&%s&&%s)*%s'%(cutLep,cutTau,cutDeepTau,cutDM,cutIP,weightOddCut,weightOdd)
     dummy = ROOT.TCanvas('dummy','dummy',500,500)
     
-    treeOdd.Draw(varToPlot+'>>histOdd',cutOdd)
-    treeEven.Draw(varToPlot+'>>histEven',cutEven)
+    varToPlot = '(180.*(%s/TMath::Pi()))'%(var)
 
-    treeOdd.Draw(varToPlot+'>>histOddIP',cutOddIP)
-    treeEven.Draw(varToPlot+'>>histEvenIP',cutEvenIP)
+    baseFolder = '%s/src/CPHiggs/Analysis/'%(os.getenv('CMSSW_BASE'))
+    eras = ['Run3_2022','Run3_2022EE','Run3_2023','Run3_2023BPix']
 
+    histEvenEra = {}
+    histOddEra = {}
+    histEvenIPEra = {}
+    histOddIPEra = {}
+    
+    for era in eras:
 
+        print('processing %s'%(era)) 
+        yaml_file = baseFolder+'/params/'+era+'.yaml'
+        metafile = open(yaml_file,'r')
+        metadata = list(yaml.load_all(metafile,Loader=SafeLoader))
+        norm = metadata[0]['lumi']*metadata[0][sample]['filter_efficiency']/metadata[0][sample]['eff']
+
+        ROOT.gROOT.cd('')
+        histEvenEra[era] = ROOT.TH1D('histEven_%s'%(era),'',nbins,array('d',list(bins)))
+        histOddEra[era]  = ROOT.TH1D('histOdd_%s'%(era), '',nbins,array('d',list(bins)))
+        histEvenIPEra[era] = ROOT.TH1D('histEvenIP_%s'%(era),'',nbins,array('d',list(bins)))
+        histOddIPEra[era]  = ROOT.TH1D('histOddIP_%s'%(era), '',nbins,array('d',list(bins)))
+
+        folder = '%s/%s/%s/%s'%(utils.tupleFolderV2,era,chan,sample)
+        fileName  = '%s/nominal/merged.root'%(folder)
+        inputFile = ROOT.TFile(fileName,'read')
+        tree = inputFile.Get('ntuple')
+
+        ROOT.gROOT.cd('')
+        tree.Draw(varToPlot+'>>histOdd_%s'%(era),cutOdd)
+        tree.Draw(varToPlot+'>>histEven_%s'%(era),cutEven)
+        tree.Draw(varToPlot+'>>histOddIP_%s'%(era),cutOddIP)
+        tree.Draw(varToPlot+'>>histEvenIP_%s'%(era),cutEvenIP)
+
+        ROOT.gROOT.cd('')        
+        histOddEra[era].Scale(norm)
+        histEvenIPEra[era].Scale(norm)
+        histOddIPEra[era].Scale(norm)
+        histEvenEra[era].Scale(norm)
+
+    ROOT.gROOT.cd('')
+    histOdd = histOddEra['Run3_2022'].Clone('histOdd')
+    histEven = histEvenEra['Run3_2022'].Clone('histEven')
+    histOddIP = histOddIPEra['Run3_2022'].Clone('histOddIP')
+    histEvenIP = histEvenIPEra['Run3_2022'].Clone('histEvenIP')
+
+    for era in ['Run3_2022EE','Run3_2023','Run3_2023BPix']:
+        histOdd.Add(histOdd,histOddEra[era])
+        histEven.Add(histEven,histEvenEra[era])
+        histOddIP.Add(histOddIP,histOddIPEra[era])
+        histEvenIP.Add(histEvenIP,histEvenIPEra[era])
+
+    
     normEven = histEven.GetSumOfWeights()
     normOdd  = histOdd.GetSumOfWeights()
     histEven.Scale(1.0/normEven)
     histOdd.Scale(1.0/normOdd)
     histEvenIP.Scale(1.0/normEven)
     histOddIP.Scale(1.0/normOdd)
+    symmetrize(histEven)
+    symmetrize(histOdd)
+    symmetrize(histEvenIP)
+    symmetrize(histOddIP)
+    
     print('')
     print('Norm(CP-odd) %4.2f  :  Norm(CP-even) = %4.2f'%(normOdd,normEven))
     print('')
@@ -200,14 +250,19 @@ if __name__ == "__main__":
 
     print('CP Asymetry : no IP cut = %5.3f  ---  IP cut = %5.3f'%(asym,asymIP))
     print('')
+
+    suffix = ''
+    if var=='aco_mu_pi' or var=='aco_e_pi':
+        if noIpCutTau: suffix = '_no_ip2'
     
     hists = {}
     hists['even'] = histEven
     hists['odd'] = histOdd
-    Plot(hists,era=era,var=var,channel=chan,suffix='')
-    
+    Plot(hists,var=var,channel=chan,asym=asym,suffix=suffix)
+
+    suffix2 = suffix+'_ip'
     histsIP = {}
     histsIP['even'] = histEvenIP
     histsIP['odd'] = histOddIP
-    Plot(histsIP,era=era,var=var,channel=chan,suffix='_ip')
+    Plot(histsIP,var=var,channel=chan,asym=asymIP,suffix=suffix2)
     

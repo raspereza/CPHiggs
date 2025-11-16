@@ -13,35 +13,65 @@ import CPHiggs.Analysis.utils as utils
 
 def DefineBinning(inputFile,nbins_new):
 
-    hist = inputFile.Get('ggH_sm_bdt_signal_os_iso_all_sm'].Clone('h_sm')
-    h_qqH_sm = hists['qqH_bdt_signal_os_iso_all_sm']
-    h_ggH_ps = hists['ggH_sm_bdt_signal_os_iso_all_ps']
-    h_qqH_ps = hists['qqH_bdt_signal_os_iso_all_ps']
+    hist = inputFile.Get('ggH_sm_bdt_signal_os_iso_all_hadtau_sm').Clone('h_sm')
+    h_qqH_sm = inputFile.Get('qqH_bdt_signal_os_iso_all_hadtau_sm')
+    h_ggH_ps = inputFile.Get('ggH_sm_bdt_signal_os_iso_all_hadtau_ps')
+    h_qqH_ps = inputFile.Get('qqH_bdt_signal_os_iso_all_hadtau_ps')
     hist.Add(hist,h_qqH_sm,1.,1.)
     hist.Add(hist,h_ggH_ps,1.,1.)
     hist.Add(hist,h_qqH_ps,1.,1.)
-    average_yield = hist.GetSumOfWeights()/float(nbins_new)
-    
-    nbins = .GetNbinsX()
-    xmin  = hist.GetXaxis().GetBinLowEdge(1)
-    xmax  = hist.GetXaxis().GetBinLowEdge(nbins+1)
+    nbins = hist.GetNbinsX()
 
-    
+    yield_sum = 0.0 
+    for ib in range(1,nbins+1):
+        yield_sum += hist.GetBinContent(ib)
+        
+    nx = float(nbins_new)+0.5
+     
+    average_yield = yield_sum/nx
+
     bins_new = []
+    yields = []
     bins_new.append(0.33)
     ibin = 1
+    tot_yield = 0.
     for ib in range(1,nbins_new):
         go = True
         nevents = 0.0
         while go:
             nevents += hist.GetBinContent(ibin)
-            nevents_up = nevents + GetBinContent(ibin+1)
+            nevents_up = nevents + hist.GetBinContent(ibin+1)
             condition = nevents<average_yield and nevents_up>average_yield
-            diff = abs(average_yield-nevents)
             if condition:
                 go = False
-            else 
+                diff = abs(average_yield-nevents)
+                diff_up = abs(nevents_up-average_yield)
+                condition2 = diff<diff_up
+                if condition2:
+                    bins_new.append(hist.GetXaxis().GetBinLowEdge(ibin+1))
+                    yields.append(nevents)
+                    tot_yield += nevents
+                else:
+                    bins_new.append(hist.GetXaxis().GetBinLowEdge(ibin+2))
+                    yields.append(nevents_up)
+                    tot_yield += nevents_up
+                    ibin += 1
+                nevents = 0.0
+            ibin += 1
     
+    bins_new.append(1.0)
+    yields.append(yield_sum-tot_yield)
+    print('')
+    print('Average yield = %3.1f'%(average_yield))
+    print('NBins = %1i'%(nbins_new))
+    totsum_check = 0.0
+    sum_prod_average = average_yield*nx
+    for ib in range(0,nbins_new):
+        print('%1i -> [%4.2f,%4.2f] : %3.1f'%(ib,bins_new[ib],bins_new[ib+1],yields[ib]))
+        totsum_check += yields[ib]
+    print('Total yield = %4.2f  %4.2f  %4.2f'%(yield_sum,totsum_check,sum_prod_average))
+    print('')
+    return bins_new
 
 def CalibrateBkgs(hists):
     
@@ -242,12 +272,15 @@ def ExtractDatacards(f,var,bins,isBDT,**kwargs):
     histograms['ZTT'] = utils.ReplicaHist(basehist,'ZTT_'+var+'_'+bdtbin)
     histograms['VVT'] = utils.ReplicaHist(basehist,'VVT_'+var+'_'+bdtbin)
     histograms['TTT'] = utils.ReplicaHist(basehist,'TTT_'+var+'_'+bdtbin)
-        
+
+    histograms['ZL'].Scale(scaleDY)
+    histograms['ZTT'].Scale(scaleDY)
+    
     for sample in dy_samples:
         name = '%s_%s_os_iso_all_leptau'%(sample,var)
-        histograms['ZL'].Add(histograms['ZL'],hists[name],1.,1.)
+        histograms['ZL'].Add(histograms['ZL'],hists[name],1.,scaleDY)
         name = '%s_%s_os_iso_all_hadtau'%(sample,var)
-        histograms['ZTT'].Add(histograms['ZTT'],hists[name],1.,1.)
+        histograms['ZTT'].Add(histograms['ZTT'],hists[name],1.,scaleDY)
 
     for tautype in ['leptau','hadtau']:
         name = 'vv_%s_os_iso_all_%s'%(var,tautype)
@@ -292,6 +325,7 @@ if __name__ == "__main__":
     parser.add_argument('-dyNorm','--dyNorm',dest='dyNorm',type=float,default=1.0)
     parser.add_argument('-qcdNorm','--qcdNorm',dest='qcdNorm',type=float,default=1.0)
     parser.add_argument('-runCalibr','--runCalibr',dest='runCalibr',action='store_true')
+    parser.add_argument('-dryRun','--dryRun',dest='dryRun',action='store_true')
     args = parser.parse_args()
 
     era = args.era
@@ -299,7 +333,8 @@ if __name__ == "__main__":
     bVeto = args.bVeto
     chan = args.channel
     runCalibr = args.runCalibr
-
+    dryRun = args.dryRun
+    
     scaleDY = args.dyNorm
     scaleWJ = args.wjNorm
     scaleQCD = args.qcdNorm
@@ -307,12 +342,10 @@ if __name__ == "__main__":
     bdt_et_bins = {
         'ditau' : [0.33,0.50,0.60,0.70,0.80,0.90,1.0],
         'fakes' : [0.33,0.50,0.60,0.70,0.80,0.90,1.0],
-        'signal': [0.33,0.52,0.66,0.78,0.90,1.00],
     }
     bdt_mt_bins = {
         'ditau' : [0.33,0.50,0.60,0.70,0.80,0.9,1.0],
         'fakes' : [0.33,0.50,0.60,0.70,0.80,0.9,1.0],
-        'signal': [0.33,0.58,0.70,0.80,0.90,1.00],
     }
 
     bdt_bins = bdt_mt_bins
@@ -367,12 +400,21 @@ if __name__ == "__main__":
         exit()
 
     inputFile = ROOT.TFile(inputFileName,'read')
-    if runCalibr:
-        binsMT = [0.,70.,150.]
-        hists_mt = utils.extractHistos(inputFile,'mt_1',binsMT,'amcatnlo',era,chan)
-        CalibrateBkgs(hists_mt)
-        exit()
+
+    # defining new binning
+    nbins_new = utils.nbins_bdt_signal[chan]
+    bdt_bins['signal'] = DefineBinning(inputFile,nbins_new)
+    print(bdt_bins['signal'])
+    exit()
     
+    binsMT = [0.,70.,150.]
+    hists_mt = utils.extractHistos(inputFile,'mt_1',binsMT,'amcatnlo',era,chan)
+    CalibrateBkgs(hists_mt)
+
+    if dryRun:
+        exit()
+
+    list_of_histos = ['ZTT','ZL','JetFakes','TTT','VVT',]
     groups_bdt = {}
     groups_phicp = {}
     for cat in cats:
@@ -386,9 +428,8 @@ if __name__ == "__main__":
                                            scaleWJ=scaleWJ,
                                            scaleDY=scaleDY,
                                            scaleQCD=scaleQCD)
-        for hist in groups_bdt[cat]:
-            print(hist,groups_bdt[cat][hist]) 
-        print('')
+        x_data = groups_bdt['data_obs'].GetSumOfWeights()
+        
 
     sigbins = bdt_bins['signal']
     nbins = len(sigbins)
@@ -410,8 +451,8 @@ if __name__ == "__main__":
                                                         bdtbin=sig_bdt_bin,
                                                         xmin=sigbins[ibin],
                                                         xmax=sigbins[ibin+1])
-            for hist in groups_phicp[name_phicp]:
-                print(hist,groups_phicp[name_phicp][hist])
+#            for hist in groups_phicp[name_phicp]:
+#                print(hist,groups_phicp[name_phicp][hist])
             print('')
 
     suffix_out = ''

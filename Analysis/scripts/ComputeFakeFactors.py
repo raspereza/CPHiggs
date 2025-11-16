@@ -11,10 +11,10 @@ import CPHiggs.Analysis.utils as utils
 
 stop_point = 70.
 
-def extractHistos(f):
+def extractHistos(f,regions):
     hists = {}
     for sample in utils.samples:
-        for region in ['qcd','wj']:
+        for region in regions:
             for dm in utils.dm_labels:
                 for njets in utils.njets_labels:
                     for eta in utils.eta_labels:
@@ -101,34 +101,46 @@ def PlotFF(hists,bins,**kwargs):
     dm = kwargs.get('dm','pi')
     njets = kwargs.get('njets','njets0')
     eta = kwargs.get('eta','barrel')
+    sampleToProcess = kwargs.get('sample','data')
+    ipcut = kwargs.get('ipcut',True)
     
     suffix = '%s_%s_%s_%s'%(region,dm,njets,eta)
-    
+
     data_num = None
     data_den = None
-    data_num = hists['data_'+suffix+'_nominal_all'].Clone('data_num'+suffix)
-    data_den = hists['data_'+suffix+'_inverted_all'].Clone('data_den'+suffix)
+    n_data_num = 0.
+    n_data_den = 0.
+    if sampleToProcess=='data':
+    
+        data_num = hists['data_'+suffix+'_nominal_all'].Clone('data_num'+suffix)
+        data_den = hists['data_'+suffix+'_inverted_all'].Clone('data_den'+suffix)
 
-    # subtracting leptons
-    for sample in ['zll','ztt','top','vv','wjets']:
-        for typ in ['lep','tau']:
-            data_num.Add(data_num,hists[sample+'_'+suffix+'_nominal_'+typ],1.,-1.)
-            data_den.Add(data_den,hists[sample+'_'+suffix+'_inverted_'+typ],1.,-1.)
+        # subtracting leptons
+        for sample in ['zll','ztt','top','vv','wjets']:
+            for typ in ['lep','tau']:
+                data_num.Add(data_num,hists[sample+'_'+suffix+'_nominal_'+typ],1.,-1.)
+                data_den.Add(data_den,hists[sample+'_'+suffix+'_inverted_'+typ],1.,-1.)
 
-    mc_had_num = hists['zll_'+suffix+'_nominal_had'].Clone('mc_had_num')
-    mc_had_den = hists['zll_'+suffix+'_inverted_had'].Clone('mc_had_den')
-    for sample in ['ztt','top','vv','wjets']:
-        name = '%s_%s_nominal_had'%(sample,suffix)
-        mc_had_num.Add(mc_had_num,hists[name],1.,1.)
-        name = '%s_%s_inverted_had'%(sample,suffix)
-        mc_had_den.Add(mc_had_num,hists[name],1.,1.)
+        mc_had_num = hists['zll_'+suffix+'_nominal_had'].Clone('mc_had_num')
+        mc_had_den = hists['zll_'+suffix+'_inverted_had'].Clone('mc_had_den')
+        for sample in ['ztt','top','vv','wjets']:
+            name = '%s_%s_nominal_had'%(sample,suffix)
+            mc_had_num.Add(mc_had_num,hists[name],1.,1.)
+            name = '%s_%s_inverted_had'%(sample,suffix)
+            mc_had_den.Add(mc_had_num,hists[name],1.,1.)
 
-    n_mc_num = mc_had_num.GetSumOfWeights()
-    n_mc_den = mc_had_den.GetSumOfWeights()
-    n_data_num = data_num.GetSumOfWeights()
-    n_data_den = data_den.GetSumOfWeights()
-    f_mc_num = n_mc_num/max(n_data_num,1.0)
-    f_mc_den = n_mc_den/max(n_data_den,1.0)
+        n_mc_num = mc_had_num.GetSumOfWeights()
+        n_mc_den = mc_had_den.GetSumOfWeights()
+        n_data_num = data_num.GetSumOfWeights()
+        n_data_den = data_den.GetSumOfWeights()
+        f_mc_num = n_mc_num/max(n_data_num,1.0)
+        f_mc_den = n_mc_den/max(n_data_den,1.0)
+    else:
+        data_num = hists[sampleToProcess+'_'+suffix+'_nominal_had'].Clone(sampleToProcess+'_num'+suffix)
+        data_den = hists[sampleToProcess+'_'+suffix+'_inverted_had'].Clone(sampleToProcess+'_den'+suffix)
+        n_data_num = data_num.GetSumOfWeights()
+        n_data_den = data_den.GetSumOfWeights()
+        
     
     num_x = utils.rebinHisto(data_num,bins,'rebinned')
     den_x = utils.rebinHisto(data_den,bins,'rebinned')
@@ -146,7 +158,7 @@ def PlotFF(hists,bins,**kwargs):
         den.SetBinContent(ib,den_x.GetBinContent(ib))
         den.SetBinError(ib,den_x.GetBinError(ib))
     
-    ff_hist = utils.divideHistos(num,den,'ff_'+suffix)
+    ff_hist = utils.divideHistos(num,den,'ff_'+suffix+'_'+sampleToProcess)
     
     styles.InitData(ff_hist)
 
@@ -166,7 +178,7 @@ def PlotFF(hists,bins,**kwargs):
     average /= float(nbins)
     ff_hist.GetYaxis().SetRangeUser(0.,2*maximum)
     
-    fitSF = ROOT.TF1('fitFunc'+suffix,FitFunc,fmin,fmax,4)
+    fitSF = ROOT.TF1('fitFunc_'+suffix+'_'+sampleToProcess,FitFunc,fmin,fmax,4)
     fitSF.SetLineColor(ROOT.kBlue)
     fitSF.SetParameter(0,average)
     fitSF.SetParameter(1,0.0)
@@ -179,9 +191,14 @@ def PlotFF(hists,bins,**kwargs):
 
     print('')
     print('+++++++++++++++++++++++++++++++++++++++')
-    print('%s %s %s %s'%(region,dm,njets,eta))
-    print('direct  : data = %6.0f  mc = %6.0f  f = %5.3f'%(n_data_num,n_mc_num,f_mc_num))
-    print('iverted : data = %6.0f  mc = %6.0f  f = %5.3f'%(n_data_den,n_mc_den,f_mc_den))
+    if sampleToProcess=='data':
+        print('%s %s %s %s'%(region,dm,njets,eta))
+        print('direct  : data = %6.0f  mc = %6.0f  f = %5.3f'%(n_data_num,n_mc_num,f_mc_num))
+        print('iverted : data = %6.0f  mc = %6.0f  f = %5.3f'%(n_data_den,n_mc_den,f_mc_den))
+    else:
+        print('%s %s %s %s'%(region,dm,njets,eta))
+        print('direct  : %s = %6.0f'%(sampleToProcess,n_data_num))
+        print('iverted : %s = %6.0f'%(sampleToProcess,n_data_den))
     
     dummy = styles.MakeCanvas('dummy','',400,400)
     fitRes = ff_hist.Fit(fitSF,"S")
@@ -204,7 +221,7 @@ def PlotFF(hists,bins,**kwargs):
 
     # upper uncertainty
     # 4 + 7 = 11 parameters
-    fitSF_up = ROOT.TF1('FitFuncPlus'+suffix,FitFuncPlus,fmin,fmax,11)
+    fitSF_up = ROOT.TF1('FitFuncPlus_'+suffix+'_'+sampleToProcess,FitFuncPlus,fmin,fmax,11)
     fitSF_up.SetLineColor(ROOT.kRed)
     fitSF_up.SetParameter(0,fitSF.GetParameter(0))
     fitSF_up.SetParameter(1,fitSF.GetParameter(1))
@@ -219,7 +236,7 @@ def PlotFF(hists,bins,**kwargs):
     fitSF_up.SetParameter(10,cov(3,3))
     
     # lower uncertainty
-    fitSF_down = ROOT.TF1('FitFuncMinus_'+suffix,FitFuncMinus,fmin,fmax,11)
+    fitSF_down = ROOT.TF1('FitFuncMinus_'+suffix+'_'+sampleToProcess,FitFuncMinus,fmin,fmax,11)
     fitSF_down.SetLineColor(ROOT.kRed)
     for i in range(0,11):
         fitSF_down.SetParameter(i,fitSF_up.GetParameter(i))
@@ -231,7 +248,7 @@ def PlotFF(hists,bins,**kwargs):
     #    print('%8.5f  %8.5f  %8.5f  %8.5f'%(corr02,corr12,corr22,corr23))
     #    print('%8.5f  %8.5f  %8.5f  %8.5f'%(corr03,corr13,corr23,corr33))
     
-    hfit = ROOT.TH1D("hfit_"+suffix,"",200,fmin,fmax)
+    hfit = ROOT.TH1D("hfit_"+suffix+"_"+sampleToProcess,"",200,fmin,fmax)
     ROOT.TVirtualFitter.GetFitter().GetConfidenceIntervals(hfit,0.68)
     styles.InitModel(hfit,"p_{T} (GeV)","Fake Factors",4)
     hfit.SetFillColor(ROOT.kCyan)
@@ -267,9 +284,14 @@ def PlotFF(hists,bins,**kwargs):
     canvas.SetLogx(True)
     canvas.Update()
 
-    #    print('')
-    figure_folder = '/eos/home-r/rasp/php-plots/plots/FF_%s/FF_%s/%s'%(chan,region,eta)
-    outputGraphics = '%s/FF_%s_%s_%s.png'%(figure_folder,era,chan,suffix)    
+    subfolder = 'FakeFactors'
+    if ipcut:
+        subfolder = 'FakeFactors_ipcut'
+    if sampleToProcess=='data':
+        figure_folder = '/eos/home-r/rasp/php-plots/plots/%s/%s/data/%s'%(subfolder,chan,region)
+    else:
+        figure_folder = '/eos/home-r/rasp/php-plots/plots/%s/%s/mc/%s'%(subfolder,chan,sampleToProcess)
+    outputGraphics = '%s/FF_%s_%s_%s.png'%(figure_folder,dm,njets,eta)    
     canvas.Print(outputGraphics)
     return hfit,fitSF,fitSF_up,fitSF_down
     
@@ -282,44 +304,93 @@ if __name__ == "__main__":
     parser = ArgumentParser()
     parser.add_argument('-era' ,'--era', dest='era', default='Run3', choices=['Run3_2022','Run3_2023','Run3'])
     parser.add_argument('-channel','--channel', dest='channel', default='mt',choices=['mt','et'])
-    parser.add_argument('-suffix','--suffix', dest='suffix', default='x')
+    parser.add_argument('-ipcut','--ipcut', dest='ipcut', action='store_true')
+    parser.add_argument('-mc','--mc',dest='mc',action='store_true')
     args = parser.parse_args()
 
     era = args.era
     chan = args.channel
-
+    
     bins_pt = [20, 25, 30, 35, 40, 50, 70, 200.]
     
     basedir = '%s'%(utils.outputFolder)
-    suffix = args.suffix
-    inputFileName = '%s/selection/jetFakes/%s_%s_%s.root'%(basedir,chan,era,suffix)
+    
+    suffixFile = 'x'
+    ipcut = False
+    if args.ipcut:
+        suffixFile = 'x_ipcut1'
+        ipcut = True
+    suffixOutFile = suffixFile
+    if args.mc:
+        suffixOutFile += '_mc'
+        
+    inputFileName = '%s/selection/jetFakes/%s_%s_%s.root'%(basedir,chan,era,suffixFile)
     inputFile = ROOT.TFile(inputFileName,'read')
     print('')
     print(inputFile)
     print('')
-    hists = extractHistos(inputFile)
+    regions = ['qcd','wj','ss_antiiso','top','os_antiiso']
+    hists = extractHistos(inputFile,regions)
 
-    eta_labels = utils.eta_labels
-    
     hfit = {}
     fitSF = {}
     fitSF_up = {}
     fitSF_down = {}
-    for region in ['wj','qcd']:
+
+    if args.mc:
+        sample='wjets'
+        region='wj'
         for dm in utils.dm_labels:
             for njets in utils.njets_labels:
-                for eta in ['endcap','barrel','all']:
-                    suffix = '%s_%s_%s_%s'%(region,dm,njets,eta)
+                for eta in utils.eta_labels:
+                    suffix = 'mc_%s_%s_%s_%s'%(region,dm,njets,eta)
                     hfit[suffix],fitSF[suffix],fitSF_up[suffix],fitSF_down[suffix] = PlotFF(hists,bins_pt,
                                                                                             era=era,
                                                                                             channel=chan,
                                                                                             region=region,
                                                                                             dm=dm,
                                                                                             njets=njets,
-                                                                                            eta=eta)
+                                                                                            sample=sample,
+                                                                                            eta=eta,
+                                                                                            ipcut=ipcut)
+                
+        sample = 'top'
+        region = 'top'
+        for dm in utils.dm_labels:
+            for njets in utils.njets_labels:
+                for eta in utils.eta_labels:
+                    suffix = 'mc_%s_%s_%s_%s'%(region,dm,njets,eta)
+                    hfit[suffix],fitSF[suffix],fitSF_up[suffix],fitSF_down[suffix] = PlotFF(hists,bins_pt,
+                                                                                            era=era,
+                                                                                            channel=chan,
+                                                                                            region=region,
+                                                                                            dm=dm,
+                                                                                            njets=njets,
+                                                                                            sample=sample,
+                                                                                            eta=eta,
+                                                                                            ipcut=ipcut)
+    else:
+        sample = 'data'
+        for region in ['os_antiiso']:
+#        for region in ['qcd','wj','ss_antiiso','os_antiiso']:
 
+            for dm in utils.dm_labels:
+                for njets in utils.njets_labels:
+                    for eta in utils.eta_labels:
+                        suffix = '%s_%s_%s_%s'%(region,dm,njets,eta)
+                        hfit[suffix],fitSF[suffix],fitSF_up[suffix],fitSF_down[suffix] = PlotFF(hists,bins_pt,
+                                                                                                era=era,
+                                                                                                channel=chan,
+                                                                                                region=region,
+                                                                                                dm=dm,
+                                                                                                njets=njets,
+                                                                                                sample=sample,
+                                                                                                eta=eta,
+                                                                                                ipcut=ipcut)
 
-    outputFileName = '%s/ScaleFactors/FF_%s_%s_v2.root'%(basedir,era,chan)
+                        
+    outputFolder='%s/src/IPcorrectionsRun3/FakeFactors/data'%(os.getenv('CMSSW_BASE'))
+    outputFileName = '%s/FF_%s_%s_%s.root'%(outputFolder,era,chan,suffixOutFile)
     print('opening file %s'%(outputFileName))
     outputFile = ROOT.TFile(outputFileName,'recreate')
     outputFile.cd('')
