@@ -6,7 +6,7 @@ class ScaleFactor:
 
     def __init__(self,**kwargs):
         self.filename = kwargs.get('filename','None')
-        self.labelSF = kwargs.get('label','promptSF')
+        print('ScaleFactor classs ->')
         if os.path.isfile(self.filename):
             print('Loading file with scale factors for IPSig cut : %s'%(self.filename))
         else:
@@ -27,8 +27,8 @@ class ScaleFactor:
         for ib in range(1,self.nbinsEta+1):
             self.binsEta.append(self.eff_data.GetYaxis().GetBinCenter(ib))
         self.binsEta.append(self.maxEta)
-        self.nbinsExtrapEta = self.nbinsEta + 1
-        self.EtaBinning = ROOT.TH1D(self.labelSF,"",self.nbinsExtrapEta,array('d',list(self.binsEta)))
+        self.nbinsInterpEta = self.nbinsEta + 1
+        self.EtaBinning = ROOT.TH1D('EtaInterpBins','',self.nbinsInterpEta,array('d',list(self.binsEta)))
         print('nbinsPt  = %1i'%(self.nbinsPt))
         print('nbinsEta = %1i'%(self.nbinsEta))
         print('minPt    = %2.0f'%(self.minPt))
@@ -51,7 +51,7 @@ class ScaleFactor:
         if bin_id==1:
             bin_pt = self.hfits[1].GetXaxis().FindBin(Pt)
             sf = self.hfits[1].GetBinContent(bin_pt)
-        elif bin_id==self.nbinsExtrapEta:
+        elif bin_id==self.nbinsInterpEta:
             bin_pt = self.hfits[self.nbinsEta].GetXaxis().FindBin(Pt)
             sf = self.hfits[self.nbinsEta].GetBinContent(bin_pt)
         else:

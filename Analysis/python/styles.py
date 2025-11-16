@@ -6,13 +6,16 @@ import ROOT
 #############################################
 
 eraLumiLabel = {
+    "Run3_simulation": "13.6 TeV",
     "Run3_2022preEE": "2022preEE, 8.0 fb^{-1} (13.6 TeV)",
     "Run3_2022postEE": "2022postEE, 26.7 fb^{-1} (13.6 TeV)",
+    "Run3_2022EE"    : "2022postEE, 26.7 fb^{-1} (13.6 TeV)",
     "Run3_2022": "2022, 34.7 fb^{-1} (13.6 TeV)",
-    "Run3_2023preBPix": "2023preBPix, 17.8 fb^{-1} (13.6 TeV)",
-    "Run3_2023postBPix": "2023postBPix, 9.5 fb^{-1} (13.6 TeV)",
-    "Run3_2023": "2023, 27.3 fb^{-1} (13.6 TeV)",
-    "Run3": "2022-2023, 61.9 fb^{-1} (13.6 TeV)",
+    "Run3_2023preBPix": "2023preBPix, 18.1 fb^{-1} (13.6 TeV)",
+    "Run3_2023postBPix": "2023postBPix, 9.7 fb^{-1} (13.6 TeV)",
+    "Run3_2023BPix": "2023postBPix, 9.7 fb^{-1} (13.6 TeV)",
+    "Run3_2023": "2023, 27.8 fb^{-1} (13.6 TeV)",
+    "Run3": "2022-2023, 62.5 fb^{-1} (13.6 TeV)",
 }
 
 def InitROOT():

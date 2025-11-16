@@ -7,12 +7,25 @@ import CPHiggs.Analysis.utils as utils
 from CPHiggs.Analysis.ScaleFactor import ScaleFactor
 from CPHiggs.PolarimetricVector.PolarimetricA1 import PolarimetricA1
 import CPHiggs.Analysis.pv_utils as pv_utils
-#from CPHiggs.fastMTT.fastmtt import fastmtt
+
+def cosDeltaPhi(x1,x2):
+    px1 = x1.Px()
+    px2 = x2.Px()
+    py1 = x1.Py()
+    py2 = x2.Py()
+    pt1 = x1.Pt()
+    pt2 = x2.Pt()
+    num = px1*px2+py1*py2
+    den = pt1*pt2
+    if den<0.001: den=0.001
+    cosinus = num/den
+    return cosinus
 
 # Cuts for Z->tau+tau and Z->ll selection
 class AnalysisCuts:
     def __init__(self,**kwargs):
-        self.mtCut = kwargs.get('mtCut',999999.)
+        
+        self.mtCut = kwargs.get('mtCut',65.)
         self.mvisUpperCut = kwargs.get('mvisUpperCut',999999.)
         self.mvisLowerCut = kwargs.get('mvisLowerCut',0.)
         
@@ -60,6 +73,7 @@ class AnalysisCuts:
         self.antiMu  = kwargs.get('antiMu',4)
         self.antiE   = kwargs.get('antiE',2)
         self.antiJet = kwargs.get('antiJet',7)
+        self.antiJetInverted = kwargs.get('antiJetInverted',4)
         self.useCrossTrigger = kwargs.get('useCrossTrigger',False)
 
         self.tauToRhoDE = kwargs.get('TauToRhoDE',0.2)
@@ -69,8 +83,8 @@ class AnalysisCuts:
         self.ipsigLepCut = kwargs.get('ipsigLepCut',1.0)
         self.ipsigTauCut = kwargs.get('ipsigTauCut',1.25)
         
-        self.isoLepInverseLowerCut = kwargs.get('isoLepInverseLowerCut',0.15)
-        self.isoLepInverseUpperCut = kwargs.get('isoLepInverseUpperCut',0.30)
+        self.isoLepInverseLowerCut = kwargs.get('isoLepInverseLowerCut',0.05)
+        self.isoLepInverseUpperCut = kwargs.get('isoLepInverseUpperCut',1.00)
 
         self.applyBVeto = kwargs.get('applyBVeto',False)
         
@@ -81,10 +95,18 @@ class AnalysisCuts:
         self.tauMomScale = kwargs.get('tauMomScale',0.02)  # tau mom scale unc. 
         self.lepTauMomScale = kwargs.get('lepTauMomScale',0.04) # lep->tau fake mom scale unc. 0.02/0.04 for muons/electrons
 
+        self.signalCat = kwargs.get('SignalCategory',1) # index of signal category in BDT
+        
         print('')
         print("Setting cuts ->")
 
+        self.mtUpperCut = 60.
+        self.mtLowerCut = 70.
+        self.bdtWCut = 0.2
+        
         print("mtCut",self.mtCut)
+        print("mtUpperCut",self.mtUpperCut)
+        print("mtLowerCut",self.mtLowerCut)
         print("mvisLowerCut",self.mvisLowerCut)
         print("mvisUpperCut",self.mvisUpperCut)
         
@@ -109,6 +131,8 @@ class AnalysisCuts:
         print("antiMu",self.antiMu)
         print("antiE",self.antiE)
         print("antiJet",self.antiJet)
+        print("antiJetInverted",self.antiJetInverted)
+
         print("useCrossTrigger",self.useCrossTrigger)
         print("BVeto",self.applyBVeto)
 
@@ -121,6 +145,7 @@ class AnalysisCuts:
         print("lepMomScale",self.lepMomScale)
         print("tauMomScale",self.tauMomScale)
         print("lepTauMomScale",self.lepTauMomScale)
+        print("signalCat",self.signalCat)
 
         print('')
         
@@ -197,18 +222,6 @@ class analysisSample:
             self.norm = 1.0
             self.ismc = False
 
-        self.sign_labels = ['os','ss']
-        self.iso_labels = ['iso','antiiso','rest']
-        self.type_labels = ['tau','lep','had','all']
-        self.scale_unc = ['lepUp','lepDown','tauUp','tauDown','lfakeUp','lfakeDown']
-        self.mt_regions = ['low_mt','high_mt']
-        self.ff_tauids = ['loose','nominal']
-        self.njet_labels = ['njets0','njets1','njets2']
-        self.dm_labels = ['pi','rho','a1_1pr','a1_3pr','all']
-        self.trig_labels = ['trig','nontrig']
-        self.tauiso_labels = ['inverted_deeptau','nominal_deeptau']
-        self.typetau_labels = ['leptau','hadtau','faketau','all']
-        self.cp_hypotheses = ['sm','ps','mm']
         
         print('%s : %s : %s : norm = %7.3f'%(era,self.channel,self.sampleName,self.norm))
         
@@ -229,10 +242,15 @@ class analysisSample:
 
         self.applyIPSigPromptLepSF = kwargs.get('applyIPSigPromptLepSF',False)
         self.applyIPSigTauLepSF = kwargs.get('applyIPSigTauLepSF',False)
+        self.applyIPSigJsonSF = kwargs.get('applyIPSigJsonSF',False)
+        self.applyFakeFactor = kwargs.get('applyFakeFactor',False)
+#        self.etaBinnedFF = kwargs.get('etaBinnedFF',False)
         
         self.ipSigPromptLepSF = kwargs.get('ipSigPromptLepSF',None)
         self.ipSigTauLepSF = kwargs.get('ipSigTauLepSF',None)
-
+        self.ipSigJsonSF = kwargs.get('ipSigJsonSF',None)
+        self.fakeFactor = kwargs.get('fakeFactor',None)
+        
         self.applyWeightCP = kwargs.get('applyWeightCP',False)
         
     def getSampleName(self):
@@ -286,63 +304,74 @@ class analysisSample:
         analysisType = self.analysisType
         
         hists = {}
-        # baseline analysis ->
-        for var in utils.lib_histos:
-            nbins = utils.lib_histos[var][0]
-            xmin  = utils.lib_histos[var][1]
-            xmax  = utils.lib_histos[var][2]
-            width = (xmax-xmin)/float(nbins)
-            xbins = []
-            for i in range(0,nbins+1):
-                xb = xmin + width*float(i)
-                xbins.append(xb)
-                
-            for sign in self.sign_labels:
-                for iso in self.iso_labels:
-                    for typ in self.type_labels:
-                        name = '%s_%s_%s_%s'%(var,sign,iso,typ)
-                        histname = self.sampleName+'_'+name
-                        hists[name] = ROOT.TH1D(histname,"",nbins,array('d',list(xbins)))
-
-
-        # phiCP studies
-        if analysisType=='phiCP':
-            for var in utils.lib_phiCP_histos:
+        ########################################
+        ######### baseline analysis ############
+        ########################################
+        if analysisType=='baseline':
+            for var in utils.lib_histos:
+            
                 nbins = utils.lib_histos[var][0]
                 xmin  = utils.lib_histos[var][1]
                 xmax  = utils.lib_histos[var][2]
-                width = (xmax-xmin)/float(nbins)
-                xbins = []
-                for i in range(0,nbins+1):
-                    xb = xmin + width*float(i)
-                    xbins.append(xb)
+                xbins = utils.createBins(nbins,xmin,xmax)
+
+                for region in utils.region_labels:
+                    for typ in utils.type_labels:
+                        name = '%s_%s_%s'%(var,region,typ)
+                        histname = self.sampleName+'_'+name
+                        hists[name] = ROOT.TH1D(histname,"",nbins,array('d',list(xbins)))
+                        for ff in utils.ff_labels:
+                            name = '%s_%s_%s_%s'%(var,region,ff,typ)
+                            histname = self.sampleName+'_'+name
+                            hists[name] = ROOT.TH1D(histname,"",nbins,array('d',list(xbins)))
+                """
+                        for njets in utils.njets_labels:
+                            name = '%s_%s_%s_%s'%(var,region,njets,typ)
+                            histname = self.sampleName+'_'+name
+                            hists[name] = ROOT.TH1D(histname,"",nbins,array('d',list(xbins)))
+                            for ff in utils.ff_labels:
+                                name = '%s_%s_%s_%s_%s'%(var,region,njets,ff,typ)
+                                histname = self.sampleName+'_'+name
+                                hists[name] = ROOT.TH1D(histname,"",nbins,array('d',list(xbins)))
+                """             
+
+        ######################################
+        ########## phi(CP) studies ###########
+        ######################################
+        if analysisType=='phiCP':
+            for var in utils.lib_phiCP_histos:
+
+                nbins = utils.lib_histos[var][0]
+                xmin  = utils.lib_histos[var][1]
+                xmax  = utils.lib_histos[var][2]
+                xbins = utils.createBins(nbins,xmin,xmax)
                 
-                for sign in self.sign_labels:
-                    for iso in self.iso_labels:
-                        for typ in self.type_labels:
+                for sign in utils.sign_labels:
+                    for iso in utils.iso_labels:
+                        for typ in utils.type_labels:
                             name = '%s_%s_%s_%s'%(var,sign,iso,typ)
                             histname = self.sampleName+'_'+name
                             hists[name] = ROOT.TH1D(histname,"",nbins,array('d',list(xbins)))
                             if self.applyWeightCP:
-                                for hypothesis in self.cp_hypotheses:
+                                for hypothesis in utils.cp_hypotheses:
                                     name = '%s_%s_%s_%s_%s'%(var,sign,iso,typ,hypothesis)
                                     histname = self.sampleName+'_'+name
                                     hists[name] = ROOT.TH1D(histname,"",nbins,array('d',list(xbins)))
 
-            
-        # measurements of SFs related to cut on mu/e ipSig
+
+        ######################################################
+        ## measurements of SFs related to cut on mu/e ipSig ##
+        ######################################################
         if analysisType=='ipSig':
+            
             nbins = utils.lib_histos['m_vis'][0]
             xmin  = utils.lib_histos['m_vis'][1]
             xmax  = utils.lib_histos['m_vis'][2]
-            width = (xmax-xmin)/float(nbins)
-            xbins = []
-            for i in range(0,nbins+1):
-                xb = xmin + width*float(i)
-                xbins.append(xb)
-            for sign in self.sign_labels:
-                for iso in self.iso_labels:
-                    for typ in self.type_labels:
+            xbins = utils.createBins(nbins,xmin,xmax)
+
+            for sign in utils.sign_labels:
+                for iso in utils.iso_labels:
+                    for typ in utils.type_labels:
                         for binPt in range(1,self.nbinsPt+1):
                             for binEta in range(1,self.nbinsEta+1):
                                 label = '%1i_%1i'%(binPt,binEta)
@@ -353,61 +382,53 @@ class analysisSample:
                                     name = 'm_vis_2_%s_%s_%s_%s_%s'%(region,label,sign,iso,typ)
                                     histname = self.sampleName+'_'+ name
                                     hists[name] = ROOT.TH1D(histname,"",nbins,array('d',list(xbins)))
-                                    """
-                                    for unc in self.scale_unc:
-                                        name = 'm_vis_%s_%s_%s_%s_%s_%s'%(unc,region,label,sign,iso,typ)
-                                        histname = self.sampleName+'_'+ name
-                                        hists[name] = ROOT.TH1D(histname,"",nbins,array('d',list(xbins)))
-                                    """
 
-        # datacard production
+
+        ##########################################
+        #######  datacard production #############
+        ##########################################
         if analysisType=='datacardsPhiCP':
+
             # BDT variable : binning
             nbins_bdt = 100
             xmin_bdt = 0.0
             xmax_bdt = 1.0
-            width_bdt = (xmax_bdt-xmin_bdt)/float(nbins_bdt)
-            xbins_bdt = []
-            for ib in range(0,nbins_bdt+1):
-                xb = xmin_bdt + width_bdt*float(ib)
-                xbins_bdt.append(xb)
+            xbins_bdt = utils.createBins(nbins_bdt,xmin_bdt,xmax_bdt)
             
+            # phi(CP) variable binning
             nbins_phicp = 40
             xmin_phicp = 0.
             xmax_phicp = 360.
-            width_phicp = (xmax_phicp-xmin_phicp)/float(nbins_phicp)
-            xbins_phicp = []
-            for ib in range(0,nbins_phicp+1):
-                xb = xmin_phicp + width_phicp*float(ib)
-                xbins_phicp.append(xb)
+            xbins_phicp =  utils.createBins(nbins_phicp,xmin_phicp,xmax_phicp)
             
             for var in utils.lib_datacards_1Dhistos:
-                for sign in self.sign_labels:
-                    for iso in self.iso_labels:
-                        for typelep in self.type_labels:
-                            for typetau in self.typetau_labels:
+                for sign in utils.sign_labels:
+                    for iso in utils.iso_labels:
+                        for typelep in utils.type_labels:
+                            for typetau in utils.type_labels:
                                 name = '%s_%s_%s_%s_%s'%(var,sign,iso,typelep,typetau)
                                 histname = self.sampleName+'_'+name
                                 hists[name] = ROOT.TH1D(histname,"",nbins_bdt,array('d',list(xbins_bdt)))
                                 if self.applyWeightCP:
-                                    for hypothesis in self.cp_hypotheses:
+                                    for hypothesis in utils.cp_hypotheses:
                                         name = '%s_%s_%s_%s_%s_%s'%(var,sign,iso,typelep,typetau,hypothesis)
                                         histname = self.sampleName+'_'+name
                                         hists[name] = ROOT.TH1D(histname,"",nbins_bdt,array('d',list(xbins_bdt)))
                                 
-            for decay_label in utils.lib_datacards_2Dhistos:
+            for dm in utils.dm_labels:
+                decay_label = 'lep_%s'%(dm)
                 var = 'phicp_vs_bdt_%s'%(decay_label)
-                for sign in self.sign_labels:
-                    for iso in self.iso_labels:
-                        for typelep in self.type_labels:
-                            for typetau in self.typetau_labels:
+                for sign in utils.sign_labels:
+                    for iso in utils.iso_labels:
+                        for typelep in utils.type_labels:
+                            for typetau in utils.type_labels:
                                 name = '%s_%s_%s_%s_%s'%(var,sign,iso,typelep,typetau)
                                 histname = self.sampleName+'_'+name
                                 hists[name] = ROOT.TH2D(histname,"",
                                                         nbins_bdt,array('d',list(xbins_bdt)),
                                                         nbins_phicp,array('d',list(xbins_phicp)))
                                 if self.applyWeightCP:
-                                    for hypothesis in self.cp_hypotheses:
+                                    for hypothesis in utils.cp_hypotheses:
                                         name = '%s_%s_%s_%s_%s_%s'%(var,sign,iso,typelep,typetau,hypothesis)
                                         histname = self.sampleName+'_'+name
                                         hists[name] = ROOT.TH2D(histname,"",
@@ -415,37 +436,36 @@ class analysisSample:
                                                                 nbins_phicp,array('d',list(xbins_phicp)))
                                             
 
-        # jetFakes modeling                            
+        ####################################
+        ####### jetFakes modeling ##########
+        ####################################
         if analysisType=='jetFakes':
-            xbins = []
-            xbins.append(20.)
-            nbins = 0
-            for i in range(1,5):
-                nbins += 1
-                xb = 20.0+float(i)*5.0
-                xbins.append(xb)
-            for i in range(1,3):
-                nbins += 1
-                xb = 40.0+float(i)*10.0
-                xbins.append(xb)
-            for i in range(1,3):
-                nbins += 1
-                xb = 60.0+float(i)*20.0
-                xbins.append(xb)
-            nbins += 1
-            xbins.append(150.)
-            nbins += 1
-            xbins.append(400.)
-            for ff_tauid in self.ff_tauids:
-                for mt in self.mt_regions:
-                    for njet in self.njet_labels:
-                        for dm in self.dm_labels:
-                            for sign in self.sign_labels:
-                                for iso in self.iso_labels:
-                                    for typ in self.type_labels:
-                                        name = 'pt_2_%s_%s_%s_%s_%s_%s_%s'%(ff_tauid,mt,njet,dm,sign,iso,typ)
-                                        histname = self.sampleName+'_'+ name
-                                        hists[name] = ROOT.TH1D(histname,"",nbins,array('d',list(xbins)))
+            nbins = utils.lib_histos['pt_2'][0]
+            xmin  = utils.lib_histos['pt_2'][1]
+            xmax  = utils.lib_histos['pt_2'][2]
+            xbins = utils.createBins(nbins,xmin,xmax)
+            for dm in utils.dm_labels:
+                for njets in utils.njets_labels:
+                    for eta in utils.eta_labels:
+                        for tauid in utils.tauid_labels:
+                            for typ in utils.type_labels:
+                                # QCD : ss, antiiso, lowmt
+                                name = 'pt_2_qcd_%s_%s_%s_%s_%s'%(dm,njets,eta,tauid,typ)
+                                histname = self.sampleName+'_'+ name
+                                hists[name] = ROOT.TH1D(histname,"",nbins,array('d',list(xbins)))
+                                # WJets : ss, iso, highmt
+                                name = 'pt_2_wj_%s_%s_%s_%s_%s'%(dm,njets,eta,tauid,typ)
+                                histname = self.sampleName+'_'+ name
+                                hists[name] = ROOT.TH1D(histname,"",nbins,array('d',list(xbins)))
+                                name = 'pt_2_top_%s_%s_%s_%s_%s'%(dm,njets,eta,tauid,typ)
+                                histname = self.sampleName+'_'+ name
+                                hists[name] = ROOT.TH1D(histname,"",nbins,array('d',list(xbins)))
+                                name = 'pt_2_ss_antiiso_%s_%s_%s_%s_%s'%(dm,njets,eta,tauid,typ)
+                                histname = self.sampleName+'_'+ name
+                                hists[name] = ROOT.TH1D(histname,"",nbins,array('d',list(xbins)))
+                                name = 'pt_2_os_antiiso_%s_%s_%s_%s_%s'%(dm,njets,eta,tauid,typ)
+                                histname = self.sampleName+'_'+ name
+                                hists[name] = ROOT.TH1D(histname,"",nbins,array('d',list(xbins)))
                                         
         return hists
 
@@ -459,8 +479,12 @@ class analysisSample:
         ipSigTauLepSF = self.ipSigTauLepSF
         applyIPSigPromptLepSF = self.applyIPSigPromptLepSF
         applyIPSigTauLepSF = self.applyIPSigTauLepSF
+        applyIPSigJsonSF = self.applyIPSigJsonSF
+        ipSigJsonSF = self.ipSigJsonSF
         applyWeightCP = self.applyWeightCP
         analysisType = self.analysisType
+        fakeFactor = self.fakeFactor
+        applyFakeFactor = self.applyFakeFactor
 
 #        print('SetConfig ->')
 #        print('ptMin=%1.0f ptMax=%1.0f'%(self.ptMin,self.ptMax))
@@ -476,7 +500,7 @@ class analysisSample:
         sampleName = self.sampleName
         
         massLep = utils.electron_mass
-        if channel=='mt':
+        if channel=='mt' or channel=='mm':
             massLep = utils.muon_mass
         massPi = utils.pi_mass
         massPi0 = utils.pi0_mass
@@ -599,6 +623,8 @@ class analysisSample:
         # general variables
         
         m_vis        = np.zeros(1,dtype=np.float64)
+        FastMTT_mass = np.zeros(1,dtype=np.float64)
+        FastMTT_pt   = np.zeros(1,dtype=np.float64)
         met_pt       = np.zeros(1,dtype=np.float64)
         met_phi      = np.zeros(1,dtype=np.float64)
         met_covXX    = np.zeros(1,dtype=np.float64)
@@ -644,13 +670,16 @@ class analysisSample:
         aco_a1_rho_FastMTT = np.zeros(1,dtype=np.float64)
 
         aco_a1_a1_FastMTT = np.zeros(1,dtype=np.float64)
+
+        BDT_W_score = np.zeros(1,dtype=np.float64)
+        dR = np.zeros(1,dtype=np.float64)
         
         # booleans
-        trg_lep     = np.zeros(1,dtype='?')
-        trg_lep2    = np.zeros(1,dtype='?')
-        trg_cross   = np.zeros(1,dtype='?')
+        trg_lep       = np.zeros(1,dtype='?')
+        trg_lep2      = np.zeros(1,dtype='?')
+        trg_cross     = np.zeros(1,dtype='?')
         trg_doubletau = np.zeros(1,dtype='?')
-        os          = np.zeros(1,dtype='?')
+        os            = np.zeros(1,dtype='?')
         
         # integers
         idDeepTau2018v2p5VSe_1   = np.zeros(1,dtype=np.int64)
@@ -683,6 +712,9 @@ class analysisSample:
         tree.SetBranchAddress('met_covYY',met_covYY)
         tree.SetBranchAddress('m_vis',m_vis)
         tree.SetBranchAddress('os',os)
+        if channel=='mt' or channel=='et':
+            tree.SetBranchAddress('FastMTT_mass',FastMTT_mass)
+            tree.SetBranchAddress('FastMTT_pt',FastMTT_pt)
 
         tree.SetBranchAddress('n_jets',n_jets)
         tree.SetBranchAddress('n_bjets',n_bjets)
@@ -798,16 +830,15 @@ class analysisSample:
         if channel=='mt':
             tree.SetBranchAddress('aco_mu_pi',aco_lep_pi)
             tree.SetBranchAddress('aco_mu_rho',aco_lep_rho)
-            tree.SetBranchAddress('aco_mu_a1',aco_lep_a1)
+#            tree.SetBranchAddress('aco_mu_a1',aco_lep_a1)
             tree.SetBranchAddress('aco_mu_a1_FASTMTT_MassConstraint',aco_lep_a1_FastMTT)
 
 
         if channel=='et':
             tree.SetBranchAddress('aco_e_pi',aco_lep_pi)
             tree.SetBranchAddress('aco_e_rho',aco_lep_rho)
-            tree.SetBranchAddress('aco_e_a1',aco_lep_a1)
+#            tree.SetBranchAddress('aco_e_a1',aco_lep_a1)
             tree.SetBranchAddress('aco_e_a1_FASTMTT_MassConstraint',aco_lep_a1_FastMTT)
-
 
         if channel=='tt':
             
@@ -842,16 +873,23 @@ class analysisSample:
             tree.SetBranchAddress('wt_cp_ps',weight_cp_ps)
             tree.SetBranchAddress('wt_cp_mm',weight_cp_mm)
             
-        if analysisType=='datacardsPhiCP':
+        if analysisType=='datacardsPhiCP' or analysisType=='baseline':
             tree.SetBranchAddress('BDT_pred_score',bdt_pred)
             tree.SetBranchAddress('BDT_pred_class',class_pred)
+
+        tree.SetBranchAddress('BDT_W_score',BDT_W_score)
+        tree.SetBranchAddress('dR',dR)
         
         # booleans (trigger)
+        # muons
         if channel=='mt' or channel=='mm': tree.SetBranchAddress('trg_singlemuon',trg_lep)
         if channel=='mm': tree.SetBranchAddress('trg_singlemuon_2',trg_lep2)
         if channel=='mt': tree.SetBranchAddress('trg_mt_cross',trg_cross)
+        # electrons
         if channel=='et' or channel=='ee': tree.SetBranchAddress('trg_singleelectron',trg_lep)
+        if channel=='ee': tree.SetBranchAddress('trg_singleelectron_2',trg_lep2)
         if channel=='et': tree.SetBranchAddress('trg_et_cross',trg_cross)
+        # di-taus
         if channel=='tt': tree.SetBranchAddress('trg_doubletau',trg_doubletau)
         
         # integers
@@ -874,17 +912,16 @@ class analysisSample:
         # run over entries
         for entry in range(0,nentries):
 
-            if entry%100000==0:
+            if entry%100000==0 and entry>0:
                 print('processed %1i out of %1i events'%(entry,nentries))
             tree.GetEntry(entry)
-
             
             # trigger threshold
             passTrigger = False
             if channel=='mm' or channel=='ee':
-                pt1Trig = pt_1[0]
                 trg1 = trg_lep[0]
                 trg2 = trg_lep2[0]
+                pt1Trig = pt_1[0]
                 eta1Trig = abs(eta_1[0])
                 pt2Trig = pt_2[0]
                 eta2Trig = abs(eta_2[0])
@@ -906,6 +943,10 @@ class analysisSample:
                 passTrigger = trig_ditau_acc and trg_doubletau[0]
 
             if not passTrigger: continue
+
+            if cuts.applyBVeto:
+                #                print('applying bveto %2i'%(n_bjets[0]))
+                if n_bjets[0]>0: continue
             
             # kinematic cuts
             if pt_1[0]<cuts.ptLep1Cut: continue
@@ -923,7 +964,11 @@ class analysisSample:
                 if iso_2[0]>cuts.isoLepCut: continue
                 if cuts.applyIPSigLep2Cut:
                     if abs(ipsig_2[0])<cuts.ipsigLepCut: continue
-            
+
+            isTauToPi_2 = False
+            isTauToRho_2 = False
+            isTauToA1_1pr_2 = False
+            isTauToA1_3pr_2 = False
             if channel=='mt' or channel=='et':
                 # m_vis cut
                 if m_vis[0]>cuts.mvisUpperCut: continue
@@ -931,18 +976,33 @@ class analysisSample:
                 # tau discriminator against e and mu and jet
                 if idDeepTau2018v2p5VSe_2[0]<cuts.antiE: continue
                 if idDeepTau2018v2p5VSmu_2[0]<cuts.antiMu: continue
-                if idDeepTau2018v2p5VSjet_2[0]<cuts.antiJet: continue
+                if idDeepTau2018v2p5VSjet_2[0]<1: continue
 
-            ##### Decay mode specific selection #####
-            isTauToPi_2 = decayModePNet_2[0]==0 and abs(ipsig_2[0])>cuts.ipsigTauCut        
-            isTauToRho_2 = decayModePNet_2[0]==1 and decayMode_2[0]==1 and abs(pion_E_split_2[0])>cuts.tauToRhoDE
-            isTauToA1_1pr_2 = decayModePNet_2[0]==2 and decayMode_2[0]==1 and abs(pion_E_split_2[0])>cuts.tauToRhoDE
-            isTauToA1_3pr_2 = decayModePNet_2[0]==10 and hasRefitSV_2[0]
+                ##### Decay mode specific selection #####
+                isTauToPi_2 = decayModePNet_2[0]==0 and abs(ipsig_2[0])>cuts.ipsigTauCut        
+                isTauToRho_2 = decayModePNet_2[0]==1 and decayMode_2[0]==1 and abs(pion_E_split_2[0])>cuts.tauToRhoDE
+                isTauToA1_1pr_2 = decayModePNet_2[0]==2 and decayMode_2[0]==1 and abs(pion_E_split_2[0])>cuts.tauToRhoDE
+                isTauToA1_3pr_2 = decayModePNet_2[0]==10 and hasRefitSV_2[0]
 
-            passTau_2 =  isTauToPi_2 or isTauToRho_2 or isTauToA1_1pr_2 or isTauToA1_3pr_2
-            if not passTau_2: continue
+                passTau_2 =  isTauToPi_2 or isTauToRho_2 or isTauToA1_1pr_2 or isTauToA1_3pr_2
+                if not passTau_2:
+                    continue
             
+            isTauToPi_1 = False
+            isTauToRho_1 = False
+            isTauToA1_1pr_1 = False
+            isTauToA1_3pr_1 = False
             if channel=='tt':
+                # m_vis cut
+                if m_vis[0]>cuts.mvisUpperCut: continue
+                if m_vis[0]<cuts.mvisLowerCut: continue
+
+                # tau discriminator against e and mu and jet
+                if idDeepTau2018v2p5VSe_1[0]<cuts.antiE: continue
+                if idDeepTau2018v2p5VSmu_1[0]<cuts.antiMu: continue
+                if idDeepTau2018v2p5VSjet_1[0]<cuts.antiJet: continue
+
+                # decay modes of the first tau
                 isTauToPi_1 = decayModePNet_1[0]==0 and abs(ipsig_1[0])>cuts.ipsigTauCut        
                 isTauToRho_1 = decayModePNet_1[0]==1 and decayMode_1[0]==1 and abs(pion_E_split_1[0])>cuts.TauToRhoDE
                 isTauToA1_1pr_1 = decayModePNet_1[0]==2 and decayMode_1[0]==1 and abs(pion_E_split_1[0])>cuts.TauToRhoDE
@@ -951,19 +1011,196 @@ class analysisSample:
                 passTau_1 =  isTauToPi_1 or isTauToRho_1 or isTauToA1_1pr_1 or isTauToA1_3pr_1 
                 if not passTau_1: continue
                 
+                # tau discriminator against e and mu and jet
+                if idDeepTau2018v2p5VSe_2[0]<cuts.antiE: continue
+                if idDeepTau2018v2p5VSmu_2[0]<cuts.antiMu: continue
+                if idDeepTau2018v2p5VSjet_2[0]<cuts.antiJet: continue
+
+                ##### Decay mode specific selection #####
+                isTauToPi_2 = decayModePNet_2[0]==0 and abs(ipsig_2[0])>cuts.ipsigTauCut        
+                isTauToRho_2 = decayModePNet_2[0]==1 and decayMode_2[0]==1 and abs(pion_E_split_2[0])>cuts.tauToRhoDE
+                isTauToA1_1pr_2 = decayModePNet_2[0]==2 and decayMode_2[0]==1 and abs(pion_E_split_2[0])>cuts.tauToRhoDE
+                isTauToA1_3pr_2 = decayModePNet_2[0]==10 and hasRefitSV_2[0]
+
+                passTau_2 =  isTauToPi_2 or isTauToRho_2 or isTauToA1_1pr_2 or isTauToA1_3pr_2
+                if not passTau_2:
+                    continue
+
+
+            #############################################
+            #### event labeling #####
+            #############################################
+            sign_label = 'ss'
+            lep_label = 'had'
+            iso_label = 'antiiso'
+            lep2_label = 'had'
+            mt_label = 'lowmt'
+            deeptau_label = 'rest'
+            njets_label = 'njets0'
+            dm_label = 'rest'
+            eta_label = 'barrel'
+            
+            if mt_1[0]>cuts.mtCut: mt_label = 'highmt'
+
+            absEta = ROOT.TMath.Abs(eta_2[0])
+            if absEta>1.48:
+                eta_label='endcap'
+                
+            if n_jets[0]==0: njets_label='njets0'
+            elif n_jets[0]==1: njets_label='njets1'
+            else: njets_label='njets2'
+
+            DecayMode = -1
+            if channel=='mt' or channel=='et':
+                if isTauToPi_2:
+                    dm_label='pi'
+                    DecayMode = 0
+                if isTauToRho_2:
+                    dm_label='rho'
+                    DecayMode = 1
+                if isTauToA1_1pr_2:
+                    dm_label='a1_1pr'
+                    DecayMode = 2
+                if isTauToA1_3pr_2:
+                    dm_label='a1_3pr'
+                    DecayMode = 10
+            
+                if idDeepTau2018v2p5VSjet_2[0]<cuts.antiJet:
+                    deeptau_label = 'inverted'
+                if idDeepTau2018v2p5VSjet_2[0]>=cuts.antiJet:
+                    deeptau_label = 'nominal'
+
+                if dm_label=='rest': continue
+                if deeptau_label=='rest': continue
+                
+                
+            if self.ismc:
+                if genmatch_1[0]==1: lep_label = 'lep'
+                if genmatch_1[0]==15: lep_label = 'tau'
+                if channel=='mm' or channel=='ee':
+                    if genmatch_2[0]==1: lep2_label = 'lep'
+                    if genmatch_2[0]==15: lep2_label = 'tau'
+                else:
+                    if genmatch_2[0]>=1 and genmatch_2[0]<=4: lep2_label = 'lep'
+                    elif genmatch_2[0]==5: lep2_label = 'tau'
+                    else: lep2_label = 'had' 
+
+            
+            if os[0]:
+                sign_label = 'os'
+
+
+            directIso = iso_1[0] < cuts.isoLepCut
+            invertedIso = iso_1[0] > cuts.isoLepInverseLowerCut and iso_1[0] < cuts.isoLepInverseUpperCut
+
+            qcd_closure = iso_1[0] > 0.15 and iso_1[0] < 0.5
+            
+            if directIso: iso_label='iso'
+
+            #####################
+            # defining regions ->
+            #####################
+            region_flags={}
+            for reg in utils.region_labels:
+                region_flags[reg] = False
+
+            acceptEvent = False
+            #            if sign_label=='os'and iso_label=='iso':
+            #                region_flags['incl_os_iso'] = True
+            #                acceptEvent = True
+            #            if sign_label=='ss'and iso_label=='iso':
+            #                region_flags['incl_ss_iso'] = True
+            #                acceptEvent = True
+            
+                
+            if mt_label=='lowmt' and sign_label=='os'and iso_label=='iso':
+                region_flags['lowmt_os_iso'] = True
+                acceptEvent = True
+            if mt_label=='lowmt' and sign_label=='ss'and iso_label=='iso':
+                region_flags['lowmt_ss_iso'] = True
+                acceptEvent = True
+
+            if mt_label=='lowmt' and sign_label=='os'and qcd_closure:
+                region_flags['lowmt_os_antiiso'] = True
+                acceptEvent = True
+            if mt_label=='lowmt' and sign_label=='ss'and qcd_closure:
+                region_flags['lowmt_ss_antiiso'] = True
+                acceptEvent = True
+
+            #            if mt_label=='highmt' and sign_label=='os'and iso_label=='iso':
+            #                region_flags['highmt_os_iso'] = True
+            #                acceptEvent = True
+            #            if mt_label=='highmt' and sign_label=='ss'and iso_label=='iso':
+            #                region_flags['highmt_ss_iso'] = True
+            #                acceptEvent = True
+                
+            qcd_ff_region = mt_1[0]<cuts.mtUpperCut and sign_label=='ss' and invertedIso 
+            if qcd_ff_region:
+                region_flags['qcd_ff'] = True
+                acceptEvent = True
+
+            wj_ff_region = mt_1[0]>cuts.mtLowerCut and sign_label=='os' and directIso and n_bjets[0]==0 and BDT_W_score[0]>cuts.bdtWCut
+            if wj_ff_region:
+                region_flags['wj_ff'] = True
+                acceptEvent = True
+            
+
+            if not acceptEvent: continue
+                
+            aco_lep = {
+                'pi'  : aco_lep_pi[0],
+                'rho' : aco_lep_rho[0],
+                'a1_1pr' : aco_lep_rho[0],
+                'a1_3pr' : aco_lep_a1_FastMTT[0],
+            }
+
+
+            #################################
+            #### Definition of variables ####
+            #################################
+            
+            lep1LV = ROOT.TLorentzVector()
+            lep2LV = ROOT.TLorentzVector()
+            metLV = ROOT.TLorentzVector()
+            lep1LV.SetPtEtaPhiM(pt_1[0],eta_1[0],phi_1[0],massLep)
+            if channel=='mm' or channel=='ee':
+                lep2LV.SetPtEtaPhiM(pt_2[0],eta_2[0],phi_2[0],massLep)
+            else:
+                lep2LV.SetPtEtaPhiM(pt_2[0],eta_2[0],phi_2[0],mass_2[0])
+            metLV.SetPtEtaPhiM(met_pt[0]*ROOT.TMath.Cos(met_phi[0]),met_pt[0]*ROOT.TMath.Sin(met_phi[0]),0.,0.)
+
+            ptLV = lep1LV+lep2LV+metLV
+            pt_tt = ptLV.Pt()
+
+            cosDeltaPhiQCD = cosDeltaPhi(metLV,lep2LV)
+            CMetQCD = metLV.Pt()*cosDeltaPhiQCD/lep2LV.Pt()
+            metLepLV = metLV+lep1LV
+            cosDeltaPhiW = cosDeltaPhi(metLepLV,lep2LV)
+            CMetW = metLepLV.Pt()*cosDeltaPhiW/lep2LV.Pt()
             
             variables = {} 
             variables['m_vis'] = m_vis[0]
+            variables['m_FastMTT'] = FastMTT_mass[0]
+            variables['pt_FastMTT'] = FastMTT_pt[0]
+            variables['pt_tt'] = pt_tt 
             variables['pt_1'] = pt_1[0]
             variables['eta_1'] = eta_1[0]
             variables['pt_2'] = pt_2[0]
             variables['eta_2'] = eta_2[0]
+            variables['mt_1'] = mt_1[0]
             variables['met'] = met_pt[0]
-            variables['ipsig_1'] = abs(ipsig_1[0])
-            variables['ipsig_2'] = abs(ipsig_2[0])
+            variables['CMetQCD'] = CMetQCD
+            variables['CMetW'] = CMetW
+#            variables['ipsig_1'] = abs(ipsig_1[0])
+#            variables['ipsig_2'] = abs(ipsig_2[0])
+            variables['dm_2'] = DecayMode
+            variables['dR'] = dR[0]
+
+#            print('dR = %5.3f'%(dR[0]))
 
             # jet related variables
             variables['n_jets'] = n_jets[0]
+            variables['n_bjets'] = n_bjets[0]
             variables['jpt_1'] = -9999.
             variables['jpt_2'] = -9999.
             variables['jeta_1'] = -9999.
@@ -979,97 +1216,257 @@ class analysisSample:
                 variables['mjj'] = mjj[0]
                 variables['jdeta'] = abs(jdeta[0])
 
-            sign_label = 'ss'
-            lep_label = 'had'
-            iso_label = 'rest'
-            lep2_label = 'had'
+            if channel=='mt' or channel=='et':
+                cat = int(class_pred[0]+0.1)
+                bdt_name = 'bdt_ditau'
+                if cat==1:
+                    bdt_name = 'bdt_signal'
+                if cat==2:
+                    bdt_name = 'bdt_fakes'
+                variables[bdt_name] = bdt_pred[0]
+#                print('category %1i BDT = %5.3f'%(cat,bdt_pred[0]))
+#            print('W BDT score : %5.3f %1i'%(BDT_W_score[0],n_bjets[0]))
             
-            if self.ismc:
-                if genmatch_1[0]==1: lep_label = 'lep'
-                if genmatch_1[0]==15: lep_label = 'tau'
-                if channel=='mm' or channel=='ee':
-                    if genmatch_2[0]==1: lep2_label = 'lep'
-                    if genmatch_2[0]==15: lep2_label = 'tau'
-                else:
-                    if genmatch_2[0]>=1 and genmatch_2[0]<=4: lep2_label = 'lep'
-                    elif genmatch_2[0]==5: lep2_label = 'tau'
-                    else: lep2_label = 'had' 
-                    
-                
-            if os[0]:
-                sign_label = 'os'
-                
-            directIso = iso_1[0] < cuts.isoLepCut
-            inverseIso = iso_1[0] > cuts.isoLepInverseLowerCut and iso_1[0] < cuts.isoLepInverseUpperCut
-
-            if directIso: iso_label = 'iso'
-            if inverseIso: iso_label = 'antiiso'
-
             ##################
             ## total weight ##
             ##################
             Weight = weight[0]
-#            if self.ismc:
-#                if channel=='mm':
-#                    trg_weight = max(0.1,w_Trigger[0])
-#                    Weight /= trg_weight
-
             # prevent large weights
             if ROOT.TMath.Abs(Weight)>10.0:
                 print('weight %3.1f > 10'%(Weight))
                 continue
 
-            
             ############################
             ## applying scale factors ##
             ## for IPSig cuts         ##
             ############################
             WeightSF = 1.0
-            if cuts.applyIPSigLep1Cut:
-                if lep_label=='lep' and applyIPSigPromptLepSF and self.ismc: 
-                    WeightSF *= ipSigPromptLepSF.getSF(pt_1[0],eta_1[0])
-                if lep_label=='tau' and applyIPSigTauLepSF and self.ismc:
-                    WeightSF *= ipSigTauLepSF.getSF(pt_1[0],eta_1[0])
+            if cuts.applyIPSigLep1Cut and self.ismc:
+                if applyIPSigJsonSF:
+                    ptx = []
+                    ptx.append(pt_1[0])
+                    etax = []
+                    etax.append(eta_1[0])
+                    if lep_label=='lep' and applyIPSigPromptLepSF and ipSigJsonSF!=None:
+                        WeightSF *= ipSigJsonSF.evaluate(ptx, etax, 0, 'nom')[0]
+                    if lep_label=='tau' and applyIPSigTauLepSF and ipSigJsonSF!=None:
+                        WeightSF *= ipSigJsonSF.evaluate(ptx, etax, 1, 'nom')[0]
+                else:
+                    if lep_label=='lep' and applyIPSigPromptLepSF and ipSigPromptLepSF!=None:
+                        WeightSF *= ipSigPromptLepSF.getSF(pt_1[0],eta_1[0])
+                    if lep_label=='tau' and applyIPSigTauLepSF and ipSigTauLepSF!=None:
+                        WeightSF *= ipSigTauLepSF.getSF(pt_1[0],eta_1[0])
+                """
+                ptx = []
+                ptx.append(pt_1[0])
+                etax = []
+                etax.append(eta_1[0])
+                WeightJson = 1.0
+                if lep_label=='lep' and applyIPSigPromptLepSF and ipSigJsonSF!=None:
+                    WeightJson = ipSigJsonSF.evaluate(ptx, etax, 0, 'nom')[0]
+                if lep_label=='tau' and applyIPSigTauLepSF and ipSigJsonSF!=None:
+                    WeightJson = ipSigJsonSF.evaluate(ptx, etax, 1, 'nom')[0]
 
+                WeightSF = 1.0
+                if lep_label=='lep' and applyIPSigPromptLepSF and ipSigJsonSF!=None:
+                    WeightSF = ipSigPromptLepSF.getSF(pt_1[0],eta_1[0])
+                if lep_label=='tau' and applyIPSigTauLepSF and ipSigJsonSF!=None:
+                    WeightSF = ipSigTauLepSF.getSF(pt_1[0],eta_1[0])
+                print('applyIPSigJson     : %s  pt = %5.1f  eta = %5.2f  SF = %5.3f'%(lep_label,pt_1[0],eta_1[0],WeightJson))
+                print('applyIPScaleFactor : %s  pt = %5.1f  eta = %5.2f  SF = %5.3f'%(lep_label,pt_1[0],eta_1[0],WeightSF))
+                """
+                        
             if channel=='mm' or channel=='ee':
-                if cuts.applyIPSigLep2Cut:
-                    if applyIPSigPromptLepSF and self.ismc:
-                        WeightSF *= ipSigPromptLepSF.getSF(pt_2[0],eta_2[0])
+                if cuts.applyIPSigLep2Cut and self.ismc:
+                    if applyIPSigJsonSF:
+                        ptx = []
+                        ptx.append(pt_2[0])
+                        etax = []
+                        etax.append(eta_2[0])
+                        if applyIPSigPromptLepSF and ipSigJsonSF!=None:
+                            WeightSF *= ipSigJsonSF.evaluate(ptx, etax, 0, 'nom')[0]
+                    else:
+                        if applyIPSigPromptLepSF and ipSigPromptLepSF!=None:
+                            WeightSF *= ipSigPromptLepSF.getSF(pt_2[0],eta_2[0])
 
 
-            if channel=='mt' or channel=='et':
-                ############################################
-                # Filling histograms with mt_1 and n_bjets #
-                # before applying mt_1 cut or b-veto       #
-                ############################################
-                nameAll = 'mt_1_%s_%s_all'%(sign_label,iso_label)
-                name = 'mt_1_%s_%s_%s'%(sign_label,iso_label,lep_label)
-                hists[nameAll].Fill(mt_1[0],Weight*WeightSF)
-                hists[name].Fill(mt_1[0],Weight*WeightSF)
-                nameAll = 'n_bjets_%s_%s_all'%(sign_label,iso_label)
-                name = 'n_bjets_%s_%s_%s'%(sign_label,iso_label,lep_label)
-                hists[nameAll].Fill(n_bjets[0],Weight*WeightSF)
-                hists[name].Fill(n_bjets[0],Weight*WeightSF)
-                # mt_1 cut and btag-veto
-                if mt_1[0]>cuts.mtCut: continue
-                if cuts.applyBVeto:
-                    if n_bjets[0]>0.5: continue
+            ####################################
+            # Applying jet->tau fake factors ###
+            ####################################
+            FF_Weights = {}
+            for ff_label in utils.ff_labels:
+                FF_Weights[ff_label] = 1.0
+                
+            if applyFakeFactor and fakeFactor!=None:
+                for FF in FF_Weights:
+                    if FF not in ['ar','qcd_closure']:
+                        FF_Weights[FF] = fakeFactor.getFF(pt_2[0],
+                                                          eta=eta_label,
+                                                          dm=dm_label,
+                                                          njets=njets_label,
+                                                          typ=FF)
+                FF_Weights['qcd_closure'] = FF_Weights['qcd']*FF_Weights['os_antiiso']/FF_Weights['ss_antiiso']
+#            for FF in FF_Weights:            
+#                print('%6s -> %6.4f'%(FF,FF_Weights[FF]))
 
+
+                    
+            #####################################
+            ####### JetFakes measurements #######
+            #####################################
+            if analysisType=='jetFakes':
+                if channel=='mm' or channel=='ee': continue
+                # histogram for measurement of jet->tau fake
+                if region_flags['qcd_ff']:
+                    name = 'pt_2_qcd_%s_%s_%s_%s_%s'%(dm_label,njets_label,eta_label,deeptau_label,lep2_label)
+                    hists[name].Fill(variables['pt_2'],Weight*WeightSF)
+                    name = 'pt_2_qcd_%s_%s_%s_%s_all'%(dm_label,njets_label,eta_label,deeptau_label)
+                    hists[name].Fill(variables['pt_2'],Weight*WeightSF)
+                    name = 'pt_2_qcd_%s_%s_all_%s_%s'%(dm_label,njets_label,deeptau_label,lep2_label)
+                    hists[name].Fill(variables['pt_2'],Weight*WeightSF)
+                    name = 'pt_2_qcd_%s_%s_all_%s_all'%(dm_label,njets_label,deeptau_label)
+                    hists[name].Fill(variables['pt_2'],Weight*WeightSF)
+                if region_flags['wj_ff']:
+                    name = 'pt_2_wj_%s_%s_%s_%s_%s'%(dm_label,njets_label,eta_label,deeptau_label,lep2_label)
+                    hists[name].Fill(variables['pt_2'],Weight*WeightSF)
+                    name = 'pt_2_wj_%s_%s_%s_%s_all'%(dm_label,njets_label,eta_label,deeptau_label)
+                    hists[name].Fill(variables['pt_2'],Weight*WeightSF)
+                    name = 'pt_2_wj_%s_%s_all_%s_%s'%(dm_label,njets_label,deeptau_label,lep2_label)
+                    hists[name].Fill(variables['pt_2'],Weight*WeightSF)
+                    name = 'pt_2_wj_%s_%s_all_%s_all'%(dm_label,njets_label,deeptau_label)
+                    hists[name].Fill(variables['pt_2'],Weight*WeightSF)
+                if region_flags['lowmt_os_iso']:
+                    name = 'pt_2_top_%s_%s_%s_%s_%s'%(dm_label,njets_label,eta_label,deeptau_label,lep2_label)
+                    hists[name].Fill(variables['pt_2'],Weight*WeightSF)
+                    name = 'pt_2_top_%s_%s_%s_%s_all'%(dm_label,njets_label,eta_label,deeptau_label)
+                    hists[name].Fill(variables['pt_2'],Weight*WeightSF)
+                    name = 'pt_2_top_%s_%s_all_%s_%s'%(dm_label,njets_label,deeptau_label,lep2_label)
+                    hists[name].Fill(variables['pt_2'],Weight*WeightSF)
+                    name = 'pt_2_top_%s_%s_all_%s_all'%(dm_label,njets_label,deeptau_label)
+                    hists[name].Fill(variables['pt_2'],Weight*WeightSF)
+                if region_flags['lowmt_ss_antiiso']:
+                    name = 'pt_2_ss_antiiso_%s_%s_%s_%s_%s'%(dm_label,njets_label,eta_label,deeptau_label,lep2_label)
+                    hists[name].Fill(variables['pt_2'],Weight*WeightSF)
+                    name = 'pt_2_ss_antiiso_%s_%s_%s_%s_all'%(dm_label,njets_label,eta_label,deeptau_label)
+                    hists[name].Fill(variables['pt_2'],Weight*WeightSF)
+                    name = 'pt_2_ss_antiiso_%s_%s_all_%s_%s'%(dm_label,njets_label,deeptau_label,lep2_label)
+                    hists[name].Fill(variables['pt_2'],Weight*WeightSF)
+                    name = 'pt_2_ss_antiiso_%s_%s_all_%s_all'%(dm_label,njets_label,deeptau_label)
+                    hists[name].Fill(variables['pt_2'],Weight*WeightSF)
+                if region_flags['lowmt_os_antiiso']:
+                    name = 'pt_2_os_antiiso_%s_%s_%s_%s_%s'%(dm_label,njets_label,eta_label,deeptau_label,lep2_label)
+                    hists[name].Fill(variables['pt_2'],Weight*WeightSF)
+                    name = 'pt_2_os_antiiso_%s_%s_%s_%s_all'%(dm_label,njets_label,eta_label,deeptau_label)
+                    hists[name].Fill(variables['pt_2'],Weight*WeightSF)
+                    name = 'pt_2_os_antiiso_%s_%s_all_%s_%s'%(dm_label,njets_label,deeptau_label,lep2_label)
+                    hists[name].Fill(variables['pt_2'],Weight*WeightSF)
+                    name = 'pt_2_os_antiiso_%s_%s_all_%s_all'%(dm_label,njets_label,deeptau_label)
+                    hists[name].Fill(variables['pt_2'],Weight*WeightSF)
+
+            #####################################
+            ######### datacardsPhiCP ############
+            #####################################
+            if analysisType=='datacardsPhiCP':
+                if channel=='ee' or channel=='mm': continue
+                
+                cat = int(class_pred[0]+0.1)
+                bdt_name = 'bdt_ditau'
+                if cat==1:
+                    bdt_name = 'bdt_signal'
+                if cat==2:
+                    bdt_name = 'bdt_fakes'
+                
+
+                CPWeights = {}
+                if applyWeightCP:
+                    CPWeights['sm'] = weight_cp_sm[0]
+                    CPWeights['ps'] = weight_cp_ps[0]
+                    CPWeights['mm'] = weight_cp_mm[0]
+                
+                if self.ismc:
+                    name = '%s_%s_%s_%s_%s'%(bdt_name,sign_label,iso_label,lep_label,lep2_label)
+                    hists[name].Fill(bdt_pred[0],Weight*WeightSF)
+                    name = '%s_%s_%s_all_%s'%(bdt_name,sign_label,iso_label,lep2_label)
+                    hists[name].Fill(bdt_pred[0],Weight*WeightSF)
+                    name = '%s_%s_%s_all_all'%(bdt_name,sign_label,iso_label)
+                    hists[name].Fill(bdt_pred[0],Weight*WeightSF)
+                    if applyWeightCP:
+                        for CPWeight in CPWeights:
+                            name = '%s_%s_%s_%s_%s_%s'%(bdt_name,sign_label,iso_label,lep_label,lep2_label,CPWeight)
+                            hists[name].Fill(bdt_pred[0],Weight*WeightSF*CPWeights[CPWeight])
+                            name = '%s_%s_%s_all_%s_%s'%(bdt_name,sign_label,iso_label,lep2_label,CPWeight)
+                            hists[name].Fill(bdt_pred[0],Weight*WeightSF*CPWeights[CPWeight])
+                            name = '%s_%s_%s_all_all_%s'%(bdt_name,sign_label,iso_label,CPWeight)
+                            hists[name].Fill(bdt_pred[0],Weight*WeightSF*CPWeights[CPWeight])
+                else:
+                    name = '%s_%s_%s_all_all'%(bdt_name,sign_label,iso_label)
+                    hists[name].Fill(bdt_pred[0],1.0)
+                    
+                # the signal category : filling 2D distributions
+                if cat==cuts.signalCat:
+                    decay_label='phicp_vs_bdt_lep_%s'%(dm_label)
+                    phiCP = RadToDeg*aco_lep[dm_label]
+                    if self.ismc:
+                        name = '%s_%s_%s_%s_%s'%(decay_label,sign_label,iso_label,lep_label,lep2_label)
+                        hists[name].Fill(bdt_pred[0],phiCP,Weight*WeightSF)
+                        name = '%s_%s_%s_all_%s'%(decay_label,sign_label,iso_label,lep2_label)
+                        hists[name].Fill(bdt_pred[0],phiCP,Weight*WeightSF)
+                        name = '%s_%s_%s_all_all'%(decay_label,sign_label,iso_label)
+                        hists[name].Fill(bdt_pred[0],phiCP,Weight*WeightSF)
+                        if applyWeightCP:
+                            for CPWeight in CPWeights:
+                                name = '%s_%s_%s_%s_%s_%s'%(decay_label,sign_label,iso_label,lep_label,lep2_label,CPWeight)
+                                hists[name].Fill(bdt_pred[0],phiCP,Weight*WeightSF*CPWeights[CPWeight])
+                                name = '%s_%s_%s_all_%s_%s'%(decay_label,sign_label,iso_label,lep2_label,CPWeight)
+                                hists[name].Fill(bdt_pred[0],phiCP,Weight*WeightSF*CPWeights[CPWeight])
+                                name = '%s_%s_%s_all_all_%s'%(decay_label,sign_label,iso_label,CPWeight)
+                                hists[name].Fill(bdt_pred[0],phiCP,Weight*WeightSF*CPWeights[CPWeight])
+                    else:
+                        name = '%s_%s_%s_all_all'%(decay_label,sign_label,iso_label)
+                        hists[name].Fill(bdt_pred[0],phiCP,1.0)
+                        
             ################################
             ## Filling control histograms ##
+            ##    baseline analysis       ##
             ################################
-            for varname in variables:
-                nameAll = '%s_%s_%s_all'%(varname,sign_label,iso_label)
-                name = '%s_%s_%s_%s'%(varname,sign_label,iso_label,lep_label)
-                hists[nameAll].Fill(variables[varname],Weight*WeightSF)
-                hists[name].Fill(variables[varname],Weight*WeightSF)
+            if analysisType=='baseline':
+                if channel=='mm' or channel=='ee':
+                    for varname in variables:
+                        for reg in ['incl_os_iso','incl_ss_iso']:
+                            if region_flags[reg]:
+                                name = '%s_incl_%s_iso_all'%(varname,sign_label)
+                                hists[name].Fill(variables[varname],Weight*WeightSF)
+                else:
+                    for reg in utils.region_labels:
+                        if region_flags[reg]:
+                            for varname in variables:
+                                if deeptau_label=='nominal':
+                                    name = '%s_%s_all'%(varname,reg)
+                                    hists[name].Fill(variables[varname],Weight*WeightSF)
+                                    name = '%s_%s_%s'%(varname,reg,lep2_label)
+                                    hists[name].Fill(variables[varname],Weight*WeightSF)
+                                    # number of jets
+                                    #name = '%s_%s_%s_all'%(varname,reg,njets_label)
+                                    #hists[name].Fill(variables[varname],Weight*WeightSF)
+                                    #name = '%s_%s_%s_%s'%(varname,reg,njets_label,lep2_label)
+                                    #hists[name].Fill(variables[varname],Weight*WeightSF)
+                                else:
+                                    for FF in FF_Weights:
+                                        name = '%s_%s_%s_all'%(varname,reg,FF)
+                                        hists[name].Fill(variables[varname],Weight*WeightSF*FF_Weights[FF])
+                                        name = '%s_%s_%s_%s'%(varname,reg,FF,lep2_label)
+                                        hists[name].Fill(variables[varname],Weight*WeightSF*FF_Weights[FF])
+                                        # number of jets 
+                                        #name = '%s_%s_%s_%s_all'%(varname,reg,njets_label,FF)
+                                        #hists[name].Fill(variables[varname],Weight*WeightSF*FF_Weight[FF])
+                                        #name = '%s_%s_%s_%s_%s'%(varname,reg,njets_label,FF,lep2_label)
+                                        #hists[name].Fill(variables[varname],Weight*WeightSF*FF_Weight[FF])
 
-#            print('genmatch_1 = %1i    genmatch_2 = %1i'%(genmatch_1[0],genmatch_2[0]))
-            
+            #######################################
+            #### IP significance scale factors ####
+            #######################################
             if analysisType=='ipSig':
-                #################################################
-                # tag-and-probe histograms for mm (ee) channels #
-                # ###############################################
+                # tag-and-probe histograms for mm (ee) channels
                 if channel=='mm' or channel=='ee':
                                 
                     # lep1 ->
@@ -1096,48 +1493,11 @@ class analysisSample:
                     name = 'm_vis_2_%s_%s_%s_%s_all'%(region_label,bin_label,sign_label,iso_label)
                     hists[name].Fill(variables['m_vis'],Weight)
                 
-                #################################################
-                # tag-and-probe histograms for mt (et) channels #
-                # ###############################################
+                # tag-and-probe histograms for mt (et) channels
                 if channel=='mt' or channel=='et':
-                    # scale uncertainties ->
-                    """
-                    mvis_unc = {}
-                    
-                    # lepton scale ->
-                    pt_up = pt_1[0]*(1.0 + cuts.lepMomScale)
-                    pt_down = pt_1[0]*(1.0 - cuts.lepMomScale)
-                    mvis_unc['lepUp'] = self.ComputeMass(pt_up,eta_1[0],phi_1[0],mass_1[0],
-                                                         pt_2[0],eta_2[0],phi_2[0],mass_2[0])
-                    mvis_unc['lepDown'] = self.ComputeMass(pt_down,eta_1[0],phi_1[0],mass_1[0],
-                                                           pt_2[0],eta_2[0],phi_2[0],mass_2[0])
-                    
-                    # tau scale ->
-                    if lep2_label=='tau':
-                        pt_up = pt_2[0]*(1.0 + cuts.tauMomScale)
-                        pt_down = pt_2[0]*(1.0 - cuts.tauMomScale)
-                        mvis_unc['tauUp'] = self.ComputeMass(pt_1[0],eta_1[0],phi_1[0],mass_1[0],
-                                                             pt_up,eta_2[0],phi_2[0],mass_2[0])
-                        mvis_unc['tauDown'] = self.ComputeMass(pt_1[0],eta_1[0],phi_1[0],mass_1[0],
-                                                               pt_down,eta_2[0],phi_2[0],mass_2[0])
-                        mvis_unc['lfakeUp'] = variables['m_vis']
-                        mvis_unc['lfakeDown'] = variables['m_vis']
-                    elif lep2_label=='lep':
-                        pt_up = pt_2[0]*(1.0 + cuts.lepTauMomScale)
-                        pt_down = pt_2[0]*(1.0 - cuts.lepTauMomScale)
-                        mvis_unc['tauUp'] = variables['m_vis']
-                        mvis_unc['tauDown'] = variables['m_vis']
-                        mvis_unc['lfakeUp'] = self.ComputeMass(pt_1[0],eta_1[0],phi_1[0],mass_1[0],
-                                                               pt_up,eta_2[0],phi_2[0],mass_2[0])
-                        mvis_unc['lfakeDown'] = self.ComputeMass(pt_1[0],eta_1[0],phi_1[0],mass_1[0],
-                                                                 pt_down,eta_2[0],phi_2[0],mass_2[0])
-                    else:
-                        mvis_unc['tauUp'] = variables['m_vis']
-                        mvis_unc['tauDown'] = variables['m_vis']
-                        mvis_unc['lfakeUp'] = variables['m_vis']
-                        mvis_unc['lfakeDown'] = variables['m_vis']
-                 """
-                        
+                    # deepTau Vs Jets->
+                    if deeptau_label!='nominal': continue
+
                     # lep1 ->
                     bin_label,binPt,binEta = self.GetPtEtaBinLabels(pt_1[0],eta_1[0])
                     # inclusive selection
@@ -1146,13 +1506,6 @@ class analysisSample:
                     hists[name].Fill(variables['m_vis'],Weight)
                     name = 'm_vis_%s_%s_%s_%s_all'%(region_label,bin_label,sign_label,iso_label)
                     hists[name].Fill(variables['m_vis'],Weight)
-                    """
-                    for unc in mvis_unc:
-                        name = 'm_vis_%s_%s_%s_%s_%s_%s'%(unc,region_label,bin_label,sign_label,iso_label,lep_label)
-                        hists[name].Fill(mvis_unc[unc],Weight)
-                        name = 'm_vis_%s_%s_%s_%s_%s_all'%(unc,region_label,bin_label,sign_label,iso_label)
-                        hists[name].Fill(mvis_unc[unc],Weight)
-                    """
                 
                     if variables['ipsig_1']>cuts.ipsigLepCut:
                         # print('passed')
@@ -1165,14 +1518,6 @@ class analysisSample:
                         hists[name].Fill(variables['m_vis'],Weight*WeightSF)
                         name = 'm_vis_%s_%s_%s_%s_all'%(region_label,bin_label,sign_label,iso_label)
                         hists[name].Fill(variables['m_vis'],Weight*WeightSF)
-                        """
-                            for unc in mvis_unc:
-                                name = 'm_vis_%s_%s_%s_%s_%s_%s'%(unc,region_label,bin_label,sign_label,iso_label,lep_label)
-                                hists[name].Fill(mvis_unc[unc],Weight*WeightSF)
-                                name = 'm_vis_%s_%s_%s_%s_%s_all'%(unc,region_label,bin_label,sign_label,iso_label)
-                                hists[name].Fill(mvis_unc[unc],Weight*WeightSF)
-                            """
-
                     else:
                         # failing probes
                         # print('failed')
@@ -1181,13 +1526,7 @@ class analysisSample:
                         hists[name].Fill(variables['m_vis'],Weight)
                         name = 'm_vis_%s_%s_%s_%s_all'%(region_label,bin_label,sign_label,iso_label)
                         hists[name].Fill(variables['m_vis'],Weight)
-                        """
-                        for unc in mvis_unc:
-                            name = 'm_vis_%s_%s_%s_%s_%s_%s'%(unc,region_label,bin_label,sign_label,iso_label,lep_label)
-                            hists[name].Fill(mvis_unc[unc],Weight)
-                            name = 'm_vis_%s_%s_%s_%s_%s_all'%(unc,region_label,bin_label,sign_label,iso_label)
-                            hists[name].Fill(mvis_unc[unc],Weight)
-                        """
+                        
 
             ####################################
             ## phi(CP) studies with signal MC ##
@@ -1386,97 +1725,8 @@ class analysisSample:
                             hists[name_ps].Fill(variables[varname],Weight*WeightSF*weight_cp_ps[0])
                             hists[nameAll_mm].Fill(variables[varname],Weight*WeightSF*weight_cp_mm[0])
                             hists[name_mm].Fill(variables[varname],Weight*WeightSF*weight_cp_mm[0])
-                
-            if analysisType=='datacardsPhiCP':
-                if channel=='et' or channel=='mt':
-                    tau_label = 'leptau'
-                    if genmatch_2[0]==0:
-                        tau_label = 'faketau'
-                    if genmatch_2[0]==5:
-                        tau_label = 'hadtau'
 
-                    cat = int(class_pred[0]+0.1)
-                    bdt_name = 'bdt_ditau'
-                    if cat==1:
-                        bdt_name = 'bdt_signal'
-                    if cat==2:
-                        bdt_name = 'bdt_fakes'
 
-                    if self.ismc:
-                        name = '%s_%s_%s_%s_%s'%(bdt_name,sign_label,iso_label,lep_label,tau_label)
-                        hists[name].Fill(bdt_pred[0],Weight*WeightSF)
-                        name = '%s_%s_%s_all_%s'%(bdt_name,sign_label,iso_label,tau_label)
-                        hists[name].Fill(bdt_pred[0],Weight*WeightSF)
-                        name = '%s_%s_%s_all_all'%(bdt_name,sign_label,iso_label)
-                        hists[name].Fill(bdt_pred[0],Weight*WeightSF)
-                        if applyWeightCP:
-                            name_sm = '%s_%s_%s_%s_%s_sm'%(bdt_name,sign_label,iso_label,lep_label,tau_label)
-                            name_ps = '%s_%s_%s_%s_%s_ps'%(bdt_name,sign_label,iso_label,lep_label,tau_label)
-                            name_mm = '%s_%s_%s_%s_%s_mm'%(bdt_name,sign_label,iso_label,lep_label,tau_label)
-                            hists[name_sm].Fill(bdt_pred[0],Weight*WeightSF*weight_cp_sm[0])
-                            hists[name_ps].Fill(bdt_pred[0],Weight*WeightSF*weight_cp_ps[0])
-                            hists[name_mm].Fill(bdt_pred[0],Weight*WeightSF*weight_cp_mm[0])
-                            name_sm = '%s_%s_%s_all_%s_sm'%(bdt_name,sign_label,iso_label,tau_label)
-                            name_ps = '%s_%s_%s_all_%s_ps'%(bdt_name,sign_label,iso_label,tau_label)
-                            name_mm = '%s_%s_%s_all_%s_mm'%(bdt_name,sign_label,iso_label,tau_label)
-                            hists[name_sm].Fill(bdt_pred[0],Weight*WeightSF*weight_cp_sm[0])
-                            hists[name_ps].Fill(bdt_pred[0],Weight*WeightSF*weight_cp_ps[0])
-                            hists[name_mm].Fill(bdt_pred[0],Weight*WeightSF*weight_cp_mm[0])
-                            name_sm = '%s_%s_%s_all_all_sm'%(bdt_name,sign_label,iso_label)
-                            name_ps = '%s_%s_%s_all_all_ps'%(bdt_name,sign_label,iso_label)
-                            name_mm = '%s_%s_%s_all_all_mm'%(bdt_name,sign_label,iso_label)
-                            hists[name_sm].Fill(bdt_pred[0],Weight*WeightSF*weight_cp_sm[0])
-                            hists[name_ps].Fill(bdt_pred[0],Weight*WeightSF*weight_cp_ps[0])
-                            hists[name_mm].Fill(bdt_pred[0],Weight*WeightSF*weight_cp_mm[0])
-                    else:
-                        name = '%s_%s_%s_all_all'%(bdt_name,sign_label,iso_label)
-                        hists[name].Fill(bdt_pred[0],1.0)
-                    
-                    # the signal category : filling 2D distributions
-                    if cat==1:
-                        decay_label=''
-                        phiCP = -999999.
-                        if isTauToPi_2:
-                            decay_label='phicp_vs_bdt_lep_pi'
-                            phiCP = RadToDeg*aco_lep_pi[0]
-                        if isTauToRho_2:
-                            decay_label='phicp_vs_bdt_lep_rho'
-                            phiCP = RadToDeg*aco_lep_rho[0]
-                        if isTauToA1_1pr_2:
-                            decay_label='phicp_vs_bdt_lep_a1_1pr'
-                            phiCP = RadToDeg*aco_lep_rho[0]
-                        if isTauToA1_3pr_2:
-                            decay_label='phicp_vs_bdt_lep_a1_3pr'
-                            phiCP = RadToDeg*aco_lep_a1_FastMTT[0]
-                        if self.ismc:
-                            name = '%s_%s_%s_%s_%s'%(decay_label,sign_label,iso_label,lep_label,tau_label)
-                            hists[name].Fill(bdt_pred[0],phiCP,Weight*WeightSF)
-                            name = '%s_%s_%s_all_%s'%(decay_label,sign_label,iso_label,tau_label)
-                            hists[name].Fill(bdt_pred[0],phiCP,Weight*WeightSF)
-                            name = '%s_%s_%s_all_all'%(decay_label,sign_label,iso_label)
-                            hists[name].Fill(bdt_pred[0],phiCP,Weight*WeightSF)
-                            if applyWeightCP:
-                                name_sm = '%s_%s_%s_%s_%s_sm'%(decay_label,sign_label,iso_label,lep_label,tau_label)
-                                name_ps = '%s_%s_%s_%s_%s_ps'%(decay_label,sign_label,iso_label,lep_label,tau_label)
-                                name_mm = '%s_%s_%s_%s_%s_mm'%(decay_label,sign_label,iso_label,lep_label,tau_label)
-                                hists[name_sm].Fill(bdt_pred[0],phiCP,Weight*WeightSF*weight_cp_sm[0])
-                                hists[name_ps].Fill(bdt_pred[0],phiCP,Weight*WeightSF*weight_cp_ps[0])
-                                hists[name_mm].Fill(bdt_pred[0],phiCP,Weight*WeightSF*weight_cp_mm[0])
-                                name_sm = '%s_%s_%s_all_%s_sm'%(decay_label,sign_label,iso_label,tau_label)
-                                name_ps = '%s_%s_%s_all_%s_ps'%(decay_label,sign_label,iso_label,tau_label)
-                                name_mm = '%s_%s_%s_all_%s_mm'%(decay_label,sign_label,iso_label,tau_label)
-                                hists[name_sm].Fill(bdt_pred[0],phiCP,Weight*WeightSF*weight_cp_sm[0])
-                                hists[name_ps].Fill(bdt_pred[0],phiCP,Weight*WeightSF*weight_cp_ps[0])
-                                hists[name_mm].Fill(bdt_pred[0],phiCP,Weight*WeightSF*weight_cp_mm[0])
-                                name_sm = '%s_%s_%s_all_all_sm'%(decay_label,sign_label,iso_label)
-                                name_ps = '%s_%s_%s_all_all_ps'%(decay_label,sign_label,iso_label)
-                                name_mm = '%s_%s_%s_all_all_mm'%(decay_label,sign_label,iso_label)
-                                hists[name_sm].Fill(bdt_pred[0],phiCP,Weight*WeightSF*weight_cp_sm[0])
-                                hists[name_ps].Fill(bdt_pred[0],phiCP,Weight*WeightSF*weight_cp_ps[0])
-                                hists[name_mm].Fill(bdt_pred[0],phiCP,Weight*WeightSF*weight_cp_mm[0])
-                        else:
-                            name = '%s_%s_%s_all_all'%(decay_label,sign_label,iso_label)
-                            hists[name].Fill(bdt_pred[0],phiCP,1.0)
             
         for hist in hists:
             hists[hist].Scale(self.norm)

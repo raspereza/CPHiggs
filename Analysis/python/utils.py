@@ -25,7 +25,8 @@ ctau = 0.0087
 tupleFolderMG='/eos/cms/store/group/phys_tau/ksavva/For_Aliaksei/files/testingzpt'
 tupleFolderPOWHEG='/eos/cms/store/group/phys_tau/ksavva/For_Aliaksei/files/production_22_06_2025'
 tupleFolderPhiCP='/eos/cms/store/group/phys_tau/lrussell/forAliaksei/old/oldTuples'
-tupleFolderV2='/eos/cms/store/group/phys_tau/lrussell/forAliaksei'
+tupleFolderV2_Alexei='/eos/cms/store/group/phys_tau/lrussell/forAliaksei'
+tupleFolderV2='/eos/cms/store/group/phys_tau/lrussell/forAliaksei/ForFakeFactors'
 
 #########################################
 # folder with outputs (ROOT histograms) #
@@ -42,6 +43,16 @@ periods = {'Run3_2022preEE' : ['Run3_2022'] ,
            }
     
 eraLumi = {
+    "Run3_2022preEE"    : 7980.4,
+    "Run3_2022postEE"   : 26671.7,
+    "Run3_2023preBPix"  : 18063.0,
+    "Run3_2023postBPix" : 9693.0,
+    "Run3_2022"  : 34652.1,
+    "Run3_2023"  : 27245.0,
+    "Run3"       : 61897.1,
+}
+
+eraLumiOld = {
     "Run3_2022preEE"    : 7980.4,
     "Run3_2022postEE"   : 26671.7,
     "Run3_2023preBPix"  : 17794.0,
@@ -176,45 +187,61 @@ ztt_2j_samples = {
     'Run3_2023BPix': ['DYto2Tau_MLL_50_2J_amcatnloFXFX'],
 }
 
-top_samples = {
-    'Run3_2022'    : ['TTto2L2Nu','TTto2L2Nu_ext1',
-                      'TTtoLNu2Q','TTtoLNu2Q_ext1',
-                      'TTto4Q','TTto4Q_ext1'],
-    'Run3_2022EE'  : ['TTto2L2Nu','TTto2L2Nu_ext1',
-                      'TTtoLNu2Q','TTtoLNu2Q_ext1',
-                      'TTto4Q','TTto4Q_ext1'],
-    'Run3_2023'    : ['TTto2L2Nu',
-                      'TTtoLNu2Q',
-                      'TTto4Q'],
-    'Run3_2023BPix': ['TTto2L2Nu',
-                      'TTtoLNu2Q',
-                      'TTto4Q'],
+top_2l2v_samples = {
+    'Run3_2022'    : ['TTto2L2Nu'],
+    'Run3_2022EE'  : ['TTto2L2Nu'],
+    'Run3_2023'    : ['TTto2L2Nu'],
+    'Run3_2023BPix': ['TTto2L2Nu'],
 }
-               
+
+top_2l2v_ext_samples = {
+    'Run3_2022'    : ['TTto2L2Nu_ext1'],
+    'Run3_2022EE'  : ['TTto2L2Nu_ext1'],
+    'Run3_2023'    : [],
+    'Run3_2023BPix': [],
+}
+
+top_lv2q_samples = {
+    'Run3_2022'    : ['TTtoLNu2Q'],
+    'Run3_2022EE'  : ['TTtoLNu2Q'],
+    'Run3_2023'    : ['TTtoLNu2Q'],
+    'Run3_2023BPix': ['TTtoLNu2Q'],
+}
+
+top_lv2q_ext_samples = {
+    'Run3_2022'    : ['TTtoLNu2Q_ext1'],
+    'Run3_2022EE'  : ['TTtoLNu2Q_ext1'],
+    'Run3_2023'    : [],
+    'Run3_2023BPix': [],
+}
+
 vv_samples = {
-    'Run3_2022'    : ['WW','WZ','ZZ',
-                      'ST_t_channel_top_4f_InclusiveDecays',
+    'Run3_2022'    : ['WW','WZ','ZZ'],
+    'Run3_2022EE'  : ['WW','WZ','ZZ'],
+    'Run3_2023'    : ['WW','WZ','ZZ'],
+    'Run3_2023BPix': ['WW','WZ','ZZ'],
+}
+
+st_samples = {
+    'Run3_2022'    : ['ST_t_channel_top_4f_InclusiveDecays',
                       'ST_t_channel_antitop_4f_InclusiveDecays',
                       'ST_tW_top_2L2Nu','ST_tW_top_2L2Nu_ext1',
                       'ST_tW_antitop_2L2Nu','ST_tW_antitop_2L2Nu_ext1',
                       'ST_tW_top_LNu2Q','ST_tW_top_LNu2Q_ext1',
                       'ST_tW_antitop_LNu2Q','ST_tW_antitop_LNu2Q_ext1'],
-    'Run3_2022EE'  : ['WW','WZ','ZZ',
-                      'ST_t_channel_top_4f_InclusiveDecays',
+    'Run3_2022EE'  : ['ST_t_channel_top_4f_InclusiveDecays',
                       'ST_t_channel_antitop_4f_InclusiveDecays',
                       'ST_tW_top_2L2Nu','ST_tW_top_2L2Nu_ext1',
                       'ST_tW_antitop_2L2Nu','ST_tW_antitop_2L2Nu_ext1',
                       'ST_tW_top_LNu2Q','ST_tW_top_LNu2Q_ext1',
                       'ST_tW_antitop_LNu2Q','ST_tW_antitop_LNu2Q_ext1'],
-    'Run3_2023'    : ['WW','WZ','ZZ',
-                      'ST_t_channel_top_4f_InclusiveDecays',
+    'Run3_2023'    : ['ST_t_channel_top_4f_InclusiveDecays',
                       'ST_t_channel_antitop_4f_InclusiveDecays',
                       'ST_tW_top_2L2Nu',
                       'ST_tW_antitop_2L2Nu',
                       'ST_tW_top_LNu2Q',
                       'ST_tW_antitop_LNu2Q'],
-    'Run3_2023BPix': ['WW','WZ','ZZ',
-                      'ST_t_channel_top_4f_InclusiveDecays',
+    'Run3_2023BPix': ['ST_t_channel_top_4f_InclusiveDecays',
                       'ST_t_channel_antitop_4f_InclusiveDecays',
                       'ST_tW_top_2L2Nu',
                       'ST_tW_antitop_2L2Nu',
@@ -237,13 +264,109 @@ wjets_samples = {
                       'WtoLNu_3J_madgraphMLM','WtoLNu_4J_madgraphMLM'],
 }
 
-ggH_even_samples = ['GluGluHTo2Tau_UncorrelatedDecay_SM_Filtered_ProdAndDecay']
-ggH_odd_samples = ['GluGluHTo2Tau_UncorrelatedDecay_CPodd_Filtered_ProdAndDecay']
-ggH_maxmix_samples = ['GluGluHTo2Tau_UncorrelatedDecay_MM_Filtered_ProdAndDecay']
-qqH_samples = ['VBFHToTauTau_UncorrelatedDecay_Filtered']
-HWplus_samples = ['WplusHToTauTau_UncorrelatedDecay_Filtered']
-HWminus_samples = ['WminusHToTauTau_UncorrelatedDecay_Filtered']
-ZH_samples = ['ZHToTauTau_UncorrelatedDecay_Filtered']
+ggH_even_samples = {
+    'Run3_2022' : ['GluGluHTo2Tau_UncorrelatedDecay_SM_Filtered_ProdAndDecay'],
+    'Run3_2022EE' : ['GluGluHTo2Tau_UncorrelatedDecay_SM_Filtered_ProdAndDecay'],
+    'Run3_2023' : ['GluGluHTo2Tau_UncorrelatedDecay_SM_Filtered_ProdAndDecay'],
+    'Run3_2023BPix' : ['GluGluHTo2Tau_UncorrelatedDecay_SM_Filtered_ProdAndDecay'],
+}
+ggH_odd_samples = {
+    'Run3_2022' : ['GluGluHTo2Tau_UncorrelatedDecay_CPodd_Filtered_ProdAndDecay'],
+    'Run3_2022EE' : ['GluGluHTo2Tau_UncorrelatedDecay_CPodd_Filtered_ProdAndDecay'],
+    'Run3_2023' : ['GluGluHTo2Tau_UncorrelatedDecay_CPodd_Filtered_ProdAndDecay'],
+    'Run3_2023BPix' : ['GluGluHTo2Tau_UncorrelatedDecay_CPodd_Filtered_ProdAndDecay'],
+}    
+
+ggH_maxmix_samples = {
+    'Run3_2022' : ['GluGluHTo2Tau_UncorrelatedDecay_MM_Filtered_ProdAndDecay'],
+    'Run3_2022EE' : ['GluGluHTo2Tau_UncorrelatedDecay_MM_Filtered_ProdAndDecay'],
+    'Run3_2023' : ['GluGluHTo2Tau_UncorrelatedDecay_MM_Filtered_ProdAndDecay'],
+    'Run3_2023BPix' : ['GluGluHTo2Tau_UncorrelatedDecay_MM_Filtered_ProdAndDecay'],
+}
+
+qqH_samples = {
+    'Run3_2022' : ['VBFHToTauTau_UncorrelatedDecay_Filtered'],
+    'Run3_2022EE' : ['VBFHToTauTau_UncorrelatedDecay_Filtered'],
+    'Run3_2023' : ['VBFHToTauTau_UncorrelatedDecay_Filtered'],
+    'Run3_2023BPix' : ['VBFHToTauTau_UncorrelatedDecay_Filtered'],
+}
+
+HWplus_samples = {
+    'Run3_2022' : ['WplusHToTauTau_UncorrelatedDecay_Filtered'],
+    'Run3_2022EE' : ['WplusHToTauTau_UncorrelatedDecay_Filtered'],
+    'Run3_2023' : ['WplusHToTauTau_UncorrelatedDecay_Filtered'],
+    'Run3_2023BPix' : ['WplusHToTauTau_UncorrelatedDecay_Filtered'],
+}
+
+HWminus_samples = {
+    'Run3_2022' : ['WminusHToTauTau_UncorrelatedDecay_Filtered'],
+    'Run3_2022EE' : ['WminusHToTauTau_UncorrelatedDecay_Filtered'],
+    'Run3_2023' : ['WminusHToTauTau_UncorrelatedDecay_Filtered'],
+    'Run3_2023BPix' : ['WminusHToTauTau_UncorrelatedDecay_Filtered'],
+}
+
+ZH_samples = {
+    'Run3_2022' : ['ZHToTauTau_UncorrelatedDecay_Filtered'],
+    'Run3_2022EE' : ['ZHToTauTau_UncorrelatedDecay_Filtered'],
+    'Run3_2023' : ['ZHToTauTau_UncorrelatedDecay_Filtered'],
+    'Run3_2023BPix' : ['ZHToTauTau_UncorrelatedDecay_Filtered'],
+}
+
+
+samplesDict = {
+    'zll_incl'     : zll_incl_samples,
+    'zll_ext'      : zll_ext_samples,
+    'zll_0j'       : zll_0j_samples,
+    'zll_1j'       : zll_1j_samples,
+    'zll_2j'       : zll_2j_samples,
+    'ztt_0j'       : ztt_0j_samples,
+    'ztt_1j'       : ztt_1j_samples,
+    'ztt_2j'       : ztt_2j_samples,
+    'top_2l2v'     : top_2l2v_samples,
+    'top_2l2v_ext' : top_2l2v_ext_samples,
+    'top_lv2q'     : top_lv2q_samples,
+    'top_lv2q_ext' : top_lv2q_ext_samples,
+    'vv'           : vv_samples,
+    'st'           : st_samples,
+    'wjets'        : wjets_samples,
+    'ggH_sm'       : ggH_even_samples,
+    'ggH_ps'       : ggH_odd_samples,
+    'ggH_mm'       : ggH_maxmix_samples,
+    'qqH'          : qqH_samples,
+    'HWplus'       : HWplus_samples, 
+    'HWminus'      : HWminus_samples,
+    'ZH'           : ZH_samples,
+}
+
+samplesNameDict = {
+    'data'          : 'data',
+    'zll_incl'      : 'zll',
+    'zll_ext'       : 'zll',
+    'zll_0j'        : 'zll',
+    'zll_1j'        : 'zll',
+    'zll_2j'        : 'zll',
+    'ztt_0j'        : 'ztt',
+    'ztt_1j'        : 'ztt',
+    'ztt_2j'        : 'ztt',
+    'top_2l2v'      : 'top',
+    'top_2l2v_ext'  : 'top',
+    'top_lv2q'      : 'top',
+    'top_lv2q_ext'  : 'top',
+    'vv'            : 'vv',
+    'st'            : 'vv',
+    'wjets'         : 'wjets',
+    'ggH_sm'        : 'ggH_sm',
+    'ggH_ps'        : 'ggH_ps',
+    'ggH_mm'        : 'ggH_mm',
+    'qqH'           : 'qqH',
+    'HWplus'        : 'HWplus',
+    'HWminus'       : 'HWminus',
+    'ZH'            : 'ZH',
+}
+
+signal_samples = ['ggH_sm','ggH_ps', 'ggH_mm', 'qqH', 'HWplus', 'HWminus', 'ZH']
+bkg_samples = ['zll','ztt','top','vv','wjets']
+samples = ['data','zll','ztt','top','vv','wjets']
 
 ################
 # Data samples #
@@ -258,7 +381,7 @@ muonSamples = {'Run3_2022': ['SingleMuon_Run2022C','Muon_Run2022C','Muon_Run2022
 
 elecSamples = {'Run3_2022': ['EGamma_Run2022C','EGamma_Run2022D'],
                'Run3_2022EE': ['EGamma_Run2022E','EGamma_Run2022F','EGamma_Run2022G'],
-               'Run3_2023': ['EGamma0_Run2023C_v1','EGamma0_Run2023C_v2','EGamma0_Run2023C_v3','EGamma0_Run2023C_v4','EGamma0_Run2023C_v1','EGamma0_Run2023C_v2','EGamma1_Run2023C_v3','EGamma1_Run2023C_v4'],
+               'Run3_2023': ['EGamma0_Run2023C_v1','EGamma0_Run2023C_v2','EGamma0_Run2023C_v3','EGamma0_Run2023C_v4','EGamma1_Run2023C_v1','EGamma1_Run2023C_v2','EGamma1_Run2023C_v3','EGamma1_Run2023C_v4'],
                'Run3_2023BPix': ['EGamma0_Run2023D_v1','EGamma0_Run2023D_v2','EGamma1_Run2023D_v1','EGamma1_Run2023D_v2']}
 
 tauVsEleWPs = {
@@ -332,14 +455,20 @@ decayProngCuts = {
 
 lib_histos = {
     'm_vis' :   [240,0.,240.],
+    'm_FastMTT' : [400,0.,400.],
+    'pt_tt' :   [400,0.,400.],
+    'pt_FastMTT' : [400,0.,400.],
     'mt_1'  :   [250,0.,250.],
     'met'   :   [250,0.,250.],
     'pt_1'  :  [200,0.,200.],
     'pt_2'  :  [200,0.,200.],
     'eta_1' :  [50,-2.5,2.5],
     'eta_2' :  [50,-2.5,2.5],
+    'dm_2'  :  [12,-0.5,11.5],
     'ipsig_1': [200,0.,10.],
     'ipsig_2': [200,0.,10.],
+    'CMetQCD' : [100,-5.0,5.0],
+    'CMetW'   : [100,-5.0,5.0],
     'n_jets' : [10,-0.5,9.5],
     'n_bjets': [10,-0.5,9.5],
     'jpt_1' :   [60,0.,300.],
@@ -347,12 +476,32 @@ lib_histos = {
     'jeta_1': [60,-6.0,6.0],
     'jeta_2': [60,-6.0,6.0],
     'mjj'   : [200,0.,2000.],
+    'dR'    : [100,0.,10.],
     'jdeta' : [80,0.,8.],
+    'bdt_ditau'  : [100,0.,1.],
+    'bdt_fakes'  : [100,0.,1.],
+    'bdt_signal' : [100,0.,1.],
 }
 
-lib_datacards_1Dhistos = ['bdt_ditau','bdt_fakes','bdt_signal']
+sign_labels = ['os','ss']
+iso_labels = ['iso','antiiso']
+tautype_labels = ['lepton','fake','all']
+type_labels = ['tau','lep','had','all']
+tauid_labels = ['inverted','nominal']
+ff_labels = ['ar','qcd','wj','mc_top','mc_wj','ss_antiiso','os_antiiso','qcd_closure']
+njets_labels = ['njets0','njets1','njets2']
+dm_labels = ['pi','rho','a1_1pr','a1_3pr']
+eta_labels = ['barrel','endcap','all']
+mt_labels = ['lowmt','highmt']
+cp_hypotheses = ['sm','ps','mm']
+region_labels = ['lowmt_os_iso',
+                 'lowmt_ss_iso',
+                 'lowmt_os_antiiso',
+                 'lowmt_ss_antiiso',
+                 'wj_ff',
+                 'qcd_ff']
 
-lib_datacards_2Dhistos = ['lep_pi','lep_rho','lep_a1_1pr','lep_a1_3pr']
+lib_datacards_1Dhistos = ['bdt_ditau','bdt_fakes','bdt_signal']
 
 lib_phiCP_histos = {    
     'alpha_lep_pi': [90,0.,90.],
@@ -421,21 +570,81 @@ lib_phiCP_histos = {
     
 }
 
+nbins_bdt_signal = {
+    'mt' : 5,
+    'et' : 3,
+}
+
 # (pt,eta) binning for scale factors of IP significance cut 
 ptbins = {
     'ee' : [30.,35.,40.,50.,60.,80.,110.,    150.],
     'mm' : [25.,30.,35.,40.,50.,60.,80.,110.,150.],
-    'et' : [24.,30.,35.,40.,50.,80.,         150.],
-    'mt' : [21.,25.,30.,35.,40.,50.,80.,     150.],
+    'et' : [31.,35.,40.,50.,80.,             150.],
+    'mt' : [25.,30.,35.,40.,50.,80.,         150.],
+}
+
+jtau_ptbins = {
+    'mt' : [20.,25.,30.,40.,50.,60.,80.,100.,150.],
+    'et' : [20.,25.,30.,40.,50.,60.,80.,100.,150.],
 }
 
 etabins = {
     'ee' : [0.,1.0,1.6,2.1],
     'mm' : [0.,1.0,1.6,2.4],
     'et' : [0.,1.0,1.6,2.1],
-    'mt' : [0.,1.0,1.6,2.4]
+    'mt' : [0.,1.0,1.6,2.4],
 }    
-    
+
+XTitle = {
+    'mt': {
+        'mt_1'  : "m_{T} (GeV)",
+        'pt_1'  : "muon p_{T} (GeV)",
+        'eta_1' : "muon #eta",
+        'pt_2'  : "tau p_{T} (GeV)",
+        'eta_2' : "tau #eta",
+        'met': "E_{T}^{mis} (GeV)",
+        'm_vis': "m_{vis} (GeV)",
+        'ipsig_1': "muon IP sig",
+        'ipsig_2': "tau IP sig",
+        'n_jets': "number of jets",
+        'n_bjets': "number of b-jets",
+        'jpt_1': "leading jet p_{T} (GeV)",
+        'jpt_2': "trailing jet p_{T} (GeV)",
+        'mjj': "dijet mass (GeV)",
+        'jdeta': "#Delta#eta(j,j)",
+        'CMetQCD' : "C_{MET}^{QCD}",
+        'CMetW' : "C_{MET}^{W}",
+        'dR' : '#DeltaR(#mu,#tau)',
+        'bdt_signal' : 'BDT_{sig}',
+        'bdt_ditau' : 'BDT_{#tau#tau}',
+        'bdt_fakes' : 'BDT_{fakes}',
+    },
+    'et': {
+        'mt_1'  : "m_{T} (GeV)",
+        'pt_1'  : "electron p_{T} (GeV)",
+        'eta_1' : "electron #eta",
+        'pt_2'  : "tau p_{T} (GeV)",
+        'eta_2' : "tau #eta",
+        'met': "E_{T}^{mis} (GeV)",
+        'm_vis': "m_{vis} (GeV)",
+	'ipsig_1': "electron IP sig",
+        'ipsig_2': "tau IP sig",
+        'n_jets': "number of jets",
+        'n_bjets': "number of b-jets",
+        'jpt_1': "leading jet p_{T} (GeV)",
+        'jpt_2': "trailing jet p_{T} (GeV)",
+        'mjj': "dijet mass (GeV)",
+        'jdeta': "#Delta#eta(j,j)",
+        'CMetQCD' : "C_{MET}^{QCD}",
+        'CMetW' : "C_{MET}^{W}",
+        'dR' : '#DeltaR(e,#tau)',
+        'bdt_signal' : 'BDT_{sig}',
+        'bdt_ditau' : 'BDT_{#tau#tau}',
+        'bdt_fakes' : 'BDT_{fakes}',
+    }
+}
+
+
 
 #######################################
 # Creating shape systematic templates #
@@ -522,15 +731,15 @@ def divideHistos(numHist,denHist,histName):
         eDen = denHist.GetBinError(i)
         ratio = 1
         eratio = 0
-        if xNum>1e-7:
+        if xDen>1e-5 and xNum>1e-5:
             ratio = xNum/xDen
             rNum = eNum/xNum
             rDen = eDen/xDen
             rratio = math.sqrt(rNum*rNum+rDen*rDen)
             eratio = rratio * ratio
         else:
-            ratio = 0.5*eNum/xDen
-            eratio = ratio
+            ratio = eNum
+            eratio = eNum
             
         hist.SetBinContent(i,ratio)
         hist.SetBinError(i,eratio)
@@ -631,7 +840,7 @@ def copyHist(inputHist,outputHist):
         outputHist.SetBinError(ib,inputHist.GetBinError(ib))
 
 # extracting Tag-and-Probe histos from ROOT file created by RunSelection.py macro
-def extractTagProbeHistos(f,bins,generator,era,channel,isSecond):
+def extractTagProbeHistos(f,bins,era,channel,isSecond):
     var = 'm_vis'
     if isSecond:
         var += '_2'
@@ -645,17 +854,6 @@ def extractTagProbeHistos(f,bins,generator,era,channel,isSecond):
     if is2022:
         dy_samples.append('zll_ext')
     dy_base = 'zll_incl'
-    if generator=='MG':
-        dy_samples = ['dy_1j','dy_2j','dy_3j','dy_4j']
-        if is2022:
-            dy_samples.append('dy_ext')
-        dy_base = 'dy_incl'
-    if generator=='powheg':
-        dy_samples = []
-        dy_base = 'zll_powheg'
-    sign_labels = ['os','ss']
-    iso_labels = ['iso','antiiso']
-    typ_labels = ['lep','tau','had','all']
     region_labels = ['pass','fail','incl']
     hists = {}
     histPtBins = f.Get('ptBins')
@@ -665,7 +863,7 @@ def extractTagProbeHistos(f,bins,generator,era,channel,isSecond):
     for sample in samples:
         for sign in sign_labels:
             for iso in iso_labels:
-                for typ in typ_labels:
+                for typ in type_labels:
                     for binPt in range(1,nbinsPt+1):
                         for binEta in range(1,nbinsEta+1):
                             label = '%1i_%1i'%(binPt,binEta)
@@ -684,55 +882,7 @@ def extractTagProbeHistos(f,bins,generator,era,channel,isSecond):
                                     nameInput = '%s_%s_%s_%s_%s_%s_%s'%(sample,var,region,label,sign,iso,typ)
                                     histo = f.Get(nameInput).Clone(name)
                                     hists[name] = rebinHisto(histo,bins,'rebinned')
-#                                for unc in unc_labels:
-#                                    name = '%s_m_vis_%s_%s_%s_%s_%s_%s'%(sample,unc,region,label,sign,iso,typ)
-#                                    histo = f.Get(name)
-#                                    hists[name] = rebinHisto(histo,bins,'rebinned')
+
     return hists
 
-# extracting histos from ROOT file created by RunSelection.py 
-def extractHistos(f,var,bins,generator,era,channel):
-    is2022 = era=='Run3_2022preEE' or era=='Run3_2022postEE' or era=='Run3_2022' or era=='Run3'
-    samples = ['data','dy','top','vv','wjets']
-    dy_samples = []
-    dy_base = ''
-    if generator=='amcatnlo':
-        dy_samples.extend(['zll_0j','zll_1j','zll_2j','ztt_0j','ztt_1j','ztt_2j'])
-        if is2022:
-            dy_samples.append('zll_ext')
-        dy_base = 'zll_incl'
-    if generator=='MG':
-        dy_samples.extend(['dy_1j','dy_2j','dy_3j','dy_4j'])
-        if is2022:
-            dy_samples.append('dy_ext')
-        dy_base = 'dy_incl'
-    if generator=='powheg':
-        if channel=='mt' or channel=='et':
-            dy_samples.append('ztt_powheg')
-        dy_base = 'zll_powheg'
-    sign_labels = ['os','ss']
-    iso_labels = ['iso','antiiso']
-    typ_labels = ['lep','tau','had','all']
-    hists = {}
-    for sample in samples:
-        for sign in sign_labels:
-            for iso in iso_labels:
-                for typ in typ_labels:
-                    if sample=='dy':
-                        name = 'dy_%s_%s_%s_%s'%(var,sign,iso,typ)
-                        
-                        nameInput = '%s_%s_%s_%s_%s'%(dy_base,var,sign,iso,typ)
-                        histo = f.Get(nameInput).Clone(name)
-#                        print(nameInput,histo)
-                        for dy_sample in dy_samples:
-                            dy_name = '%s_%s_%s_%s_%s'%(dy_sample,var,sign,iso,typ)
-                            dy_histo = f.Get(dy_name)
-                            histo.Add(histo,dy_histo,1.,1.)
-                        hists[name] = rebinHisto(histo,bins,'rebinned')
-                    else:
-                        name = '%s_%s_%s_%s_%s'%(sample,var,sign,iso,typ)
-                        histo = f.Get(name)
-#                        print(name,histo)
-                        hists[name] = rebinHisto(histo,bins,'rebinned')
-    return hists
 
