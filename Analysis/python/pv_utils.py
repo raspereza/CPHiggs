@@ -6,6 +6,175 @@ import numpy as np
 import os
 import CPHiggs.Analysis.utils as utils
 from CPHiggs.PolarimetricVector.PolarimetricA1 import PolarimetricA1
+#from CPHiggs.Analysis.fastmtt import fastmtt
+
+def tauMomGJ(E_vis,m_vis,cos_theta_GJ):
+
+    P_vis = math.sqrt(E_vis*E_vis-m_vis*m_vis)
+    A = 4 * (E_vis**2-P_vis*P_vis*cos_theta_GJ*cos_theta_GJ)
+    B = 4 * E_vis*(utils.tau_mass*utils.tau_mass+m_vis*m_vis)
+    C = (utils.tau_mass*utils.tau_mass+m_vis*m_vis)**2 + 4*utils.tau_mass*utils.tau_mass*cos_theta_GJ*cos_theta_GJ*P_vis*P_vis
+    discriminant = B**2 - 4*A*C
+    solutions = []
+    if discriminant < 0:
+        return solutions
+    
+    sqrt_disc = np.sqrt(discriminant)
+    
+    for sign in [+1, -1]:
+        p_tau = (B + sign * sqrt_disc) / (2 * A)
+        if p_tau > 0:
+            solutions.append(p_tau)
+            
+    return solutions
+
+def Basis(P,SV):
+    nz = P.Vect().Unit()
+    sv = SV.Unit()
+    ny = nz.Cross(sv).Unit()
+    nx = ny.Cross(nz)
+    return nx,ny,nz
+
+def ThetaGJ(P,SV):
+    vistau_dir = P.Vect().Unit()
+    mass_vis_tau = P.M()
+    vistau_mom = P.P()
+    tau_dir = SV.Unit()
+    cos_theta = max(-1.0,min(1.0,vistau_dir.Dot(tau_dir)))
+    theta = math.acos(cos_theta)
+    sin_theta_GJ_max = max(-1.0,min(1.0,0.5*(utils.tau_mass*utils.tau_mass-mass_vis_tau*mass_vis_tau)/(utils.tau_mass*vistau_mom)))
+    theta_GJ_max = math.asin(sin_theta_GJ_max)
+    return theta,theta_GJ_max
+
+# FastMTT with the vertex constraint
+def FastMTT_3pr(P1, P2,
+                MET,  
+                met_covxx,met_covxy,met_covyy,
+                SV2,
+                sv2_covxx,sv2_covyx,sv2_covyy,
+                sv2_covzx,sv2_covzy,sv2_covzz):
+
+    massH = 125.0
+
+    x2_min = P2.M()*P2.M()/(utils.tau_mass*utils.tau_mass)
+    
+    mass_vis = (P1+P2).M()
+    mass_ratio = mass_vis*mass_vis/(massH*massH)
+
+    solutionFound = False
+
+    theta_sv2, theta_GJ_max = ThetaGJ(P2,SV2)
+    Nx,Ny,Nz = Basis(P2,SV2)
+    nx = np.array([Nx.X(), Nx.Y(), Nx.Z()])
+    ny = np.array([Ny.X(), Ny.Y(), Ny.Z()])
+    nz = np.array([Nz.X(), Nz.Y(), Nz.Z()])
+    
+    met = np.array([[MET.X()],[MET.Y()]])
+    
+    metcov = np.array([ [met_covxx[0] , met_covxy[0]],
+                        [met_covxy[0] , met_covyy[0]]])
+    det = np.linalg.det(metcov)
+    if det<1e-12:
+        metcovinv = np.array([ [met_covxx[0] , 0.0,
+                                0.0 , met_covyy[0]]])
+    metcovinv = np.linalg.inv(metcov)
+        
+    sv2 = np.array([SV2.X(),SV2.Y(),SV2.Z()])
+    sv2_norm = np.linalg.norm(sv2)
+    sv2_unit = sv2/sv2_norm
+
+    svcov2 = 1e+6*np.array([[sv2_covxx[0], sv2_covyx[0], sv2_covzx[0]],
+                            [sv2_covyx[0], sv2_covyy[0], sv2_covzy[0]],
+                            [sv2_covzx[0], sv2_covzy[0], sv2_covzz[0]]])
+    
+    svcovinv2_det = np.linalg.det(svcov2)
+    if svcovinv2_det<1e-12:
+        svcov2 = 1e+6*np.array([[sv2_covxx[0], 0., 0.],
+		                [0., sv2_covyy[0], 0.],
+                                [0., 0., sv2_covzz[0]]])
+        
+    svcovinv2 = np.linalg.inv(svcov2)
+
+    #    sv2_rescaled = 1e+3*sv2
+    #    print('SV covariance',svcovinv2)
+    #    print('SV',sv2)   
+    #    significance = math.sqrt(max(0.,sv2_rescaled @ svcovinv2 @ sv2_rescaled))
+
+    chi2_min = 1.0e+12
+    theta_opt = theta_sv2
+    x1_opt = 0.5
+    x2_opt = 0.5
+    cosTheta = math.cos(theta_sv2)
+    Evis = P2.E()
+    mvis = P2.M()
+    solutions = tauMomGJ(Evis,mvis,cosTheta)
+    for p2 in solutions:
+        x2 = P2.P()/p2
+        x1 = mass_ratio/x2
+        if x1>1.0 or x2>1.0: continue
+        if x2<x2_min: continue
+        p1 = P1.P()/x1
+        nuX = P1.X()*(1.0/x1-1.0) + P2.X()*(1.0/x2-1.0)
+        nuY = P1.Y()*(1.0/x1-1.0) + P2.Y()*(1.0/x2-1.0)
+        residualX = nuX - MET.X()
+        residualY = nuY - MET.Y()
+        residual = np.array([ residualX,residualY ])
+        chi2_met = 2.0*residual.T @ metcovinv @ residual
+        if chi2_met<chi2_min:
+            chi2_min = chi2_met
+            x1_opt = x1
+            x2_opt = x2
+            theta_opt = theta_sv2
+            solutionFound = True
+    
+    theta_upper = 0.98*theta_GJ_max
+    
+    for i in range(0,50):
+        theta = theta_upper*(1.0 - 0.02*float(i))
+        cosTheta = math.cos(theta)
+        solutions = tauMomGJ(Evis,mvis,cosTheta)
+        for p2 in solutions:
+            x2 = P2.P()/p2
+            x1 = mass_ratio/x2
+            if x1>1.0 or x2>1.0: continue
+            if x2<x2_min: continue
+            p1 = P1.P()/x1
+            nuX = P1.X()*(1.0/x1-1.0) + P2.X()*(1.0/x2-1.0)
+            nuY = P1.Y()*(1.0/x1-1.0) + P2.Y()*(1.0/x2-1.0)
+            residualX = nuX - MET.X()
+            residualY = nuY - MET.Y()
+            residual = np.array([ residualX,residualY ])
+            chi2_met = 2.0*residual.T @ metcovinv @ residual
+            n_unit = math.sin(theta)*nx+math.cos(theta)*nz
+            n_diff = 1e+3*(sv2_unit - n_unit)
+            chi2_sv2 = n_diff.T @ svcovinv2 @ n_diff
+            chi2_tot = chi2_sv2 + chi2_met
+            if chi2_tot<chi2_min:
+                chi2_min = chi2_tot
+                x1_opt = x1
+                x2_opt = x2
+                theta_opt = theta
+                solutionFound = True
+
+    P1_mom = P1.P()/x1_opt
+    P1_x = P1.X()/x1_opt
+    P1_y = P1.Y()/x1_opt
+    P1_z = P1.Z()/x1_opt
+    P1_en = math.sqrt(P1_mom*P1_mom+utils.tau_mass*utils.tau_mass)    
+    P1_out = ROOT.TLorentzVector(P1_x,P1_y,P1_z,P1_en)
+    
+    P2_mom = P2.P()/x2_opt
+    P2_unit = Nx*math.sin(theta_opt)+Nz*math.cos(theta_opt)
+    P2_x = P2_mom*P2_unit.X()
+    P2_y = P2_mom*P2_unit.Y()
+    P2_z = P2_mom*P2_unit.Z()
+    P2_en = math.sqrt(P2_mom*P2_mom+utils.tau_mass*utils.tau_mass)
+    P2_out = ROOT.TLorentzVector(P2_x,P2_y,P2_z,P2_en)
+
+#    print('theta_sv = %6.4f  theta_opt = %6.4f  theta_max = %6.4f'%(theta_sv2,theta_opt,theta_GJ_max))
+#    print('x1 = %5.3f   x2 = %5.3f'%(x1_opt,x2_opt))
+    
+    return solutionFound, P1_out, P2_out
 
 ####################################################################
 # TauDirRho : routine returns direction of fully reconstructed tau
@@ -258,7 +427,7 @@ def sortA1(pi1_input,pi2_input,pi3_input,q1,q2,q3):
         p2 = p3
         p3 = temp
 
-
+#    print('')
 #    print('a1 sorted -> ')
 #    print('pi_os  (pt,eta,phi,mass) = (%5.1f,%5.3f,%5.3f,%5.3f)'%(p1.Pt(),p1.Eta(),p1.Phi(),p1.M()))
 #    print('pi_ss1 (pt,eta,phi,mass) = (%5.1f,%5.3f,%5.3f,%5.3f)'%(p2.Pt(),p2.Eta(),p2.Phi(),p2.M()))
@@ -268,58 +437,18 @@ def sortA1(pi1_input,pi2_input,pi3_input,q1,q2,q3):
     
     return p1,p2,p3
 
-
-###################################################
-# Rotation of initial tau momentum
-# (along visible momentum) towards reconstructed
-# direction (e.g. SV-PV) to match theta_GJ
-###################################################
-def rotateToGJ(visTau,tau):
-
-    vistau_P = visTau.Vect()
-    tau_P = tau.Vect()
-    mass_vis_tau = visTau.M()
-    
-    tau_mom = tau.P()
-    vistau_mom = visTau.P()
-
-    tau_dir = tau_P.Unit()
-
-    cos_theta_GJX = 0.5*(2.0*tau.E()*visTau.E()-utils.tau_mass*utils.tau_mass-mass_vis_tau*mass_vis_tau)/(tau_mom*vistau_mom)
-    cos_theta_GJ = max(-1.0,min(1.0,cos_theta_GJX))
-    sin_theta_GJ = ROOT.TMath.Sqrt(1.0-cos_theta_GJ*cos_theta_GJ)
-
-    #    print('E(tau) = %5.3f  E(vis) = %5.3f  m(tau) = %5.3f  m(vis) = %5.3f'%(tau.E(),visTau.E(),utils.tau_mass,mass_vis_tau))
-    #    print('cos_theta_GJ_1 = %10.8f   cos_theta_GJ_2 = %10.8f'%(cos_theta_GJX_1,cos_theta_GJX_2)) 
-    
-    # orthogonal basis
-    
-    n1 = vistau_P.Unit()
-    n3 = n1.Cross(tau_dir).Unit()
-    n2 = n3.Cross(n1).Unit()
-
-    Pperp  = tau_P.Dot(n3)
-    Pparal = ROOT.TMath.Sqrt(tau_mom*tau_mom-Pperp*Pperp) 
-    p1 = n3*Pperp + (n1*cos_theta_GJ+n2*sin_theta_GJ)*Pparal
-    p2 = n3*Pperp + (n1*cos_theta_GJ-n2*sin_theta_GJ)*Pparal
-    cos1 = p1.Dot(tau_dir)
-    cos2 = p2.Dot(tau_dir)
-    newTauP = p1
-    if cos2>cos1:
-        newTauP = p2
-    
-    new_tau = ROOT.TLorentzVector()
-    new_tau.SetXYZT(newTauP.X(),newTauP.Y(),newTauP.Z(),tau.E())
-    return new_tau
-
-
 ###########################################################
 # Rotation of visible tau momentum towards reconstructed  #
 # direction (e.g. SV-PV) to match theta_GJmax             #
 # vistau - 4-momentum of visible tau decay products       #
 # tau - full 4-momentum of tau                            #
 ###########################################################
-def rotateToGJMax(vistau,tau):
+def rotateToGJ(vistau,Pt,sv):
+    
+    tau = ROOT.TLorentzVector()
+    SV = ROOT.TLorentzVector(sv.X(),sv.Y(),sv.Z(),0.)
+    tau.SetPtEtaPhiM(Pt,SV.Eta(),SV.Phi(),utils.tau_mass)
+
     vistau_P = vistau.Vect()
     tau_P = tau.Vect()
     vistau_dir = vistau_P.Unit()
@@ -337,10 +466,10 @@ def rotateToGJMax(vistau,tau):
 
     new_tau = ROOT.TLorentzVector()
     new_tau.SetXYZT(tau.X(),tau.Y(),tau.Z(),tau.T())
-#    print('')
-#    print('Routine rotateToGJMax ->')
+    #    print('')
+    #    print('Routine rotateToGJMax ->')
     if theta_GJ>theta_GJ_max:
-#       print('theta_GJ (%5.3f) > theta_GJ_max (%5.3f) -> rotation of tau 3-momentum'%(theta_GJ,theta_GJ_max))
+        #        print('theta_GJ (%5.3f) > theta_GJ_max (%5.3f) -> rotation of tau 3-momentum'%(theta_GJ,theta_GJ_max))
         n1 = vistau_dir
         n3 = n1.Cross(tau_dir).Unit()
         n2 = n3.Cross(n1).Unit()
@@ -367,105 +496,31 @@ def rotateToGJMax(vistau,tau):
             
         new_P = tau_mom*new_dir
         new_tau.SetXYZT(new_P.X(),new_P.Y(),new_P.Z(),tau.E())
-#    print('Initial tau (x,y,z,t) = (%5.3f,%5.3f,%5.3f,%5.3f)'%(tau.X(),tau.Y(),tau.Z(),tau.T()))
-#    print('Rotated tau (x,y,z,t) = (%5.3f,%5.3f,%5.3f,%5.3f)'%(new_tau.X(),new_tau.Y(),new_tau.Z(),new_tau.T()))
-#    print('')
-    return new_tau
+    return new_tau,theta_GJ,theta_GJ_max
 
-###################################################################
-# PolVectA1 : routine returns corrected full
-# tau 4-momentum and polarimetric vector
-# in tau->a1(3-prong)+nu decay channel
-# Inputs ->
-# PV - TLorentzVector : primary vertex
-# SV - TLorentzVector : secondary vertex
-# Pt - float : tau pT from fastMTT
-# P1 - TLorentzVector : 4-momentum of os charged pion
-# P2 - TLorentzVector : 4-momentum of ss1 charged pion
-# P3 - TLorentzVector : 4-momentum of ss2 charged pion
-# PGen - TLorentzVector : full generator 4-momentum of tau
-#                         (only for exploratory studies with MC)
-# q  - tau charge
-# method - string : options ->
-#                   'recoDESY' - DESY-wise computation (preferred)
-#                   'recoIC'   - IC-wise computation
-#                   'gen'      - generator information is used
-# Outputs ->
-# tau - TLorentzVector : corrected full 4-momentum of tau
-# pv  - TLorentzVector : polarimetric vector
-###################################################################
-def PolVectA1(PV,SV,
-              Pt,P1,P2,P3,PGen,
-              q,method):    
+def PolVectA1(P,P1,P2,P3,q):
 
-#    P1,P2,P3 = sortA1(Pi1,Pi2,Pi3,q1,q2,q3)    
-#    print('PolVectA1 : q1 = %3.1f  q2 = %3.1f  q3 = %3.1f   q = %3.1f'%(q1,q2,q3,q))
-#    print('PolVectA1 : PV(x) = %6.4f  PV(y) = %6.4f  PV(z) = %6.4f'%(PV.X(),PV.Y(),PV.Z()))
-#    print('PolVectA1 : SV(x) = %6.4f  SV(y) = %6.4f  SV(z) = %6.4f'%(SV.X(),SV.Y(),SV.Z()))
-
-    n = SV - PV
-    
-    visTau = P1+P2+P3
-    tau = ROOT.TLorentzVector()
-    if method=='gen':
-        tau = PGen
-    else:
-        Ptau = ROOT.TLorentzVector()
-        Ptau.SetPtEtaPhiM(Pt,n.Eta(),n.Phi(),utils.tau_mass)
-        tau = rotateToGJMax(visTau,Ptau,method)
-
-    tempTau = ROOT.TLorentzVector()
-    tempTau.SetXYZT(tau.X(),tau.Y(),tau.Z(),tau.T())
-    tempP1 = ROOT.TLorentzVector()
-    tempP1.SetXYZT(P1.X(),P1.Y(),P1.Z(),P1.T())
-    tempP2 = ROOT.TLorentzVector()
-    tempP2.SetXYZT(P2.X(),P2.Y(),P2.Z(),P2.T())
-    tempP3 = ROOT.TLorentzVector()
-    tempP3.SetXYZT(P3.X(),P3.Y(),P3.Z(),P3.T())
-    
-    boost = -tau.BoostVector()
-    if method=='IC':
-        tempTau.Boost(boost)
-        tempP1.Boost(boost)
-        tempP2.Boost(boost)
-        tempP3.Boost(boost)
-    
-    PA1 = PolarimetricA1(tempTau,
-                         tempP1,
-                         tempP2,
-                         tempP3,
-                         q)
-
-    xTau = ROOT.TLorentzVector(tempTau.X(),tempTau.Y(),tempTau.Z(),tempTau.T())
-    xP1 = ROOT.TLorentzVector(tempP1.X(),tempP1.Y(),tempP1.Z(),tempP1.T())
-    xP2 = ROOT.TLorentzVector(tempP2.X(),tempP2.Y(),tempP2.Z(),tempP2.T())
-    xP3 = ROOT.TLorentzVector(tempP3.X(),tempP3.Y(),tempP3.Z(),tempP3.T())
-    
-    PA1_tau = PolarimetricA1(xTau,
-                             xP1,
-                             xP2,
-                             xP3,
+    PA1_tau = PolarimetricA1(P,
+                             P1,
+                             P2,
+                             P3,
                              q)
+    PV = - PA1_tau.PVC()
 
-    tempPV = -PA1.PVC()
-    xPV = - PA1_tau.PVC()
-#    print('')
-#    print('pol. vector from PolarimetricA1.PVC() ->')
-#    print('pol. vec. lab frame : (X,Y,Z,T)=(%6.4f,%6.4f,%6.4f,%6.4f)'%(tempPV.X(),tempPV.Y(),tempPV.Z(),tempPV.T()))
-#    print('pol. vec. tau frame : (X,Y,Z,T)=(%6.4f,%6.4f,%6.4f,%6.4f)'%(xPV.X(),xPV.Y(),xPV.Z(),xPV.T()))
-#    print('')
-    
-    pv = ROOT.TLorentzVector()
-    if method=='IC':
-        pv.SetXYZT(tempPV.X(),tempPV.Y(),tempPV.Z(),0.)
-#        print('Pol. vector before boost = (%5.3f,%5.3f,%5.3f)'%(pv.X(),pv.Y(),pv.Z()))
-        pv.Boost(-boost)
-#        print('Pol. vector after boost = (%5.3f,%5.3f,%5.3f)'%(pv.X(),pv.Y(),pv.Z()))
-    else:
-        pv.SetXYZT(tempPV.X(),tempPV.Y(),tempPV.Z(),tempPV.T())
+    #    tempPV = -PA1.PVC()
+    #    print('')
+    #    print('pol. vector from PolarimetricA1.PVC() ->')
+    #    print('pol. vec. tau frame     : (X,Y,Z,T)=(%6.4f,%6.4f,%6.4f,%6.4f)'%(tempPV.X(),tempPV.Y(),tempPV.Z(),tempPV.T()))
+    #    print('pol. vec. lab frame     : (X,Y,Z,T)=(%6.4f,%6.4f,%6.4f,%6.4f)'%(xPV.X(),xPV.Y(),xPV.Z(),xPV.T()))
+    #    print('')
+
+    #    pv = ROOT.TLorentzVector()
+    #    pv.SetXYZT(tempPV.X(),tempPV.Y(),tempPV.Z(),tempPV.T())
+    #    pv.Boost(-boost)
         
-    return tau,pv
-    
+    return PV
+
+
 ######################################################################
 # acoCP : routine returns acoplanarity angle phi(CP)
 # Inputs -> 
@@ -526,6 +581,13 @@ def acoCP(P1_input, P2_input, R1_input, R2_input,
     vecR1 = R1.Vect()
     vecR2 = R2.Vect()
 
+    #    print('After boost into ZMF of visible products')
+    #    print('P1 (x,y,z)=(%5.3f,%5.3f,%5.3f)'%(vecP1.X(),vecP1.Y(),vecP1.Z()))
+    #    print('P2 (x,y,z)=(%5.3f,%5.3f,%5.3f)'%(vecP2.X(),vecP2.Y(),vecP2.Z()))
+    #    print('R1 (x,y,z)=(%5.3f,%5.3f,%5.3f)'%(vecR1.X(),vecR1.Y(),vecR1.Z()))
+    #    print('R2 (x,y,z)=(%5.3f,%5.3f,%5.3f)'%(vecP1.X(),vecR2.Y(),vecR2.Z()))
+    
+    
     R1transv = vecR1 - vecP1*(vecP1.Dot(vecR1))
     R2transv = vecR2 - vecP2*(vecP2.Dot(vecR2))
 
@@ -548,6 +610,8 @@ def acoCP(P1_input, P2_input, R1_input, R2_input,
         if acop>2.*ROOT.TMath.Pi():
             acop = acop - 2.*ROOT.TMath.Pi()
 
+
+    if math.isnan(acop): acop = -9999.
     return acop
 
             
