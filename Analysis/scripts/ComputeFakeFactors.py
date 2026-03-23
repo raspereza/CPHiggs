@@ -284,13 +284,13 @@ def PlotFF(hists,bins,**kwargs):
     canvas.SetLogx(True)
     canvas.Update()
 
-    subfolder = 'FakeFactors'
+    subfolder = 'FakeFactors_%s'%(chan)
     if ipcut:
-        subfolder = 'FakeFactors_ipcut'
+        subfolder += '_ipcut'
     if sampleToProcess=='data':
-        figure_folder = '/eos/home-r/rasp/php-plots/plots/%s/%s/data/%s'%(subfolder,chan,region)
+        figure_folder = '/eos/home-r/rasp/php-plots/plots/%s/data/%s'%(subfolder,region)
     else:
-        figure_folder = '/eos/home-r/rasp/php-plots/plots/%s/%s/mc/%s'%(subfolder,chan,sampleToProcess)
+        figure_folder = '/eos/home-r/rasp/php-plots/plots/%s/mc/%s'%(subfolder,sampleToProcess)
     outputGraphics = '%s/FF_%s_%s_%s.png'%(figure_folder,dm,njets,eta)    
     canvas.Print(outputGraphics)
     return hfit,fitSF,fitSF_up,fitSF_down
@@ -305,7 +305,6 @@ if __name__ == "__main__":
     parser.add_argument('-era' ,'--era', dest='era', default='Run3', choices=['Run3_2022','Run3_2023','Run3'])
     parser.add_argument('-channel','--channel', dest='channel', default='mt',choices=['mt','et'])
     parser.add_argument('-ipcut','--ipcut', dest='ipcut', action='store_true')
-    parser.add_argument('-mc','--mc',dest='mc',action='store_true')
     args = parser.parse_args()
 
     era = args.era
@@ -321,15 +320,13 @@ if __name__ == "__main__":
         suffixFile = 'x_ipcut1'
         ipcut = True
     suffixOutFile = suffixFile
-    if args.mc:
-        suffixOutFile += '_mc'
         
     inputFileName = '%s/selection/jetFakes/%s_%s_%s.root'%(basedir,chan,era,suffixFile)
     inputFile = ROOT.TFile(inputFileName,'read')
     print('')
     print(inputFile)
     print('')
-    regions = ['qcd','wj','ss_antiiso','top','os_antiiso']
+    regions = ['qcd','wj','top','qcd_looseIso']
     hists = extractHistos(inputFile,regions)
 
     hfit = {}
@@ -337,29 +334,44 @@ if __name__ == "__main__":
     fitSF_up = {}
     fitSF_down = {}
 
-    if args.mc:
-        sample='wjets'
-        region='wj'
-        for dm in utils.dm_labels:
-            for njets in utils.njets_labels:
-                for eta in utils.eta_labels:
-                    suffix = 'mc_%s_%s_%s_%s'%(region,dm,njets,eta)
-                    hfit[suffix],fitSF[suffix],fitSF_up[suffix],fitSF_down[suffix] = PlotFF(hists,bins_pt,
-                                                                                            era=era,
-                                                                                            channel=chan,
-                                                                                            region=region,
-                                                                                            dm=dm,
-                                                                                            njets=njets,
-                                                                                            sample=sample,
-                                                                                            eta=eta,
-                                                                                            ipcut=ipcut)
+    
+    sample='wjets'
+    region='wj'
+    for dm in utils.dm_labels:
+        for njets in utils.njets_labels:
+            for eta in utils.eta_labels:
+                suffix = 'mc_%s_%s_%s_%s'%(region,dm,njets,eta)
+                hfit[suffix],fitSF[suffix],fitSF_up[suffix],fitSF_down[suffix] = PlotFF(hists,bins_pt,
+                                                                                        era=era,
+                                                                                        channel=chan,
+                                                                                        region=region,
+                                                                                        dm=dm,
+                                                                                        njets=njets,
+                                                                                        sample=sample,
+                                                                                        eta=eta,
+                                                                                        ipcut=ipcut)
                 
-        sample = 'top'
-        region = 'top'
+    sample = 'top'
+    region = 'top'
+    for dm in utils.dm_labels:
+        for njets in utils.njets_labels:
+            for eta in utils.eta_labels:
+                suffix = 'mc_%s_%s_%s_%s'%(region,dm,njets,eta)
+                hfit[suffix],fitSF[suffix],fitSF_up[suffix],fitSF_down[suffix] = PlotFF(hists,bins_pt,
+                                                                                        era=era,
+                                                                                        channel=chan,
+                                                                                        region=region,
+                                                                                        dm=dm,
+                                                                                        njets=njets,
+                                                                                        sample=sample,
+                                                                                        eta=eta,
+                                                                                        ipcut=ipcut)
+    sample='data'
+    for region in ['qcd','wj','qcd_looseIso']:
         for dm in utils.dm_labels:
             for njets in utils.njets_labels:
                 for eta in utils.eta_labels:
-                    suffix = 'mc_%s_%s_%s_%s'%(region,dm,njets,eta)
+                    suffix = '%s_%s_%s_%s'%(region,dm,njets,eta)
                     hfit[suffix],fitSF[suffix],fitSF_up[suffix],fitSF_down[suffix] = PlotFF(hists,bins_pt,
                                                                                             era=era,
                                                                                             channel=chan,
@@ -369,26 +381,8 @@ if __name__ == "__main__":
                                                                                             sample=sample,
                                                                                             eta=eta,
                                                                                             ipcut=ipcut)
-    else:
-        sample = 'data'
-        for region in ['os_antiiso']:
-#        for region in ['qcd','wj','ss_antiiso','os_antiiso']:
 
-            for dm in utils.dm_labels:
-                for njets in utils.njets_labels:
-                    for eta in utils.eta_labels:
-                        suffix = '%s_%s_%s_%s'%(region,dm,njets,eta)
-                        hfit[suffix],fitSF[suffix],fitSF_up[suffix],fitSF_down[suffix] = PlotFF(hists,bins_pt,
-                                                                                                era=era,
-                                                                                                channel=chan,
-                                                                                                region=region,
-                                                                                                dm=dm,
-                                                                                                njets=njets,
-                                                                                                sample=sample,
-                                                                                                eta=eta,
-                                                                                                ipcut=ipcut)
-
-                        
+                    
     outputFolder='%s/src/IPcorrectionsRun3/FakeFactors/data'%(os.getenv('CMSSW_BASE'))
     outputFileName = '%s/FF_%s_%s_%s.root'%(outputFolder,era,chan,suffixOutFile)
     print('opening file %s'%(outputFileName))

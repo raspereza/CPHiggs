@@ -9,6 +9,18 @@ import os
 import CPHiggs.Analysis.styles as styles
 import CPHiggs.Analysis.utils as utils
 
+etabins_dict = {
+    '1': '|#eta|<1.0',
+    '2': '1.0<|#eta|<1.6',
+    '3': '1.6<|#eta|<2.4',
+}
+
+ptbins_dict = {
+    '1': '26<p_{T}<30 GeV',
+    '2': '30<p_{T}<35 GeV',
+    '3': '35<p_{T}<40 GeV',
+}
+
 def Plot(f,d,**kwargs):
 
     era = kwargs.get('era','Run3_2022EE')
@@ -219,6 +231,12 @@ def Plot(f,d,**kwargs):
         
     if plotLegend: leg.Draw()
 
+    text = ROOT.TLatex()
+    text.SetTextSize(0.045)
+    text.DrawLatexNDC(0.65,0.30,region+' '+fit_suffix)
+    text.DrawLatexNDC(0.65,0.22,ptbins_dict[binPt])
+    text.DrawLatexNDC(0.65,0.14,etabins_dict[binEta])
+    
     styles.CMS_label(upper,era=era)
 
     upper.Draw("SAME")
@@ -256,7 +274,9 @@ def Plot(f,d,**kwargs):
     print('')
     
     binPtEta = 'binPt%s_binEta%s'%(binPt,binEta)
-    basedir = '%s/figures/IPSigTP/'%(utils.outputFolder)
+    basedir = '/eos/home-r/rasp/php-plots/plots/IPSig_Fits'
+#    basedir = '%s/figures/IPSigTP/'%(utils.outputFolder)
+
     outputGraphics = '%s/%s_%s_%s_%s_%s_%s.png'%(basedir,chan,era,binPtEta,region,fit_suffix,typ_suffix)    
     canvas.Print(outputGraphics)
 
@@ -291,7 +311,7 @@ if __name__ == "__main__":
     if chan=='mt': nbinsPt = 5
     region_labels = ['pass','fail']
     basedir='%s/datacardsIpSig/'%(utils.outputFolder)
-    for iPt in range(1,nbinsPt+1):
+    for iPt in range(1,3):
         binPt='%1i'%(iPt)
         for iEta in range(1,nbinsEta+1):
             binEta='%1i'%(iEta)

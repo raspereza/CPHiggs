@@ -33,8 +33,7 @@ def Plot(hists,**kwargs):
     plotLegend = kwargs.get('plotLegend',True)
     ymin = kwargs.get('ymin',0.501)
     ymax = kwargs.get('ymax',1.499)
-    ff = kwargs.get('ff','wj')
-    ff_version = kwargs.get('ff_version','v3')
+    ff = kwargs.get('ff','mc_wj')
 
     h_data = hists['%s_had'%(sample)]
     h_model = hists['%s_%s_had'%(sample,ff)]
@@ -42,7 +41,7 @@ def Plot(hists,**kwargs):
     x_data = h_data.GetSumOfWeights()
     x_model = h_model.GetSumOfWeights()
 
-    styles.InitData(x_data)
+    styles.InitData(h_data)
     xtitle = utils.XTitle[chan][var]
     styles.InitHist(h_model,"","",ROOT.TColor.GetColor("#FFCCFF"),1001)
     
@@ -134,7 +133,7 @@ def Plot(hists,**kwargs):
     canvas.SetSelected(canvas)
     canvas.Update()
     print('')
-    outputFolder = '/eos/home-r/rasp/php-plots/plots/FFclosure_%s/%s/mc_%s'%(chan,ff_version,sample)
+    outputFolder = '/eos/home-r/rasp/php-plots/plots/FFclosure_%s/%s'%(chan,ff)
     outputGraphics = '%s/%s.png'%(outputFolder,var)
     canvas.Print(outputGraphics)
 
@@ -154,8 +153,9 @@ if __name__ == "__main__":
     parser.add_argument('-ymin','--ymin',dest='ymin',type=float,default=0.201)
     parser.add_argument('-ymax','--ymax',dest='ymax',type=float,default=1.899)
     parser.add_argument('-region','--region',dest='region',default='lowmt_os_iso')
-    parser.add_argument('-ff_version','--ff_version',dest='ff_version',default='v4')
+    parser.add_argument('-suffix','--suffix',dest='suffix',default='x_ipcut1_ff_ipcut')
     parser.add_argument('-sample','--sample',dest='sample',default='wjets')
+    parser.add_argument('-ff','--ff',dest='ff',default='mc_wj')
     
     args = parser.parse_args()
 
@@ -169,21 +169,18 @@ if __name__ == "__main__":
     ymax = args.ymax
     sample = args.sample
     region = args.region
-    ff_version = args.ff_version
+    suffix = args.suffix
+    ff = args.ff
     plotLegend = True
 
-    if var in ['eta_1','eta_2','CMetQCD','CMetW','bdt_ditau','bdt_fakes','bdt_signal']:
+    if var in ['eta_1','eta_2','CMetQCD','CMetW','bdt_ditau','bdt_fakes','bdt_signal','dR']:
         plotLegend = False
 
-    ff = 'mc_wj'
-    if sample=='top':
-        ff = 'mc_top'
-    
     basedir = utils.outputFolder+'/selection/baseline'
 
     bins = utils.createBins(nbins,xmin,xmax)
 
-    inputFileName = '%s/%s_%s_x_ipcut1_ff_%s.root'%(basedir,chan,era,ff_version)
+    inputFileName = '%s/%s_%s_%s.root'%(basedir,chan,era,suffix)
     if os.path.isfile(inputFileName):
         print('')
         print('Loading ROOT file %s'%(inputFileName))
@@ -197,7 +194,7 @@ if __name__ == "__main__":
     hists = ExtractHistosFF(inputFile,sample,var,region,ff,bins)
     Plot(hists,era=era,var=var,channel=chan,
          sample=sample,ymin=ymin,ymax=ymax,
-         plotLegend=plotLegend,ff=ff,ff_version=ff_version)
+         plotLegend=plotLegend,ff=ff)
 
     
 

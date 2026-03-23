@@ -30,15 +30,6 @@ varToChan = {
     'aco_e_a1_FASTMTT_MassConstraint' : 'et',
 }
 
-def symmetrize(hist):
-    nbins = hist.GetNbinsX()
-    bins2 = nbins//2
-    for ib in range(1,bins2+1):
-        ib2 = nbins + 1 - ib
-        x = 0.5*(hist.GetBinContent(ib)+hist.GetBinContent(ib2))
-        hist.SetBinContent(ib,x)
-        hist.SetBinContent(ib2,x)
-
 
 def Plot(hists,**kwargs):
 
@@ -51,7 +42,7 @@ def Plot(hists,**kwargs):
     h_odd = hists['odd'].Clone('h_odd')
 
     xtitle = '#phi_{CP} [deg]'
-    ytitle = 'normalized'
+    ytitle = 'Events'
 
     styles.InitModel(h_even,xtitle,ytitle,2)
     styles.InitModel(h_odd,xtitle,ytitle,4)
@@ -93,7 +84,7 @@ def Plot(hists,**kwargs):
     canvas.Modified()
     canvas.Update()
 
-    outputGraphics = utils.outputFolder+'/figures/signal/'+var+suffix+'.png'    
+    outputGraphics = '/eos/home-r/rasp/php-plots/plots/phiCP/'+var+suffix+'.png'    
     canvas.Print(outputGraphics)
 
 if __name__ == "__main__":
@@ -127,13 +118,16 @@ if __name__ == "__main__":
     chan = varToChan[var]
     bins = utils.createBins(nbins,xmin,xmax)
     
-    cutDeepTau = 'idDeepTau2018v2p5VSjet_2>=5&&idDeepTau2018v2p5VSe_2>=2&&idDeepTau2018v2p5VSmu_2>=4'
+    cutDeepTau = 'idDeepTau2018v2p5VSjet_2>=7&&idDeepTau2018v2p5VSe_2>=2&&idDeepTau2018v2p5VSmu_2>=4'
+    if chan=='et':
+        cutDeepTau = 'idDeepTau2018v2p5VSjet_2>=7&&idDeepTau2018v2p5VSe_2>=6&&idDeepTau2018v2p5VSmu_2>=4'
+        
     
-    cutLep = 'pt_1>25&&fabs(eta_1)<2.4&&iso_1<0.15&&os>0.5'
-    cutTau = 'pt_2>20&&fabs(eta_2)<2.3'
+    cutLep = 'pt_1>26&&fabs(eta_1)<2.4&&iso_1<0.15&&os>0.5&&trg_singlemuon>0.5&&mt_1<65.'
+    cutTau = 'pt_2>20&&fabs(eta_2)<2.5&&os>0.5'
 
     if chan=='et':
-        cutLep = 'pt_1>31&&fabs(eta_1)<2.1&&iso_1<0.15&&os>0.5'
+        cutLep = 'pt_2>32&&fabs(eta_1)<2.1&&iso_1<0.15&&os>0.5&&trg_singleelectron>0.5&&mt_1<65.'
 
     
     weightOdd = '(weight*wt_cp_ps)'
@@ -176,7 +170,7 @@ if __name__ == "__main__":
         yaml_file = baseFolder+'/params/'+era+'.yaml'
         metafile = open(yaml_file,'r')
         metadata = list(yaml.load_all(metafile,Loader=SafeLoader))
-        norm = metadata[0]['lumi']*metadata[0][sample]['filter_efficiency']/metadata[0][sample]['eff']
+        norm = metadata[0]['lumi']*metadata[0][sample]['filter_efficiency']*metadata[0][sample]['xs']/metadata[0][sample]['eff']
 
         ROOT.gROOT.cd('')
         histEvenEra[era] = ROOT.TH1D('histEven_%s'%(era),'',nbins,array('d',list(bins)))
@@ -216,20 +210,20 @@ if __name__ == "__main__":
     
     normEven = histEven.GetSumOfWeights()
     normOdd  = histOdd.GetSumOfWeights()
-    histEven.Scale(1.0/normEven)
-    histOdd.Scale(1.0/normOdd)
-    histEvenIP.Scale(1.0/normEven)
-    histOddIP.Scale(1.0/normOdd)
-    symmetrize(histEven)
-    symmetrize(histOdd)
-    symmetrize(histEvenIP)
-    symmetrize(histOddIP)
+    normEvenIP = histEvenIP.GetSumOfWeights()
+    normOddIP  = histOddIP.GetSumOfWeights()
+
+    utils.symmetrize(histEven)
+    utils.symmetrize(histOdd)
+    utils.symmetrize(histEvenIP)
+    utils.symmetrize(histOddIP)
     
     print('')
-    print('Norm(CP-odd) %4.2f  :  Norm(CP-even) = %4.2f'%(normOdd,normEven))
+    print('no IP  : Norm(CP-odd) %4.2f  :  Norm(CP-even) = %4.2f'%(normOdd,normEven))
+    print('IP cut : Norm(CP-odd) %4.2f  :  Norm(CP-even) = %4.2f'%(normOddIP,normEvenIP))
     print('')
-    print('  CP-Odd  |   CP-even')
-    print('----------+------------')
+    print('  CP-Odd   |   CP-even')
+    print('-----------+------------')
     asym = 0
     for ib in range(1,nbins+1):
         xOdd = histOdd.GetBinContent(ib)

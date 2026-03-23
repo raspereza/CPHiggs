@@ -1,5 +1,5 @@
 #! /usr/bin/env python3
-# Author: Alexei Raspereza (December 2024)
+# Author: Alexei Raspereza (November 2025)
 # Plotting macro for Z->tautau  selection
 import ROOT
 import math
@@ -9,21 +9,16 @@ import os
 import CPHiggs.Analysis.styles as styles
 import CPHiggs.Analysis.utils as utils
 
-def ExtractHistosFF(f,var,bins,region,njets):
+def ExtractHistosFF(f,var,region,bins):
     hists = {}
-    njets_label = {'incl' : '',
-                   'njets0' : '_njets0',
-                   'njets1' : '_njets1',
-                   'njets2' : '_njets2'
-                   }
 
     for sample in utils.samples:
         for typ in utils.type_labels:
-            nameInput='%s_%s_%s%s_%s'%(sample,var,region,njets_label[njets],typ)
+            nameInput='%s_%s_%s_%s'%(sample,var,region,typ)
             name='%s_%s'%(sample,typ)
             hists[name]=utils.rebinHisto(f.Get(nameInput),bins,'rebinned')
             for ff in utils.ff_labels:
-                nameInput='%s_%s_%s%s_%s_%s'%(sample,var,region,njets_label[njets],ff,typ)
+                nameInput='%s_%s_%s_%s_%s'%(sample,var,region,ff,typ)
                 name='%s_%s_%s'%(sample,ff,typ)
                 hists[name] = utils.rebinHisto(f.Get(nameInput),bins,'rebinned')
 
@@ -34,12 +29,11 @@ def Plot(hists,**kwargs):
     era = kwargs.get('era','Run3')
     var = kwargs.get('var','m_vis')
     chan = kwargs.get('channel','mt')
-    suffix = kwargs.get('suffix','')
     plotLegend = kwargs.get('plotLegend',True)
     ymin = kwargs.get('ymin',0.501)
     ymax = kwargs.get('ymax',1.499)
     ff_label = kwargs.get('ff','qcd')
-    njets = kwargs.get('njets','njets0')
+    region = kwargs.get('region','qcd_ff')
     
     mc_reduced_samples = ['zll','vv','wjets']
     h_mc = {} # sample, {sig,ar,qcd,wj}, {jet, lepton} 
@@ -201,8 +195,8 @@ def Plot(hists,**kwargs):
     canvas.SetSelected(canvas)
     canvas.Update()
     print('')
-    outputFolder = '/eos/home-r/rasp/php-plots/plots/FFclosure_%s/%s/%s'%(chan,suffix,njets)
-    outputGraphics = '%s/%s_%s_%s.png'%(outputFolder,var,njets,ff_label)
+    outputFolder = '/eos/home-r/rasp/php-plots/plots/FFclosure_%s/%s'%(chan,region)
+    outputGraphics = '%s/%s.png'%(outputFolder,var)
     canvas.Print(outputGraphics)
 
     ######################
@@ -225,7 +219,7 @@ def Plot(hists,**kwargs):
     h_qcd_ar.GetYaxis().SetTitle('Events')
     h_qcd_ar.GetYaxis().SetTitleOffset(1.4)
     
-    canvas = styles.MakeCanvas("canv","",600,600)
+    canvas = styles.MakeCanvas("canv_num","",600,600)
     
     h_qcd_ar.Draw('hsame')
     h_mc_ar_had.Draw('hsame')
@@ -244,8 +238,8 @@ def Plot(hists,**kwargs):
 
     canvas.Update()
     print('')
-    outputFolder = '/eos/home-r/rasp/php-plots/plots/FFcomposition_%s/%s/%s'%(chan,suffix,njets)
-    outputGraphics = '%s/%s_%s_%s_den.png'%(outputFolder,var,njets,ff_label)
+    outputFolder = '/eos/home-r/rasp/php-plots/plots/FFcomposition_%s/%s'%(chan,region)
+    outputGraphics = '%s/%s_den.png'%(outputFolder,var)
     canvas.Print(outputGraphics)
 
     ######################
@@ -287,8 +281,8 @@ def Plot(hists,**kwargs):
 
     canvas.Update()
     print('')
-    outputFolder = '/eos/home-r/rasp/php-plots/plots/FFcomposition_%s/%s/%s'%(chan,suffix,njets)
-    outputGraphics = '%s/%s_%s_%s_num.png'%(outputFolder,var,njets,ff_label)
+    outputFolder = '/eos/home-r/rasp/php-plots/plots/FFcomposition_%s/%s'%(chan,region)
+    outputGraphics = '%s/%s_num.png'%(outputFolder,var)
     canvas.Print(outputGraphics)
 
 if __name__ == "__main__":
@@ -306,11 +300,10 @@ if __name__ == "__main__":
     parser.add_argument('-xmax','--xmax',dest='xmax',type=float,default=250.)
     parser.add_argument('-ymin','--ymin',dest='ymin',type=float,default=0.201)
     parser.add_argument('-ymax','--ymax',dest='ymax',type=float,default=1.899)
-    parser.add_argument('-suffix','--suffix',dest='suffix',default='x_ipcut1_promptSF_tauSF_json_ff')
+    parser.add_argument('-suffix','--suffix',dest='suffix',default='x_ipcut1_ff_ipcut')
     #    parser.add_argument('-suffix','--suffix',dest='suffix',default='x_ff')
-    parser.add_argument('-njets','--njets',dest='njets',default='incl')
-    parser.add_argument('-ff','--ff',dest='ff',default='qcd')
-
+    parser.add_argument('-ff','--ff',dest='ff',default='wj')
+    parser.add_argument('-region','--region',dest='region',default='wj_ff')
     
     args = parser.parse_args()
 
@@ -324,17 +317,12 @@ if __name__ == "__main__":
     ymax = args.ymax
     suffix = args.suffix
     plotLegend = True
-    if var=='eta_1' or var=='eta_2' or var=='CMetQCD' or var=='CMetW':
+    ff = args.ff
+    region = args.region
+    no_legend_vars = ['eta_1','eta_2','CMetQCD','CMetW','bdt_ditau','bdt_fakes','bdt_signal','dR','mt_1','aco_lep_pi','aco_lep_rho','aco_lep_a1_1pr','aco_lep_a1_3pr'] 
+    if var in no_legend_vars:
         plotLegend = False
 
-    ff = args.ff
-    region = '%s_ff'%(ff)
-    njets = args.njets
-
-    suffixIP = 'no_ipcut'
-    if suffix=='x_ipcut1_promptSF_tauSF_json_ff':
-        suffixIP = 'ipcut'
-    
     basedir = utils.outputFolder+'/selection'
 
     bins = utils.createBins(nbins,xmin,xmax)
@@ -350,10 +338,10 @@ if __name__ == "__main__":
         print('quitting')
         print('')
     inputFile = ROOT.TFile(inputFileName,'read')
-    hists = ExtractHistosFF(inputFile,var,bins,region,njets)
+    hists = ExtractHistosFF(inputFile,var,region,bins)
     Plot(hists,era=era,var=var,channel=chan,
-         suffix=suffixIP,ymin=ymin,ymax=ymax,
-         plotLegend=plotLegend,ff=ff,njets=njets)
+         ymin=ymin,ymax=ymax,region=region,
+         plotLegend=plotLegend,ff=ff)
 
     
 

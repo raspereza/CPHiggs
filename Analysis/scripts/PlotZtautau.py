@@ -30,7 +30,8 @@ def Plot(hists,**kwargs):
     plotLegend = kwargs.get('plotLegend',True)
     ymin = kwargs.get('ymin',0.701)
     ymax = kwargs.get('ymax',1.299)
-
+    blind_data = kwargs.get('blind_data',True)
+    
     # histograms
     h_data = hists['data_os'].Clone('h_data')
     h_ztt = hists['ztt_os'].Clone('h_ztt')
@@ -90,8 +91,18 @@ def Plot(hists,**kwargs):
     h_tot = h_ztt.Clone("total")
     print('Total (cross-check) : %7.0f'%(h_tot.GetSumOfWeights()))
     print('')
+
+    YMax = h_data.GetMaximum()
+    if h_tot.GetMaximum()>YMax: YMax = h_tot.GetMaximum()
     
     styles.InitTotalHist(h_tot)
+
+    if blind_data and var=='bdt_signal':
+        for ib in range(1,nbins+1):
+            bdt = h_data.GetXaxis().GetBinLowEdge(ib)
+            if bdt>0.6:
+                h_data.SetBinContent(ib,10000.)
+                h_data.SetBinError(ib,0.)
     
     h_ratio = utils.histoRatio(h_data,h_tot,'ratio')
     h_tot_ratio = utils.createUnitHisto(h_tot,'tot_ratio')
@@ -106,8 +117,6 @@ def Plot(hists,**kwargs):
     utils.zeroBinErrors(h_wjets)
     utils.zeroBinErrors(h_qcd)
 
-    YMax = h_data.GetMaximum()
-    if h_tot.GetMaximum()>YMax: YMax = h_tot.GetMaximum()
     
     h_data.GetYaxis().SetRangeUser(0.,1.2*YMax)
     h_data.GetXaxis().SetLabelSize(0)
@@ -181,7 +190,7 @@ def Plot(hists,**kwargs):
     canvas.SetSelected(canvas)
     canvas.Update()
     print('')
-    fig_folder = '/eos/home-r/rasp/php-plots/plots/%s_classic/%s'%(chan,suffix)
+    fig_folder = '/eos/home-r/rasp/php-plots/plots/%s_classic/'%(chan)
     outputGraphics = '%s/%s.png'%(fig_folder,var)
     canvas.Print(outputGraphics)
     return h_data, h_ztt
@@ -201,8 +210,7 @@ if __name__ == "__main__":
     parser.add_argument('-xmax','--xmax',dest='xmax',type=float,default=250.)
     parser.add_argument('-ymin','--ymin',dest='ymin',type=float,default=0.501)
     parser.add_argument('-ymax','--ymax',dest='ymax',type=float,default=1.499)
-    parser.add_argument('-suffix','--suffix',dest='suffix',default='x_ipcut1_ff_v3')
-    #    parser.add_argument('-suffix','--suffix',dest='suffix',default='x_ipcut1_promptSF_tauSF_json_ff')
+    parser.add_argument('-suffix','--suffix',dest='suffix',default='x_ipcut1_ff_noipcut')
     parser.add_argument('-region','--region',dest='region',default='lowmt')
     parser.add_argument('-qcdNorm','--qcdNorm',dest='qcdNorm',type=float,default=1.0)
     

@@ -30,12 +30,12 @@ def Plot(hists,**kwargs):
     era = kwargs.get('era','Run3')
     var = kwargs.get('var','m_vis')
     chan = kwargs.get('channel','mt')
-    suffixIP = kwargs.get('suffixIP','ipcut')
     region = kwargs.get('region','lowmt_os_iso')
     plotLegend = kwargs.get('plotLegend',True)
     ymin = kwargs.get('ymin',0.501)
     ymax = kwargs.get('ymax',1.499)
-    
+    blind_data = kwargs.get('blind_data',True)
+
     mc_samples = ['ztt','zll','top','vv','wjets']
     h_mc = {} # sample, {sig,ar,qcd,wj}, {jet, lepton} 
     # histograms
@@ -59,7 +59,7 @@ def Plot(hists,**kwargs):
             name = '%s_%s_had'%(mc,ff)
             h_mc[name] = hists['%s_%s_had'%(mc,ff)].Clone('h_'+name)
             
-    h_data_qcd = hists['data_qcd_closure_all'].Clone('h_data_qcd')
+    h_data_qcd = hists['data_qcd_all'].Clone('h_data_qcd')
     h_data_ar = hists['data_ar_all'].Clone('h_data_ar')
     h_data_ewk = hists['data_wj_all'].Clone('h_data_ewk')
     h_data_top = hists['data_mc_top_all'].Clone('h_data_top')
@@ -67,18 +67,31 @@ def Plot(hists,**kwargs):
     for mc in mc_samples:
         hist = h_mc['%s_ar_lepton'%(mc)]
         h_data_ar.Add(h_data_ar,hist,1.,-1.)
-        hist = h_mc['%s_qcd_closure_lepton'%(mc)]
+        hist = h_mc['%s_qcd_lepton'%(mc)]
         h_data_qcd.Add(h_data_qcd,hist,1.,-1.)
         hist = h_mc['%s_wj_lepton'%(mc)]
         h_data_ewk.Add(h_data_ewk,hist,1.,-1.)
         hist = h_mc['%s_mc_top_lepton'%(mc)]
         h_data_top.Add(h_data_top,hist,1.,-1.)
 
+
     ewk_ar = h_mc['wjets_ar_had']
     for mc in ['zll','ztt','vv']:
         ewk_ar.Add(ewk_ar,h_mc['%s_ar_had'%(mc)],1.,1.)        
     top_ar = h_mc['top_ar_had']
-        
+
+    x_data_ar = int(h_data_ar.GetSumOfWeights())
+    x_ewk_ar = int(ewk_ar.GetSumOfWeights())
+    x_top_ar = int(top_ar.GetSumOfWeights())
+    x_qcd_ar = int(x_data_ar - x_ewk_ar - x_top_ar)
+
+    print(f'Application region  {chan}')
+    print(f'top  : {x_top_ar}')
+    print(f'wj   : {x_ewk_ar}')
+    print(f'qcd  : {x_qcd_ar}')
+    print(f'data : {x_data_ar}')
+    
+    
     nbins = h_data_ar.GetNbinsX() 
     for ib in range(1,nbins+1):
         x_data_ar = max(h_data_ar.GetBinContent(ib),1.)
@@ -94,14 +107,14 @@ def Plot(hists,**kwargs):
             f_mc = 0.99
         f_qcd = 1.0-f_mc
         xlower = h_data_ar.GetXaxis().GetBinLowEdge(ib)
-        xupper = h_data_ar.GetYaxis().GetBinLowEdge(ib+1)
+        xupper = h_data_ar.GetXaxis().GetBinLowEdge(ib+1)
         f_tot = f_top+f_ewk+f_qcd
         print('[%5.2f  %5.2f]   %5.3f  %5.3f  %5.3f  %5.3f'%(xlower,xupper,f_qcd,f_ewk,f_top,f_tot))
         x_ff_qcd = h_data_qcd.GetBinContent(ib)
         x_ff_ewk = h_data_ewk.GetBinContent(ib)
         x_ff_top = h_data_top.GetBinContent(ib) 
-        x_ff = f_ewk*x_ff_ewk+f_qcd*x_ff_qcd#+f_top*x_ff_top
-#        e_ff = ROOT.TMath.Sqrt(f_ewk*e_ff_ewk*f_ewk*e_ff_ewk+f_qcd*e_ff_qcd*f_qcd*e_ff_qcd)
+        x_ff = f_ewk*x_ff_ewk+f_qcd*x_ff_qcd+f_top*x_ff_top
+#        e_ff = ROOT.TMath.Sqrt(f_ewk*e_ff_ewk*f_ewk*e_ff_ewk+f_qcd*e_ff_qcd*f_qcd*e_ff_qcd+f_top*e_ff_top*f_top*e_ff_top)
         h_data_qcd.SetBinContent(ib,x_ff)
 #        h_data_qcd.SetBinError(ib,e_ff)
         
@@ -154,8 +167,18 @@ def Plot(hists,**kwargs):
     h_tot = h_ztt.Clone("total")
     print('Total (cross-check) : %7.0f'%(h_tot.GetSumOfWeights()))
     print('')
+
+    YMax = h_data.GetMaximum()
+    if h_tot.GetMaximum()>YMax: YMax = h_tot.GetMaximum()
     
     styles.InitTotalHist(h_tot)
+
+    if blind_data and var=='bdt_signal':
+        for ib in range(1,nbins+1):
+            bdt = h_data.GetXaxis().GetBinLowEdge(ib)
+            if bdt>0.6:
+                h_data.SetBinContent(ib,100000.)
+                h_data.SetBinError(ib,0.)
     
     h_ratio = utils.histoRatio(h_data,h_tot,'ratio')
     h_tot_ratio = utils.createUnitHisto(h_tot,'tot_ratio')
@@ -170,8 +193,6 @@ def Plot(hists,**kwargs):
     utils.zeroBinErrors(h_wjets)
     utils.zeroBinErrors(h_qcd)
 
-    YMax = h_data.GetMaximum()
-    if h_tot.GetMaximum()>YMax: YMax = h_tot.GetMaximum()
     
     h_data.GetYaxis().SetRangeUser(0.,1.2*YMax)
     h_data.GetXaxis().SetLabelSize(0)
@@ -179,6 +200,7 @@ def Plot(hists,**kwargs):
     h_ratio.GetYaxis().SetTitle("obs/exp")
     h_ratio.GetXaxis().SetTitle(xtitle)
 
+    
     # canvas and pads
     canvas = styles.MakeCanvas("canv","",600,700)
     # upper pad
@@ -243,8 +265,9 @@ def Plot(hists,**kwargs):
     canvas.SetSelected(canvas)
     canvas.Update()
     print('')
-    outputFolder = '/eos/home-r/rasp/php-plots/plots/%s_FF/%s'%(chan,suffixIP)
+    outputFolder = '/eos/home-r/rasp/php-plots/plots/%s_FFmodel'%(chan)
     outputGraphics = '%s/%s.png'%(outputFolder,var)
+    if qcd_corr: outputGraphics = '%s.png'%(outputFolder,var)
     canvas.Print(outputGraphics)
 
 if __name__ == "__main__":
@@ -262,11 +285,13 @@ if __name__ == "__main__":
     parser.add_argument('-xmax','--xmax',dest='xmax',type=float,default=250.)
     parser.add_argument('-ymin','--ymin',dest='ymin',type=float,default=0.501)
     parser.add_argument('-ymax','--ymax',dest='ymax',type=float,default=1.499)
-    parser.add_argument('-suffix','--suffix',dest='suffix',default='x_ipcut1_ff_v3')
+    parser.add_argument('-suffix','--suffix',dest='suffix',default='x_ipcut1_ff_ipcut')
     parser.add_argument('-region','--region',dest='region',default='lowmt_os_iso')
     
     args = parser.parse_args()
 
+    qcd_corr = False
+    
     era = args.era
     chan = args.channel
     var = args.variable
@@ -278,8 +303,6 @@ if __name__ == "__main__":
     region = args.region
     suffix = args.suffix
     
-    suffixIP = 'ipcut'
-        
     plotLegend = True
     if var in ['eta_1','eta_2','bdt_ditau','bdt_fakes','bdt_signal']:
         plotLegend = False
@@ -300,7 +323,7 @@ if __name__ == "__main__":
     inputFile = ROOT.TFile(inputFileName,'read')
     hists = ExtractHistos(inputFile,var,bins,region)
     Plot(hists,era=era,var=var,channel=chan,
-         suffixIP=suffixIP,ymin=ymin,ymax=ymax,
+         ymin=ymin,ymax=ymax,
          plotLegend=plotLegend,region=region)
     
 

@@ -11,6 +11,7 @@ import os
 import CPHiggs.Analysis.styles as styles
 import CPHiggs.Analysis.utils as utils
 
+
 # Fit function (SF vs pT) : pol2
 def FitFunc(x,par):
     b = par[0]+par[1]*x[0]+par[2]*x[0]*x[0]
@@ -416,16 +417,25 @@ def RunTagProbe(hists,**kwargs):
 
     hist.Draw('e1')    
     
-    leg = ROOT.TLegend(0.65,0.55,0.9,0.7)
+    leg = ROOT.TLegend(0.65,0.5,0.9,0.7)
     styles.SetLegendStyle(leg)
-    leg.SetTextSize(0.042)
+    leg.SetTextSize(0.05)
     leg.SetHeader(header)
     if sample=='data': leg.AddEntry(hist,'data','lp')
     else: leg.AddEntry(hist,'simulation','lp')
     if plotLegend: leg.Draw()
 
+    text = ROOT.TLatex()
+    text.SetTextFont(42)
+    text.SetTextSize(0.05)
+    text.DrawLatexNDC(0.25,0.8,region)
+    text.DrawLatexNDC(0.25,0.7,'30<p_{T}<35 GeV')
+    text.DrawLatexNDC(0.25,0.6,'|#eta|<1.0')
+    
     styles.CMS_label(canvas,era=era)
 
+    
+    
     canvas.RedrawAxis()
     canvas.Modified()
     canvas.Update()
@@ -434,7 +444,7 @@ def RunTagProbe(hists,**kwargs):
     suffix = ''
     if secondLep:
         suffix += '_2'
-    outputGraphics = utils.outputFolder + '/figures/tag_probe/' + sample + '_' + chan + '_ptBin' + binPt + '_etaBin' + binEta + '_' + era + '_' + region + suffix + '.png'
+    outputGraphics = '/eos/home-r/rasp/php-plots/plots/'+sample + '_' + chan + '_ptBin' + binPt + '_etaBin' + binEta + '_' + era + '_' + region + suffix + '.png'
     canvas.Print(outputGraphics)
 
     del canvas
@@ -487,7 +497,7 @@ if __name__ == "__main__":
     print('')
     print(inputFile)
     print('')
-    hists = utils.extractTagProbeHistos(inputFile,bins,generator,era,chan,secondLep)
+    hists = utils.extractTagProbeHistos(inputFile,bins,era,chan,secondLep)
     histPtBins = inputFile.Get('ptBins')
     histEtaBins = inputFile.Get('etaBins')
     nbinsPt = histPtBins.GetNbinsX()
@@ -513,7 +523,9 @@ if __name__ == "__main__":
     fitSF_down = {}
     effData_1D = ROOT.TH1D('effData_eta'+binEta,'',nbinsPt,array('d',list(ptBins)))
     effMC_1D = ROOT.TH1D('effMC_eta'+binEta,'',nbinsPt,array('d',list(ptBins)))
-    for iPt in range(1,nbinsPt+1):
+    for iPt in range(2,3):
+#    for iPt in range(1,nbinsPt+1):
+
         binPt = '%1i'%(iPt)
         # tag-and-probe data
         nPassData,xPassData,ePassData = RunTagProbe(hists,
@@ -576,6 +588,7 @@ if __name__ == "__main__":
         effMC_1D.SetBinError(iPt,effErrMC)
         effMC_2D.SetBinContent(iPt,iEta,effMC)
         effMC_2D.SetBinError(iPt,iEta,effErrMC)
+    exit()
     hfit[binEta],fitSF[binEta],fitSF_up[binEta],fitSF_down[binEta] = PlotTagProbe(effData_1D,effMC_1D,era=era,channel=chan,binEta=binEta,ymin=ymin,ymax=ymax,generator=generator,secondLep=secondLep)
 
     suffix = generator
