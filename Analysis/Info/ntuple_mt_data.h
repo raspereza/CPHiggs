@@ -1,8 +1,8 @@
 //////////////////////////////////////////////////////////
 // This class has been automatically generated on
-// Mon Mar 23 08:48:27 2026 by ROOT version 6.30/07
+// Mon Mar 23 08:49:21 2026 by ROOT version 6.30/07
 // from TTree ntuple/
-// found on file: root://eoscms.cern.ch//eos/cms/store/group/phys_tau/lrussell/forAliaksei/ForFakeFactors/Run3_2022EE/mt/GluGluHTo2Tau_UncorrelatedDecay_SM_Filtered_ProdAndDecay/nominal/merged.root
+// found on file: root://eoscms.cern.ch//eos/cms/store/group/phys_tau/lrussell/forAliaksei/ForFakeFactors/Run3_2022EE/mt/Muon_Run2022E/nominal/merged.root
 //////////////////////////////////////////////////////////
 
 #ifndef ntuple_h
@@ -172,75 +172,9 @@ public :
    Double_t        pi0_pdgId_2;
    Double_t        pi0_Energy_2;
    Double_t        weight;
-   Double_t        genWeight;
    Double_t        is_data;
-   Double_t        LHEReweightingWeight_SM;
-   Double_t        LHEReweightingWeight_PS;
-   Double_t        LHEReweightingWeight_MM;
-   Long64_t        nLHEjets;
-   Long64_t        npNLOjets;
-   Double_t        LHE_Vpt;
-   Double_t        wt_cp_sm;
-   Double_t        wt_cp_ps;
-   Double_t        wt_cp_mm;
    Double_t        pion_E_split_1;
    Double_t        pion_E_split_2;
-   Double_t        gen_boson_pT;
-   Double_t        gen_boson_mass;
-   Double_t        gen_boson_eta;
-   Double_t        gen_boson_phi;
-   Double_t        gen_taunus_pT;
-   Double_t        gen_taunus_phi;
-   Long64_t        genPartFlav_1;
-   Long64_t        genPartFlav_2;
-   Double_t        genPart_pt_1;
-   Double_t        genPart_eta_1;
-   Double_t        genPart_phi_1;
-   Double_t        genPart_pdgId_1;
-   Double_t        genPart_pt_2;
-   Double_t        genPart_eta_2;
-   Double_t        genPart_phi_2;
-   Double_t        genPart_pdgId_2;
-   Double_t        genVisTau_pt_1;
-   Double_t        genVisTau_eta_1;
-   Double_t        genVisTau_phi_1;
-   Double_t        genVisTau_mass_1;
-   Double_t        genVisTau_pt_2;
-   Double_t        genVisTau_eta_2;
-   Double_t        genVisTau_phi_2;
-   Double_t        genVisTau_mass_2;
-   Double_t        gen_decayMode_1;
-   Double_t        gen_decayMode_2;
-   Double_t        w_WJ_soup;
-   Double_t        w_DY_NLO_soup;
-   Double_t        w_Pileup;
-   Double_t        w_Zpt_Reweighting;
-   Double_t        w_Top_pt_Reweighting;
-   Double_t        w_ggH_QuarkMass_Effects;
-   Double_t        w_Electron_ID;
-   Double_t        w_Electron_Reco;
-   Double_t        w_Muon_ID;
-   Double_t        w_Muon_Isolation;
-   Double_t        w_Tau_ID_PNet;
-   Double_t        w_Tau_e_FakeRate;
-   Double_t        w_Tau_mu_FakeRate;
-   Double_t        w_Trigger;
-   Double_t        w_IP_Significance;
-   Double_t        w_CrossTrigger_Tau_leg2;
-   Double_t        w_SingleMuon_leg1;
-   Double_t        w_CrossTrigger_Muon_leg1;
-   Double_t        w_IPSig_correction_tauDecay_eta1p0to1p6_statUp;
-   Double_t        w_IPSig_correction_tauDecay_etaLt1p0_statUp;
-   Double_t        w_IPSig_correction_tauDecay_eta1p0to1p6_statDown;
-   Double_t        w_IPSig_correction_prompt_etaGt1p6_statUp;
-   Double_t        w_IPSig_correction_prompt_eta1p0to1p6_statDown;
-   Double_t        w_IPSig_correction_tauDecay_etaLt1p0_statDown;
-   Double_t        w_IPSig_correction_tauDecay_etaGt1p6_statUp;
-   Double_t        w_IPSig_correction_prompt_etaLt1p0_statUp;
-   Double_t        w_IPSig_correction_prompt_etaGt1p6_statDown;
-   Double_t        w_IPSig_correction_prompt_eta1p0to1p6_statUp;
-   Double_t        w_IPSig_correction_prompt_etaLt1p0_statDown;
-   Double_t        w_IPSig_correction_tauDecay_etaGt1p6_statDown;
    Double_t        iso_1;
    Double_t        abs_eta_1;
    Double_t        BDT_pred_score;
@@ -401,75 +335,9 @@ public :
    TBranch        *b_pi0_pdgId_2;   //!
    TBranch        *b_pi0_Energy_2;   //!
    TBranch        *b_weight;   //!
-   TBranch        *b_genWeight;   //!
    TBranch        *b_is_data;   //!
-   TBranch        *b_LHEReweightingWeight_SM;   //!
-   TBranch        *b_LHEReweightingWeight_PS;   //!
-   TBranch        *b_LHEReweightingWeight_MM;   //!
-   TBranch        *b_nLHEjets;   //!
-   TBranch        *b_npNLOjets;   //!
-   TBranch        *b_LHE_Vpt;   //!
-   TBranch        *b_wt_cp_sm;   //!
-   TBranch        *b_wt_cp_ps;   //!
-   TBranch        *b_wt_cp_mm;   //!
    TBranch        *b_pion_E_split_1;   //!
    TBranch        *b_pion_E_split_2;   //!
-   TBranch        *b_gen_boson_pT;   //!
-   TBranch        *b_gen_boson_mass;   //!
-   TBranch        *b_gen_boson_eta;   //!
-   TBranch        *b_gen_boson_phi;   //!
-   TBranch        *b_gen_taunus_pT;   //!
-   TBranch        *b_gen_taunus_phi;   //!
-   TBranch        *b_genPartFlav_1;   //!
-   TBranch        *b_genPartFlav_2;   //!
-   TBranch        *b_genPart_pt_1;   //!
-   TBranch        *b_genPart_eta_1;   //!
-   TBranch        *b_genPart_phi_1;   //!
-   TBranch        *b_genPart_pdgId_1;   //!
-   TBranch        *b_genPart_pt_2;   //!
-   TBranch        *b_genPart_eta_2;   //!
-   TBranch        *b_genPart_phi_2;   //!
-   TBranch        *b_genPart_pdgId_2;   //!
-   TBranch        *b_genVisTau_pt_1;   //!
-   TBranch        *b_genVisTau_eta_1;   //!
-   TBranch        *b_genVisTau_phi_1;   //!
-   TBranch        *b_genVisTau_mass_1;   //!
-   TBranch        *b_genVisTau_pt_2;   //!
-   TBranch        *b_genVisTau_eta_2;   //!
-   TBranch        *b_genVisTau_phi_2;   //!
-   TBranch        *b_genVisTau_mass_2;   //!
-   TBranch        *b_gen_decayMode_1;   //!
-   TBranch        *b_gen_decayMode_2;   //!
-   TBranch        *b_w_WJ_soup;   //!
-   TBranch        *b_w_DY_NLO_soup;   //!
-   TBranch        *b_w_Pileup;   //!
-   TBranch        *b_w_Zpt_Reweighting;   //!
-   TBranch        *b_w_Top_pt_Reweighting;   //!
-   TBranch        *b_w_ggH_QuarkMass_Effects;   //!
-   TBranch        *b_w_Electron_ID;   //!
-   TBranch        *b_w_Electron_Reco;   //!
-   TBranch        *b_w_Muon_ID;   //!
-   TBranch        *b_w_Muon_Isolation;   //!
-   TBranch        *b_w_Tau_ID_PNet;   //!
-   TBranch        *b_w_Tau_e_FakeRate;   //!
-   TBranch        *b_w_Tau_mu_FakeRate;   //!
-   TBranch        *b_w_Trigger;   //!
-   TBranch        *b_w_IP_Significance;   //!
-   TBranch        *b_w_CrossTrigger_Tau_leg2;   //!
-   TBranch        *b_w_SingleMuon_leg1;   //!
-   TBranch        *b_w_CrossTrigger_Muon_leg1;   //!
-   TBranch        *b_w_IPSig_correction_tauDecay_eta1p0to1p6_statUp;   //!
-   TBranch        *b_w_IPSig_correction_tauDecay_etaLt1p0_statUp;   //!
-   TBranch        *b_w_IPSig_correction_tauDecay_eta1p0to1p6_statDown;   //!
-   TBranch        *b_w_IPSig_correction_prompt_etaGt1p6_statUp;   //!
-   TBranch        *b_w_IPSig_correction_prompt_eta1p0to1p6_statDown;   //!
-   TBranch        *b_w_IPSig_correction_tauDecay_etaLt1p0_statDown;   //!
-   TBranch        *b_w_IPSig_correction_tauDecay_etaGt1p6_statUp;   //!
-   TBranch        *b_w_IPSig_correction_prompt_etaLt1p0_statUp;   //!
-   TBranch        *b_w_IPSig_correction_prompt_etaGt1p6_statDown;   //!
-   TBranch        *b_w_IPSig_correction_prompt_eta1p0to1p6_statUp;   //!
-   TBranch        *b_w_IPSig_correction_prompt_etaLt1p0_statDown;   //!
-   TBranch        *b_w_IPSig_correction_tauDecay_etaGt1p6_statDown;   //!
    TBranch        *b_iso_1;   //!
    TBranch        *b_abs_eta_1;   //!
    TBranch        *b_BDT_pred_score;   //!
@@ -498,9 +366,9 @@ ntuple::ntuple(TTree *tree) : fChain(0)
 // if parameter tree is not specified (or zero), connect the file
 // used to generate this class and read the Tree.
    if (tree == 0) {
-      TFile *f = (TFile*)gROOT->GetListOfFiles()->FindObject("root://eoscms.cern.ch//eos/cms/store/group/phys_tau/lrussell/forAliaksei/ForFakeFactors/Run3_2022EE/mt/GluGluHTo2Tau_UncorrelatedDecay_SM_Filtered_ProdAndDecay/nominal/merged.root");
+      TFile *f = (TFile*)gROOT->GetListOfFiles()->FindObject("root://eoscms.cern.ch//eos/cms/store/group/phys_tau/lrussell/forAliaksei/ForFakeFactors/Run3_2022EE/mt/Muon_Run2022E/nominal/merged.root");
       if (!f || !f->IsOpen()) {
-         f = new TFile("root://eoscms.cern.ch//eos/cms/store/group/phys_tau/lrussell/forAliaksei/ForFakeFactors/Run3_2022EE/mt/GluGluHTo2Tau_UncorrelatedDecay_SM_Filtered_ProdAndDecay/nominal/merged.root");
+         f = new TFile("root://eoscms.cern.ch//eos/cms/store/group/phys_tau/lrussell/forAliaksei/ForFakeFactors/Run3_2022EE/mt/Muon_Run2022E/nominal/merged.root");
       }
       f->GetObject("ntuple",tree);
 
@@ -699,75 +567,9 @@ void ntuple::Init(TTree *tree)
    fChain->SetBranchAddress("pi0_pdgId_2", &pi0_pdgId_2, &b_pi0_pdgId_2);
    fChain->SetBranchAddress("pi0_Energy_2", &pi0_Energy_2, &b_pi0_Energy_2);
    fChain->SetBranchAddress("weight", &weight, &b_weight);
-   fChain->SetBranchAddress("genWeight", &genWeight, &b_genWeight);
    fChain->SetBranchAddress("is_data", &is_data, &b_is_data);
-   fChain->SetBranchAddress("LHEReweightingWeight_SM", &LHEReweightingWeight_SM, &b_LHEReweightingWeight_SM);
-   fChain->SetBranchAddress("LHEReweightingWeight_PS", &LHEReweightingWeight_PS, &b_LHEReweightingWeight_PS);
-   fChain->SetBranchAddress("LHEReweightingWeight_MM", &LHEReweightingWeight_MM, &b_LHEReweightingWeight_MM);
-   fChain->SetBranchAddress("nLHEjets", &nLHEjets, &b_nLHEjets);
-   fChain->SetBranchAddress("npNLOjets", &npNLOjets, &b_npNLOjets);
-   fChain->SetBranchAddress("LHE_Vpt", &LHE_Vpt, &b_LHE_Vpt);
-   fChain->SetBranchAddress("wt_cp_sm", &wt_cp_sm, &b_wt_cp_sm);
-   fChain->SetBranchAddress("wt_cp_ps", &wt_cp_ps, &b_wt_cp_ps);
-   fChain->SetBranchAddress("wt_cp_mm", &wt_cp_mm, &b_wt_cp_mm);
    fChain->SetBranchAddress("pion_E_split_1", &pion_E_split_1, &b_pion_E_split_1);
    fChain->SetBranchAddress("pion_E_split_2", &pion_E_split_2, &b_pion_E_split_2);
-   fChain->SetBranchAddress("gen_boson_pT", &gen_boson_pT, &b_gen_boson_pT);
-   fChain->SetBranchAddress("gen_boson_mass", &gen_boson_mass, &b_gen_boson_mass);
-   fChain->SetBranchAddress("gen_boson_eta", &gen_boson_eta, &b_gen_boson_eta);
-   fChain->SetBranchAddress("gen_boson_phi", &gen_boson_phi, &b_gen_boson_phi);
-   fChain->SetBranchAddress("gen_taunus_pT", &gen_taunus_pT, &b_gen_taunus_pT);
-   fChain->SetBranchAddress("gen_taunus_phi", &gen_taunus_phi, &b_gen_taunus_phi);
-   fChain->SetBranchAddress("genPartFlav_1", &genPartFlav_1, &b_genPartFlav_1);
-   fChain->SetBranchAddress("genPartFlav_2", &genPartFlav_2, &b_genPartFlav_2);
-   fChain->SetBranchAddress("genPart_pt_1", &genPart_pt_1, &b_genPart_pt_1);
-   fChain->SetBranchAddress("genPart_eta_1", &genPart_eta_1, &b_genPart_eta_1);
-   fChain->SetBranchAddress("genPart_phi_1", &genPart_phi_1, &b_genPart_phi_1);
-   fChain->SetBranchAddress("genPart_pdgId_1", &genPart_pdgId_1, &b_genPart_pdgId_1);
-   fChain->SetBranchAddress("genPart_pt_2", &genPart_pt_2, &b_genPart_pt_2);
-   fChain->SetBranchAddress("genPart_eta_2", &genPart_eta_2, &b_genPart_eta_2);
-   fChain->SetBranchAddress("genPart_phi_2", &genPart_phi_2, &b_genPart_phi_2);
-   fChain->SetBranchAddress("genPart_pdgId_2", &genPart_pdgId_2, &b_genPart_pdgId_2);
-   fChain->SetBranchAddress("genVisTau_pt_1", &genVisTau_pt_1, &b_genVisTau_pt_1);
-   fChain->SetBranchAddress("genVisTau_eta_1", &genVisTau_eta_1, &b_genVisTau_eta_1);
-   fChain->SetBranchAddress("genVisTau_phi_1", &genVisTau_phi_1, &b_genVisTau_phi_1);
-   fChain->SetBranchAddress("genVisTau_mass_1", &genVisTau_mass_1, &b_genVisTau_mass_1);
-   fChain->SetBranchAddress("genVisTau_pt_2", &genVisTau_pt_2, &b_genVisTau_pt_2);
-   fChain->SetBranchAddress("genVisTau_eta_2", &genVisTau_eta_2, &b_genVisTau_eta_2);
-   fChain->SetBranchAddress("genVisTau_phi_2", &genVisTau_phi_2, &b_genVisTau_phi_2);
-   fChain->SetBranchAddress("genVisTau_mass_2", &genVisTau_mass_2, &b_genVisTau_mass_2);
-   fChain->SetBranchAddress("gen_decayMode_1", &gen_decayMode_1, &b_gen_decayMode_1);
-   fChain->SetBranchAddress("gen_decayMode_2", &gen_decayMode_2, &b_gen_decayMode_2);
-   fChain->SetBranchAddress("w_WJ_soup", &w_WJ_soup, &b_w_WJ_soup);
-   fChain->SetBranchAddress("w_DY_NLO_soup", &w_DY_NLO_soup, &b_w_DY_NLO_soup);
-   fChain->SetBranchAddress("w_Pileup", &w_Pileup, &b_w_Pileup);
-   fChain->SetBranchAddress("w_Zpt_Reweighting", &w_Zpt_Reweighting, &b_w_Zpt_Reweighting);
-   fChain->SetBranchAddress("w_Top_pt_Reweighting", &w_Top_pt_Reweighting, &b_w_Top_pt_Reweighting);
-   fChain->SetBranchAddress("w_ggH_QuarkMass_Effects", &w_ggH_QuarkMass_Effects, &b_w_ggH_QuarkMass_Effects);
-   fChain->SetBranchAddress("w_Electron_ID", &w_Electron_ID, &b_w_Electron_ID);
-   fChain->SetBranchAddress("w_Electron_Reco", &w_Electron_Reco, &b_w_Electron_Reco);
-   fChain->SetBranchAddress("w_Muon_ID", &w_Muon_ID, &b_w_Muon_ID);
-   fChain->SetBranchAddress("w_Muon_Isolation", &w_Muon_Isolation, &b_w_Muon_Isolation);
-   fChain->SetBranchAddress("w_Tau_ID_PNet", &w_Tau_ID_PNet, &b_w_Tau_ID_PNet);
-   fChain->SetBranchAddress("w_Tau_e_FakeRate", &w_Tau_e_FakeRate, &b_w_Tau_e_FakeRate);
-   fChain->SetBranchAddress("w_Tau_mu_FakeRate", &w_Tau_mu_FakeRate, &b_w_Tau_mu_FakeRate);
-   fChain->SetBranchAddress("w_Trigger", &w_Trigger, &b_w_Trigger);
-   fChain->SetBranchAddress("w_IP_Significance", &w_IP_Significance, &b_w_IP_Significance);
-   fChain->SetBranchAddress("w_CrossTrigger_Tau_leg2", &w_CrossTrigger_Tau_leg2, &b_w_CrossTrigger_Tau_leg2);
-   fChain->SetBranchAddress("w_SingleMuon_leg1", &w_SingleMuon_leg1, &b_w_SingleMuon_leg1);
-   fChain->SetBranchAddress("w_CrossTrigger_Muon_leg1", &w_CrossTrigger_Muon_leg1, &b_w_CrossTrigger_Muon_leg1);
-   fChain->SetBranchAddress("w_IPSig_correction_tauDecay_eta1p0to1p6_statUp", &w_IPSig_correction_tauDecay_eta1p0to1p6_statUp, &b_w_IPSig_correction_tauDecay_eta1p0to1p6_statUp);
-   fChain->SetBranchAddress("w_IPSig_correction_tauDecay_etaLt1p0_statUp", &w_IPSig_correction_tauDecay_etaLt1p0_statUp, &b_w_IPSig_correction_tauDecay_etaLt1p0_statUp);
-   fChain->SetBranchAddress("w_IPSig_correction_tauDecay_eta1p0to1p6_statDown", &w_IPSig_correction_tauDecay_eta1p0to1p6_statDown, &b_w_IPSig_correction_tauDecay_eta1p0to1p6_statDown);
-   fChain->SetBranchAddress("w_IPSig_correction_prompt_etaGt1p6_statUp", &w_IPSig_correction_prompt_etaGt1p6_statUp, &b_w_IPSig_correction_prompt_etaGt1p6_statUp);
-   fChain->SetBranchAddress("w_IPSig_correction_prompt_eta1p0to1p6_statDown", &w_IPSig_correction_prompt_eta1p0to1p6_statDown, &b_w_IPSig_correction_prompt_eta1p0to1p6_statDown);
-   fChain->SetBranchAddress("w_IPSig_correction_tauDecay_etaLt1p0_statDown", &w_IPSig_correction_tauDecay_etaLt1p0_statDown, &b_w_IPSig_correction_tauDecay_etaLt1p0_statDown);
-   fChain->SetBranchAddress("w_IPSig_correction_tauDecay_etaGt1p6_statUp", &w_IPSig_correction_tauDecay_etaGt1p6_statUp, &b_w_IPSig_correction_tauDecay_etaGt1p6_statUp);
-   fChain->SetBranchAddress("w_IPSig_correction_prompt_etaLt1p0_statUp", &w_IPSig_correction_prompt_etaLt1p0_statUp, &b_w_IPSig_correction_prompt_etaLt1p0_statUp);
-   fChain->SetBranchAddress("w_IPSig_correction_prompt_etaGt1p6_statDown", &w_IPSig_correction_prompt_etaGt1p6_statDown, &b_w_IPSig_correction_prompt_etaGt1p6_statDown);
-   fChain->SetBranchAddress("w_IPSig_correction_prompt_eta1p0to1p6_statUp", &w_IPSig_correction_prompt_eta1p0to1p6_statUp, &b_w_IPSig_correction_prompt_eta1p0to1p6_statUp);
-   fChain->SetBranchAddress("w_IPSig_correction_prompt_etaLt1p0_statDown", &w_IPSig_correction_prompt_etaLt1p0_statDown, &b_w_IPSig_correction_prompt_etaLt1p0_statDown);
-   fChain->SetBranchAddress("w_IPSig_correction_tauDecay_etaGt1p6_statDown", &w_IPSig_correction_tauDecay_etaGt1p6_statDown, &b_w_IPSig_correction_tauDecay_etaGt1p6_statDown);
    fChain->SetBranchAddress("iso_1", &iso_1, &b_iso_1);
    fChain->SetBranchAddress("abs_eta_1", &abs_eta_1, &b_abs_eta_1);
    fChain->SetBranchAddress("BDT_pred_score", &BDT_pred_score, &b_BDT_pred_score);
