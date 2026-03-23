@@ -18,14 +18,14 @@ pi_mass = 0.140
 pi0_mass = 0.13498
 rho_mass = 0.7755
 ctau = 0.0087
+massH = 125.10
 
 ##################################
 # folder where tuples are stored #
 ##################################
-tupleFolderMG='/eos/cms/store/group/phys_tau/ksavva/For_Aliaksei/files/testingzpt'
-tupleFolderPOWHEG='/eos/cms/store/group/phys_tau/ksavva/For_Aliaksei/files/production_22_06_2025'
-tupleFolderPhiCP='/eos/cms/store/group/phys_tau/lrussell/forAliaksei/old/oldTuples'
-tupleFolderV2_Alexei='/eos/cms/store/group/phys_tau/lrussell/forAliaksei'
+#tupleFolderPhiCP='/eos/cms/store/group/phys_tau/lrussell/forAliaksei/oldTuples/old0407'
+#tupleFolderPhiCP='/eos/cms/store/group/phys_tau/lrussell/forAliaksei/oldTuples/old0808'
+tupleFolderPhiCP='/eos/cms/store/group/phys_tau/lrussell/forAliaksei/CPSignalStudies'
 tupleFolderV2='/eos/cms/store/group/phys_tau/lrussell/forAliaksei/ForFakeFactors'
 
 #########################################
@@ -478,6 +478,10 @@ lib_histos = {
     'mjj'   : [200,0.,2000.],
     'dR'    : [100,0.,10.],
     'jdeta' : [80,0.,8.],
+    'aco_lep_pi': [360, 0., 360.],
+    'aco_lep_rho': [360, 0., 360. ],
+    'aco_lep_a1_1pr': [360, 0., 360.],
+    'aco_lep_a1_3pr': [360, 0., 360.],
     'bdt_ditau'  : [100,0.,1.],
     'bdt_fakes'  : [100,0.,1.],
     'bdt_signal' : [100,0.,1.],
@@ -488,7 +492,7 @@ iso_labels = ['iso','antiiso']
 tautype_labels = ['lepton','fake','all']
 type_labels = ['tau','lep','had','all']
 tauid_labels = ['inverted','nominal']
-ff_labels = ['ar','qcd','wj','mc_top','mc_wj','ss_antiiso','os_antiiso','qcd_closure']
+ff_labels = ['ar','qcd','wj','mc_top','mc_wj','qcd_looseIso']
 njets_labels = ['njets0','njets1','njets2']
 dm_labels = ['pi','rho','a1_1pr','a1_3pr']
 eta_labels = ['barrel','endcap','all']
@@ -496,81 +500,106 @@ mt_labels = ['lowmt','highmt']
 cp_hypotheses = ['sm','ps','mm']
 region_labels = ['lowmt_os_iso',
                  'lowmt_ss_iso',
-                 'lowmt_os_antiiso',
-                 'lowmt_ss_antiiso',
+                 'qcd_closure_ff',
                  'wj_ff',
-                 'qcd_ff']
+                 'qcd_ff',
+                 'qcd_looseIso_ff']
 
 lib_datacards_1Dhistos = ['bdt_ditau','bdt_fakes','bdt_signal']
 
-lib_phiCP_histos = {    
-    'alpha_lep_pi': [90,0.,90.],
-    'alpha_lep_rho': [90,0.,90.],
-    'alpha_lep_a1': [90,0.,90.],
-
-    'aco_lep_pi_plus': [8,0.,360.],
-    'aco_lep_pi_minus': [8,0.,360.],
+lib_phiCP_histos = {
+    
     'aco_lep_pi': [8,0.,360.],
-    'aco_lep_piIP': [8,0.,360.],
-    'aco_lepIP_pi': [8,0.,360.],
-    'aco_lepIP_piIP': [8,0.,360.],    
-    
-    'aco_lep_rho_plus': [8,0.,360.],
-    'aco_lep_rho_minus': [8,0.,360.],
     'aco_lep_rho': [8,0.,360.],
-    'aco_lepIP_rho': [8,0.,360.],
-
-    'aco_lep_rhoECut': [8,0.,360.],
-    'aco_lep_rhoGen': [8,0.,360.],
-    'aco_lep_rhoReco': [8,0.,360.],
-    'aco_lep_rhoRecoECut': [8,0.,360.],
-    'aco_lep_rhoCollinear': [8,0.,360],
-    'aco_lep_rhoRecoGen': [8,0.,360.],
-    'aco_lep_rhoRecoGenECut': [8,0.,360.],
-
-    'aco_lep_rhoRecoIP1p0': [8,0.,360.],
-    'aco_lep_rhoRecoGenIP1p0': [8,0.,360.],
-    'aco_lep_rhoRecoIP1p2': [8,0.,360.],
-    'aco_lep_rhoRecoGenIP1p2': [8,0.,360.],
-    'aco_lep_rhoRecoIP1p5': [8,0.,360.],
-    'aco_lep_rhoRecoGenIP1p5': [8,0.,360.],
-
-    'aco_lep_rhoRecoIP1p0ECut': [8,0.,360.],
-    'aco_lep_rhoRecoGenIP1p0ECut': [8,0.,360.],
-    'aco_lep_rhoRecoIP1p2ECut': [8,0.,360.],
-    'aco_lep_rhoRecoGenIP1p2ECut': [8,0.,360.],
-    'aco_lep_rhoRecoIP1p5ECut': [8,0.,360.],
-    'aco_lep_rhoRecoGenIP1p5ECut': [8,0.,360.],
-
-    'aco_lep_a1_plus': [8,0.,360.],
-    'aco_lep_a1_minus': [8,0.,360.],
+    
     'aco_lep_a1': [8,0.,360.],
-    'aco_lepIP_a1': [8,0.,360.],
-    'aco_lep_a1DP': [8,0.,360.],
-    'aco_lep_a1PVGen': [8,0.,360.],
-    'aco_lepIP_a1PVGen': [8,0.,360.],
-    'aco_lep_a1PVDESY': [8,0.,360.],
-    'aco_lepIP_a1PVDESY': [8,0.,360.],
-    'aco_lep_a1PVIC': [8,0.,360.],
+    'aco_lep_a1_chi5': [8,0.,360.],
+    'aco_lep_a1_chi10': [8,0.,360.],
+    'aco_lep_a1_chi20': [8,0.,360.],
     
+    'aco_lep_a1_KinFit': [8,0.,360.],
+    'aco_lep_a1_chi5_KinFit': [8,0.,360.],    
+    'aco_lep_a1_chi10_KinFit': [8,0.,360.],    
+    'aco_lep_a1_chi20_KinFit': [8,0.,360.],    
 
-#    'aco_pi_pi': [8,0.,360.],
-#    'aco_pi_rho': [8,0.,360.],
-#    'aco_pi_rhoPV': [8,0.,360.],
-#    'aco_pi_a1': [8,0.,360.],
-#    'aco_pi_a1DP': [8,0.,360.],
-#    'aco_pi_a1PV': [8,0.,360.],
+    'chi2_lep_a1' : [1000,0.,100.],
     
-#    'aco_rho_rho': [8,0.,360.],
-#    'aco_rhoPV_rhoPV': [8,0.,360.],
-#    'aco_rho_a1': [8,0.,360.],
-#    'aco_rho_a1DP': [8,0.,360.],
-#    'aco_rho_a1PV': [8,0.,360.],
-#    'aco_a1_a1': [8,0.,360.]
+    'aco_lep_a1_GenPV': [8,0.,360.],
+    'aco_lep_a1_GenTheta': [8,0.,360.],
+
+    'dPt': [500,0.,5.],
+    'dPt_KinFit': [500,0.,5.],
+
+    'dTheta': [500,-0.1,0.1],
+    'dTheta_KinFit': [500,-0.1,0.1],
+    'dTheta_KinFitSV': [500,-0.1,0.1],
+
+    'dAlpha': [200,0.,0.1],
+    'dAlpha_KinFit': [200,0.,0.1],
+    'dAlpha_KinFitSV': [200,0.,0.1],
+    
+    'theta_GJ': [200,0.,0.2],
+    'theta_GJ_max': [200,0.,0.2],
+    
+    'aco_pi_pi': [8,0.,360.],
+    'aco_pi_rho': [8,0.,360.],
+    'aco_rho_rho': [8,0.,360.],
+
+    'aco_pi_a1': [8,0.,360.],
+    'aco_rho_a1': [8,0.,360.],
+    'aco_a1_a1': [8,0.,360.],
+
+    'aco_pi_a1_chi5': [8,0.,360.],
+    'aco_rho_a1_chi5': [8,0.,360.],
+    'aco_a1_a1_chi5': [8,0.,360.],
+    
+    'aco_pi_a1_chi10': [8,0.,360.],
+    'aco_rho_a1_chi10': [8,0.,360.],
+    'aco_a1_a1_chi10': [8,0.,360.],
+
+    'aco_pi_a1_chi20': [8,0.,360.],
+    'aco_rho_a1_chi20': [8,0.,360.],
+    'aco_a1_a1_chi20': [8,0.,360.],
+    
+    'aco_pi_a1_KinFit': [8,0.,360.],
+    'aco_rho_a1_KinFit': [8,0.,360.],
+    'aco_a1_a1_KinFit': [8,0.,360.],
+
+    'aco_pi_a1_chi5_KinFit': [8,0.,360.],
+    'aco_rho_a1_chi5_KinFit': [8,0.,360.],
+    'aco_a1_a1_chi5_KinFit': [8,0.,360.],
+
+    'aco_pi_a1_chi10_KinFit': [8,0.,360.],
+    'aco_rho_a1_chi10_KinFit': [8,0.,360.],
+    'aco_a1_a1_chi10_KinFit': [8,0.,360.],
+
+    'aco_pi_a1_chi20_KinFit': [8,0.,360.],
+    'aco_rho_a1_chi20_KinFit': [8,0.,360.],
+    'aco_a1_a1_chi20_KinFit': [8,0.,360.],
+    
+    'aco_pi_a1_GenPV': [8,0.,360.],
+    'aco_rho_a1_GenPV': [8,0.,360.],
+    'aco_a1_a1_GenPV': [8,0.,360.],
+
+    'aco_pi_a1_GenTheta': [8,0.,360.],
+    'aco_rho_a1_GenTheta': [8,0.,360.],
+    'aco_a1_a1_GenTheta': [8,0.,360.],
+
+    'mass': [300, 0., 300.],
+    'mass_KinFit': [300,0.,300.],
+    
+    'mass_a1_a1': [300, 0., 300.],
+    'mass_a1_a1_KinFit': [300,0.,300.],
+
+    'chi2_pi_a1'  : [1000,0.,100.],
+    'chi2_rho_a1' : [1000,0.,100.],
+    'chi2_a1_a1'  : [1000,0.,100.],
+    
     
 }
 
 nbins_bdt_signal = {
+    'tt' : 5,
     'mt' : 5,
     'et' : 3,
 }
@@ -581,11 +610,13 @@ ptbins = {
     'mm' : [25.,30.,35.,40.,50.,60.,80.,110.,150.],
     'et' : [31.,35.,40.,50.,80.,             150.],
     'mt' : [25.,30.,35.,40.,50.,80.,         150.],
+    'tt' : [25.,30.,35.,40.,50.,80.,         150.],
 }
 
 jtau_ptbins = {
     'mt' : [20.,25.,30.,40.,50.,60.,80.,100.,150.],
     'et' : [20.,25.,30.,40.,50.,60.,80.,100.,150.],
+    'tt' : [20.,25.,30.,40.,50.,60.,80.,100.,150.],
 }
 
 etabins = {
@@ -593,6 +624,7 @@ etabins = {
     'mm' : [0.,1.0,1.6,2.4],
     'et' : [0.,1.0,1.6,2.1],
     'mt' : [0.,1.0,1.6,2.4],
+    'tt' : [0.,1.0,1.6,2.4],
 }    
 
 XTitle = {
@@ -618,6 +650,10 @@ XTitle = {
         'bdt_signal' : 'BDT_{sig}',
         'bdt_ditau' : 'BDT_{#tau#tau}',
         'bdt_fakes' : 'BDT_{fakes}',
+        'aco_lep_pi': '#phi_{CP} (#pi)',
+        'aco_lep_rho': '#phi_{CP} (#rho)',
+        'aco_lep_a1_1pr': '#phi_{CP} (a_{1}(1-prong))',
+        'aco_lep_a1_3pr': '#phi_{CP} (a_{1}(3-prong))',
     },
     'et': {
         'mt_1'  : "m_{T} (GeV)",
@@ -641,8 +677,27 @@ XTitle = {
         'bdt_signal' : 'BDT_{sig}',
         'bdt_ditau' : 'BDT_{#tau#tau}',
         'bdt_fakes' : 'BDT_{fakes}',
+        'aco_lep_pi': '#phi_{CP} (#pi)',
+        'aco_lep_rho': '#phi_{CP} (#rho)',
+        'aco_lep_a1_1pr': '#phi_{CP} (a_{1}(1-prong))',
+        'aco_lep_a1_3pr': '#phi_{CP} (a_{1}(3-prong))',
     }
 }
+
+#################################
+# Symmetrization of histogram   #
+#################################
+def symmetrize(hist):
+    nbins = hist.GetNbinsX()
+    bins2 = nbins//2
+    for ib in range(1,bins2+1):
+        ib2 = nbins + 1 - ib
+        x = 0.5*(hist.GetBinContent(ib)+hist.GetBinContent(ib2))
+        err = math.sqrt(hist.GetBinError(ib)**2+hist.GetBinError(ib2**2))/2
+        hist.SetBinContent(ib,x)
+        hist.SetBinContent(ib2,x)
+        hist.SetBinError(ib,err)
+        hist.SetBinError(ib2,err)
 
 
 
@@ -743,6 +798,25 @@ def divideHistos(numHist,denHist,histName):
             
         hist.SetBinContent(i,ratio)
         hist.SetBinError(i,eratio)
+    return hist
+
+def histoErrRatio(numHist,denHist,histName):
+    nbins = numHist.GetNbinsX()
+    hist = numHist.Clone(histName)
+    for i in range(1,nbins+1):
+        xNum = numHist.GetBinContent(i)
+        eNum = numHist.GetBinError(i)
+        xDen = denHist.GetBinContent(i)
+        eDen = denHist.GetBinError(i)
+        ratio = 1
+        eratio = 0.1
+        if xNum>1e-7 and xDen>1e-7:
+            ratio = xNum/xDen
+            rNum = eNum/xNum
+            rDen = eDen/xDen
+            eratio = ratio*math.sqrt(rNum*rNum+rDen*rDen)
+            hist.SetBinContent(i,ratio)
+            hist.SetBinError(i,eratio)
     return hist
 
 def histoRatio(numHist,denHist,histName):

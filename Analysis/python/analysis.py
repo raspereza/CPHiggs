@@ -30,7 +30,7 @@ class AnalysisCuts:
         self.mvisLowerCut = kwargs.get('mvisLowerCut',0.)
         
         self.etaLep1Cut = kwargs.get('etaLep1Cut',2.4)
-        self.etaLep2Cut = kwargs.get('etaLep2Cut',2.3)
+        self.etaLep2Cut = kwargs.get('etaLep2Cut',2.5)
         
         self.ptLep1Cut = kwargs.get('ptLep1Cut',21.)
         self.ptLep2Cut = kwargs.get('ptLep2Cut',20.)
@@ -43,6 +43,8 @@ class AnalysisCuts:
         self.ptTauCrossTrigger  = kwargs.get('ptTauCrossTrigger',32.)  # 35 for e-tau
         self.etaTauCrossTrigger = kwargs.get('etaTauCrossTrigger',2.1) # 2.1 for e-tau
 
+        self.ptDiTauTrigger = kwargs.get('ptDitauTrigger',40.) # 
+        
         # antiMu:
         # 1 - VLoose
         # 2 - Loose
@@ -96,11 +98,12 @@ class AnalysisCuts:
         self.lepTauMomScale = kwargs.get('lepTauMomScale',0.04) # lep->tau fake mom scale unc. 0.02/0.04 for muons/electrons
 
         self.signalCat = kwargs.get('SignalCategory',1) # index of signal category in BDT
+        self.signalRegion = kwargs.get('SignalRegion',False) # select to signal category
         
         print('')
         print("Setting cuts ->")
 
-        self.mtUpperCut = 60.
+        self.mtUpperCut = 65.
         self.mtLowerCut = 70.
         self.bdtWCut = 0.2
         
@@ -240,18 +243,15 @@ class analysisSample:
         self.etaMin = histEtaBins.GetBinLowEdge(1)
         self.etaMax = histEtaBins.GetBinLowEdge(self.nbinsEta+1)
 
-        self.applyIPSigPromptLepSF = kwargs.get('applyIPSigPromptLepSF',False)
-        self.applyIPSigTauLepSF = kwargs.get('applyIPSigTauLepSF',False)
-        self.applyIPSigJsonSF = kwargs.get('applyIPSigJsonSF',False)
+        self.applyIPSigCorr  = kwargs.get('applyIPSigCorr',False)
         self.applyFakeFactor = kwargs.get('applyFakeFactor',False)
-#        self.etaBinnedFF = kwargs.get('etaBinnedFF',False)
         
-        self.ipSigPromptLepSF = kwargs.get('ipSigPromptLepSF',None)
-        self.ipSigTauLepSF = kwargs.get('ipSigTauLepSF',None)
-        self.ipSigJsonSF = kwargs.get('ipSigJsonSF',None)
+        self.ipSigCorr  = kwargs.get('ipSigCorr',None)
         self.fakeFactor = kwargs.get('fakeFactor',None)
         
         self.applyWeightCP = kwargs.get('applyWeightCP',False)
+        self.cppKinFit = kwargs.get('cppKinFit',False)
+        self.phiScan = kwargs.get('phiScan',False)
         
     def getSampleName(self):
         return self.sampleName
@@ -341,22 +341,19 @@ class analysisSample:
         if analysisType=='phiCP':
             for var in utils.lib_phiCP_histos:
 
-                nbins = utils.lib_histos[var][0]
-                xmin  = utils.lib_histos[var][1]
-                xmax  = utils.lib_histos[var][2]
+                nbins = utils.lib_phiCP_histos[var][0]
+                xmin  = utils.lib_phiCP_histos[var][1]
+                xmax  = utils.lib_phiCP_histos[var][2]
                 xbins = utils.createBins(nbins,xmin,xmax)
                 
-                for sign in utils.sign_labels:
-                    for iso in utils.iso_labels:
-                        for typ in utils.type_labels:
-                            name = '%s_%s_%s_%s'%(var,sign,iso,typ)
-                            histname = self.sampleName+'_'+name
-                            hists[name] = ROOT.TH1D(histname,"",nbins,array('d',list(xbins)))
-                            if self.applyWeightCP:
-                                for hypothesis in utils.cp_hypotheses:
-                                    name = '%s_%s_%s_%s_%s'%(var,sign,iso,typ,hypothesis)
-                                    histname = self.sampleName+'_'+name
-                                    hists[name] = ROOT.TH1D(histname,"",nbins,array('d',list(xbins)))
+                name = '%s'%(var)
+                histname = self.sampleName+'_'+name
+                hists[name] = ROOT.TH1D(histname,"",nbins,array('d',list(xbins)))
+                if self.applyWeightCP:
+                    for hypothesis in utils.cp_hypotheses:
+                        name = '%s_%s'%(var,hypothesis)
+                        histname = self.sampleName+'_'+name
+                        hists[name] = ROOT.TH1D(histname,"",nbins,array('d',list(xbins)))
 
 
         ######################################################
@@ -460,12 +457,11 @@ class analysisSample:
                                 name = 'pt_2_top_%s_%s_%s_%s_%s'%(dm,njets,eta,tauid,typ)
                                 histname = self.sampleName+'_'+ name
                                 hists[name] = ROOT.TH1D(histname,"",nbins,array('d',list(xbins)))
-                                name = 'pt_2_ss_antiiso_%s_%s_%s_%s_%s'%(dm,njets,eta,tauid,typ)
+                                name = 'pt_2_qcd_looseIso_%s_%s_%s_%s_%s'%(dm,njets,eta,tauid,typ)
                                 histname = self.sampleName+'_'+ name
                                 hists[name] = ROOT.TH1D(histname,"",nbins,array('d',list(xbins)))
-                                name = 'pt_2_os_antiiso_%s_%s_%s_%s_%s'%(dm,njets,eta,tauid,typ)
-                                histname = self.sampleName+'_'+ name
-                                hists[name] = ROOT.TH1D(histname,"",nbins,array('d',list(xbins)))
+#        for hist in hists:
+#            print(hist)
                                         
         return hists
 
@@ -475,16 +471,15 @@ class analysisSample:
 
         # initialization
         cuts = self.analysisCuts
-        ipSigPromptLepSF = self.ipSigPromptLepSF
-        ipSigTauLepSF = self.ipSigTauLepSF
-        applyIPSigPromptLepSF = self.applyIPSigPromptLepSF
-        applyIPSigTauLepSF = self.applyIPSigTauLepSF
-        applyIPSigJsonSF = self.applyIPSigJsonSF
-        ipSigJsonSF = self.ipSigJsonSF
+        
+        applyIPSigCorr = self.applyIPSigCorr
+        ipSigCorr = self.ipSigCorr
         applyWeightCP = self.applyWeightCP
         analysisType = self.analysisType
         fakeFactor = self.fakeFactor
         applyFakeFactor = self.applyFakeFactor
+        cppKinFit = self.cppKinFit
+        phiScan = self.phiScan
 
 #        print('SetConfig ->')
 #        print('ptMin=%1.0f ptMax=%1.0f'%(self.ptMin,self.ptMax))
@@ -515,6 +510,7 @@ class analysisSample:
         # floats
         w_Trigger   = np.zeros(1,dtype=np.float64)
         weight      = np.zeros(1,dtype=np.float64)
+        w_IP_Significance = np.zeros(1,dtype=np.float64)
 
         # First lepton
         
@@ -537,9 +533,9 @@ class analysisSample:
         
         pi_pt_1     = np.zeros(1,dtype=np.float64)
         pi_eta_1    = np.zeros(1,dtype=np.float64)
-        pi_phi_2    = np.zeros(1,dtype=np.float64)
-        pi_mass_2   = np.zeros(1,dtype=np.float64)
-        pi_charge_2 = np.zeros(1,dtype=np.float64)
+        pi_phi_1    = np.zeros(1,dtype=np.float64)
+        pi_mass_1   = np.zeros(1,dtype=np.float64)
+        pi_charge_1 = np.zeros(1,dtype=np.float64)
         
         pi0_pt_1     = np.zeros(1,dtype=np.float64)
         pi0_eta_1    = np.zeros(1,dtype=np.float64)
@@ -564,9 +560,27 @@ class analysisSample:
         sv_y_1       = np.zeros(1,dtype=np.float64)
         sv_z_1       = np.zeros(1,dtype=np.float64)
 
+        sv_cov00_1   = np.zeros(1,dtype=np.float64)
+        sv_cov10_1   = np.zeros(1,dtype=np.float64)
+        sv_cov11_1   = np.zeros(1,dtype=np.float64)
+        sv_cov20_1   = np.zeros(1,dtype=np.float64)
+        sv_cov21_1   = np.zeros(1,dtype=np.float64)
+        sv_cov22_1   = np.zeros(1,dtype=np.float64)
+
+        PVBS_cov00   = np.zeros(1,dtype=np.float64)
+        PVBS_cov10   = np.zeros(1,dtype=np.float64)
+        PVBS_cov20   = np.zeros(1,dtype=np.float64)
+        PVBS_cov11   = np.zeros(1,dtype=np.float64)
+        PVBS_cov21   = np.zeros(1,dtype=np.float64)
+        PVBS_cov22   = np.zeros(1,dtype=np.float64)
+        
         genPart_pt_1 = np.zeros(1,dtype=np.float64)
         genPart_eta_1 = np.zeros(1,dtype=np.float64)
         genPart_phi_1 =	np.zeros(1,dtype=np.float64)
+
+        genPart_pt_2 = np.zeros(1,dtype=np.float64)
+        genPart_eta_2 = np.zeros(1,dtype=np.float64)
+        genPart_phi_2 =	np.zeros(1,dtype=np.float64)
 
         alphaAngle_1 = np.zeros(1,dtype=np.float64)
         
@@ -618,6 +632,14 @@ class analysisSample:
         sv_y_2       = np.zeros(1,dtype=np.float64)
         sv_z_2       = np.zeros(1,dtype=np.float64)
 
+        sv_cov00_2   = np.zeros(1,dtype=np.float64)
+        sv_cov10_2   = np.zeros(1,dtype=np.float64)
+        sv_cov11_2   = np.zeros(1,dtype=np.float64)
+        sv_cov20_2   = np.zeros(1,dtype=np.float64)
+        sv_cov21_2   = np.zeros(1,dtype=np.float64)
+        sv_cov22_2   = np.zeros(1,dtype=np.float64)
+        
+        
         alphaAngle_2 = np.zeros(1,dtype=np.float64)
 
         # general variables
@@ -633,7 +655,6 @@ class analysisSample:
         aco_lep_pi   = np.zeros(1,dtype=np.float64)
         aco_lep_rho  = np.zeros(1,dtype=np.float64)
         aco_lep_a1   = np.zeros(1,dtype=np.float64)
-        aco_lep_a1_FastMTT = np.zeros(1,dtype=np.float64)
         weight_cp_sm = np.zeros(1,dtype=np.float64)
         weight_cp_ps = np.zeros(1,dtype=np.float64)
         weight_cp_mm = np.zeros(1,dtype=np.float64)
@@ -658,18 +679,11 @@ class analysisSample:
         aco_rho_pi   = np.zeros(1,dtype=np.float64)
         aco_rho_rho  = np.zeros(1,dtype=np.float64)
         aco_rho_a1   = np.zeros(1,dtype=np.float64)
-
+        
         aco_a1_pi   = np.zeros(1,dtype=np.float64)
         aco_a1_rho  = np.zeros(1,dtype=np.float64)
         aco_a1_a1   = np.zeros(1,dtype=np.float64)
 
-        aco_pi_a1_FastMTT = np.zeros(1,dtype=np.float64)
-        aco_a1_pi_FastMTT = np.zeros(1,dtype=np.float64)
-
-        aco_rho_a1_FastMTT = np.zeros(1,dtype=np.float64)
-        aco_a1_rho_FastMTT = np.zeros(1,dtype=np.float64)
-
-        aco_a1_a1_FastMTT = np.zeros(1,dtype=np.float64)
 
         BDT_W_score = np.zeros(1,dtype=np.float64)
         dR = np.zeros(1,dtype=np.float64)
@@ -712,9 +726,10 @@ class analysisSample:
         tree.SetBranchAddress('met_covYY',met_covYY)
         tree.SetBranchAddress('m_vis',m_vis)
         tree.SetBranchAddress('os',os)
-        if channel=='mt' or channel=='et':
-            tree.SetBranchAddress('FastMTT_mass',FastMTT_mass)
-            tree.SetBranchAddress('FastMTT_pt',FastMTT_pt)
+        tree.SetBranchAddress('FastMTT_mass',FastMTT_mass)
+        tree.SetBranchAddress('FastMTT_pt',FastMTT_pt)
+        if not analysisType=='phiCP':
+            if self.ismc: tree.SetBranchAddress('w_IP_Significance',w_IP_Significance)
 
         tree.SetBranchAddress('n_jets',n_jets)
         tree.SetBranchAddress('n_bjets',n_bjets)
@@ -731,7 +746,8 @@ class analysisSample:
         tree.SetBranchAddress('phi_1',phi_1)
         tree.SetBranchAddress('mass_1',mass_1)
         tree.SetBranchAddress('charge_1',charge_1)
-        tree.SetBranchAddress('iso_1',iso_1)
+        if channel=='mm' or channel=='ee' or channel=='mt' or channel=='et':
+            tree.SetBranchAddress('iso_1',iso_1)
         
         tree.SetBranchAddress('ip_x_1',ip_x_1)
         tree.SetBranchAddress('ip_y_1',ip_y_1)
@@ -756,6 +772,15 @@ class analysisSample:
             tree.SetBranchAddress('PVBS_z',PVBS_z)
 
             if analysisType=='phiCP':
+
+                tree.SetBranchAddress('genPart_pt_1',genPart_pt_1)
+                tree.SetBranchAddress('genPart_eta_1',genPart_eta_1)
+                tree.SetBranchAddress('genPart_phi_1',genPart_phi_1)
+                
+                tree.SetBranchAddress('genPart_pt_2',genPart_pt_2)
+                tree.SetBranchAddress('genPart_eta_2',genPart_eta_2)
+                tree.SetBranchAddress('genPart_phi_2',genPart_phi_2)
+
                 tree.SetBranchAddress('pi0_pt_2',pi0_pt_2)
                 tree.SetBranchAddress('pi0_eta_2',pi0_eta_2)
                 tree.SetBranchAddress('pi0_phi_2',pi0_phi_2)
@@ -778,12 +803,28 @@ class analysisSample:
                 tree.SetBranchAddress('pi3_mass_2',pi3_mass_2)
                 tree.SetBranchAddress('pi3_charge_2',pi3_charge_2)
 
-            tree.SetBranchAddress('pion_E_split_2',pion_E_split_2)
-            
-            tree.SetBranchAddress('sv_x_2',sv_x_2)
-            tree.SetBranchAddress('sv_y_2',sv_y_2)
-            tree.SetBranchAddress('sv_z_2',sv_z_2)
+                tree.SetBranchAddress('sv_x_2',sv_x_2)
+                tree.SetBranchAddress('sv_y_2',sv_y_2)
+                tree.SetBranchAddress('sv_z_2',sv_z_2)
 
+                tree.SetBranchAddress('PVBS_cov00',PVBS_cov00)
+                tree.SetBranchAddress('PVBS_cov10',PVBS_cov10)
+                tree.SetBranchAddress('PVBS_cov20',PVBS_cov20)
+                tree.SetBranchAddress('PVBS_cov11',PVBS_cov11)
+                tree.SetBranchAddress('PVBS_cov21',PVBS_cov21)
+                tree.SetBranchAddress('PVBS_cov22',PVBS_cov22)
+                
+                tree.SetBranchAddress('sv_cov00_2',sv_cov00_2)
+                tree.SetBranchAddress('sv_cov10_2',sv_cov10_2)
+                tree.SetBranchAddress('sv_cov11_2',sv_cov11_2)
+                tree.SetBranchAddress('sv_cov20_2',sv_cov20_2)
+                tree.SetBranchAddress('sv_cov21_2',sv_cov21_2)
+                tree.SetBranchAddress('sv_cov22_2',sv_cov22_2)
+                
+            tree.SetBranchAddress('FastMTT_pt_1_constraint',pt_1_FastMTT)
+            tree.SetBranchAddress('FastMTT_pt_2_constraint',pt_2_FastMTT)
+
+            tree.SetBranchAddress('pion_E_split_2',pion_E_split_2)
             tree.SetBranchAddress('hasRefitSV_2',hasRefitSV_2)
 
         if channel=='tt':
@@ -811,6 +852,14 @@ class analysisSample:
                 tree.SetBranchAddress('pi3_mass_1',pi3_mass_1)
                 tree.SetBranchAddress('pi3_charge_1',pi3_charge_1)
 
+                tree.SetBranchAddress('sv_cov00_1',sv_cov00_1)
+                tree.SetBranchAddress('sv_cov10_1',sv_cov10_1)
+                tree.SetBranchAddress('sv_cov11_1',sv_cov11_1)
+                tree.SetBranchAddress('sv_cov20_1',sv_cov20_1)
+                tree.SetBranchAddress('sv_cov21_1',sv_cov21_1)
+                tree.SetBranchAddress('sv_cov22_1',sv_cov22_1)
+
+
             tree.SetBranchAddress('pion_E_split_1',pion_E_split_1)
             
             tree.SetBranchAddress('sv_x_1',sv_x_1)
@@ -830,29 +879,27 @@ class analysisSample:
         if channel=='mt':
             tree.SetBranchAddress('aco_mu_pi',aco_lep_pi)
             tree.SetBranchAddress('aco_mu_rho',aco_lep_rho)
-#            tree.SetBranchAddress('aco_mu_a1',aco_lep_a1)
-            tree.SetBranchAddress('aco_mu_a1_FASTMTT_MassConstraint',aco_lep_a1_FastMTT)
+            tree.SetBranchAddress('aco_mu_a1_FASTMTT_MassConstraint',aco_lep_a1)
 
 
         if channel=='et':
             tree.SetBranchAddress('aco_e_pi',aco_lep_pi)
             tree.SetBranchAddress('aco_e_rho',aco_lep_rho)
-#            tree.SetBranchAddress('aco_e_a1',aco_lep_a1)
-            tree.SetBranchAddress('aco_e_a1_FASTMTT_MassConstraint',aco_lep_a1_FastMTT)
+            tree.SetBranchAddress('aco_e_a1_FASTMTT_MassConstraint',aco_lep_a1)
 
         if channel=='tt':
-            
             tree.SetBranchAddress('aco_pi_pi',aco_pi_pi)
-            tree.SetBranchAddress('aco_pi_rho',aco_pi_rho)
-            tree.SetBranchAddress('aco_pi_a1',aco_pi_a1)
-            
-            tree.SetBranchAddress('aco_rho_pi',aco_rho_pi)
             tree.SetBranchAddress('aco_rho_rho',aco_rho_rho)
-            tree.SetBranchAddress('aco_rho_a1',aco_rho_a1)
-            
-            tree.SetBranchAddress('aco_a1_pi',aco_a1_pi)
-            tree.SetBranchAddress('aco_a1_rho',aco_a1_rho)
             tree.SetBranchAddress('aco_a1_a1',aco_a1_a1)
+
+            tree.SetBranchAddress('aco_pi_rho',aco_pi_rho)
+            tree.SetBranchAddress('aco_rho_pi',aco_rho_pi)
+            
+            tree.SetBranchAddress('aco_pi_a1_FASTMTT_MassConstraint',aco_pi_a1)
+            tree.SetBranchAddress('aco_a1_pi_FASTMTT_MassConstraint',aco_a1_pi)
+            
+            tree.SetBranchAddress('aco_rho_a1_FASTMTT_MassConstraint',aco_rho_a1)            
+            tree.SetBranchAddress('aco_a1_rho_FASTMTT_MassConstraint',aco_a1_rho)
 
         if channel=='mt' or channel=='et' or channel=='tt':
             tree.SetBranchAddress('decayMode_2',decayMode_2)
@@ -877,7 +924,9 @@ class analysisSample:
             tree.SetBranchAddress('BDT_pred_score',bdt_pred)
             tree.SetBranchAddress('BDT_pred_class',class_pred)
 
-        tree.SetBranchAddress('BDT_W_score',BDT_W_score)
+        if analysisType=='baseline':
+            tree.SetBranchAddress('BDT_W_score',BDT_W_score)
+            
         tree.SetBranchAddress('dR',dR)
         
         # booleans (trigger)
@@ -912,7 +961,7 @@ class analysisSample:
         # run over entries
         for entry in range(0,nentries):
 
-            if entry%100000==0 and entry>0:
+            if entry%10000==0 and entry>0:
                 print('processed %1i out of %1i events'%(entry,nentries))
             tree.GetEntry(entry)
             
@@ -945,7 +994,6 @@ class analysisSample:
             if not passTrigger: continue
 
             if cuts.applyBVeto:
-                #                print('applying bveto %2i'%(n_bjets[0]))
                 if n_bjets[0]>0: continue
             
             # kinematic cuts
@@ -969,6 +1017,7 @@ class analysisSample:
             isTauToRho_2 = False
             isTauToA1_1pr_2 = False
             isTauToA1_3pr_2 = False
+            
             if channel=='mt' or channel=='et':
                 # m_vis cut
                 if m_vis[0]>cuts.mvisUpperCut: continue
@@ -1004,8 +1053,8 @@ class analysisSample:
 
                 # decay modes of the first tau
                 isTauToPi_1 = decayModePNet_1[0]==0 and abs(ipsig_1[0])>cuts.ipsigTauCut        
-                isTauToRho_1 = decayModePNet_1[0]==1 and decayMode_1[0]==1 and abs(pion_E_split_1[0])>cuts.TauToRhoDE
-                isTauToA1_1pr_1 = decayModePNet_1[0]==2 and decayMode_1[0]==1 and abs(pion_E_split_1[0])>cuts.TauToRhoDE
+                isTauToRho_1 = decayModePNet_1[0]==1 and decayMode_1[0]==1 and abs(pion_E_split_1[0])>cuts.tauToRhoDE
+                isTauToA1_1pr_1 = decayModePNet_1[0]==2 and decayMode_1[0]==1 and abs(pion_E_split_1[0])>cuts.tauToRhoDE
                 isTauToA1_3pr_1 = decayModePNet_1[0]==10 and hasRefitSV_1[0]
 
                 passTau_1 =  isTauToPi_1 or isTauToRho_1 or isTauToA1_1pr_1 or isTauToA1_3pr_1 
@@ -1093,7 +1142,9 @@ class analysisSample:
             directIso = iso_1[0] < cuts.isoLepCut
             invertedIso = iso_1[0] > cuts.isoLepInverseLowerCut and iso_1[0] < cuts.isoLepInverseUpperCut
 
-            qcd_closure = iso_1[0] > 0.15 and iso_1[0] < 0.5
+            iso_loose_ff = iso_1[0] > 0.05 
+            iso_ff = iso_1[0] > 0.05 and iso_1[0] < 0.2
+            iso_closure_ff = iso_1[0] > 0.2
             
             if directIso: iso_label='iso'
 
@@ -1105,13 +1156,6 @@ class analysisSample:
                 region_flags[reg] = False
 
             acceptEvent = False
-            #            if sign_label=='os'and iso_label=='iso':
-            #                region_flags['incl_os_iso'] = True
-            #                acceptEvent = True
-            #            if sign_label=='ss'and iso_label=='iso':
-            #                region_flags['incl_ss_iso'] = True
-            #                acceptEvent = True
-            
                 
             if mt_label=='lowmt' and sign_label=='os'and iso_label=='iso':
                 region_flags['lowmt_os_iso'] = True
@@ -1120,23 +1164,18 @@ class analysisSample:
                 region_flags['lowmt_ss_iso'] = True
                 acceptEvent = True
 
-            if mt_label=='lowmt' and sign_label=='os'and qcd_closure:
-                region_flags['lowmt_os_antiiso'] = True
-                acceptEvent = True
-            if mt_label=='lowmt' and sign_label=='ss'and qcd_closure:
-                region_flags['lowmt_ss_antiiso'] = True
+            if mt_label=='lowmt' and sign_label=='ss'and iso_closure_ff:
+                region_flags['qcd_closure_ff'] = True
                 acceptEvent = True
 
-            #            if mt_label=='highmt' and sign_label=='os'and iso_label=='iso':
-            #                region_flags['highmt_os_iso'] = True
-            #                acceptEvent = True
-            #            if mt_label=='highmt' and sign_label=='ss'and iso_label=='iso':
-            #                region_flags['highmt_ss_iso'] = True
-            #                acceptEvent = True
-                
-            qcd_ff_region = mt_1[0]<cuts.mtUpperCut and sign_label=='ss' and invertedIso 
+            qcd_ff_region = mt_1[0]<cuts.mtUpperCut and sign_label=='ss' and iso_ff 
             if qcd_ff_region:
                 region_flags['qcd_ff'] = True
+                acceptEvent = True
+
+            qcd_ff_looseIso_region = mt_1[0]<cuts.mtUpperCut and sign_label=='ss' and iso_loose_ff
+            if qcd_ff_looseIso_region:
+                region_flags['qcd_looseIso_ff'] = True
                 acceptEvent = True
 
             wj_ff_region = mt_1[0]>cuts.mtLowerCut and sign_label=='os' and directIso and n_bjets[0]==0 and BDT_W_score[0]>cuts.bdtWCut
@@ -1144,14 +1183,14 @@ class analysisSample:
                 region_flags['wj_ff'] = True
                 acceptEvent = True
             
-
-            if not acceptEvent: continue
-                
+            if (channel=='mt' or channel=='et'):
+                if not acceptEvent: continue
+            
             aco_lep = {
                 'pi'  : aco_lep_pi[0],
                 'rho' : aco_lep_rho[0],
                 'a1_1pr' : aco_lep_rho[0],
-                'a1_3pr' : aco_lep_a1_FastMTT[0],
+                'a1_3pr' : aco_lep_a1[0],
             }
 
 
@@ -1224,8 +1263,19 @@ class analysisSample:
                 if cat==2:
                     bdt_name = 'bdt_fakes'
                 variables[bdt_name] = bdt_pred[0]
-#                print('category %1i BDT = %5.3f'%(cat,bdt_pred[0]))
-#            print('W BDT score : %5.3f %1i'%(BDT_W_score[0],n_bjets[0]))
+
+            variables['aco_lep_pi'] = -99999.
+            variables['aco_lep_rho'] = -99999.
+            variables['aco_lep_a1_1pr'] = -99999.
+            variables['aco_lep_a1_3pr'] = -99999. 
+            if isTauToPi_2:
+                variables['aco_lep_pi'] = RadToDeg*aco_lep_pi[0]
+            if isTauToRho_2:
+                variables['aco_lep_rho'] = RadToDeg*aco_lep_rho[0]
+            if isTauToA1_1pr_2:
+                variables['aco_lep_a1_1pr'] = RadToDeg*aco_lep_rho[0]
+            if isTauToA1_3pr_2:
+                variables['aco_lep_a1_3pr'] = RadToDeg*aco_lep_a1[0]
             
             ##################
             ## total weight ##
@@ -1240,56 +1290,9 @@ class analysisSample:
             ## applying scale factors ##
             ## for IPSig cuts         ##
             ############################
-            WeightSF = 1.0
-            if cuts.applyIPSigLep1Cut and self.ismc:
-                if applyIPSigJsonSF:
-                    ptx = []
-                    ptx.append(pt_1[0])
-                    etax = []
-                    etax.append(eta_1[0])
-                    if lep_label=='lep' and applyIPSigPromptLepSF and ipSigJsonSF!=None:
-                        WeightSF *= ipSigJsonSF.evaluate(ptx, etax, 0, 'nom')[0]
-                    if lep_label=='tau' and applyIPSigTauLepSF and ipSigJsonSF!=None:
-                        WeightSF *= ipSigJsonSF.evaluate(ptx, etax, 1, 'nom')[0]
-                else:
-                    if lep_label=='lep' and applyIPSigPromptLepSF and ipSigPromptLepSF!=None:
-                        WeightSF *= ipSigPromptLepSF.getSF(pt_1[0],eta_1[0])
-                    if lep_label=='tau' and applyIPSigTauLepSF and ipSigTauLepSF!=None:
-                        WeightSF *= ipSigTauLepSF.getSF(pt_1[0],eta_1[0])
-                """
-                ptx = []
-                ptx.append(pt_1[0])
-                etax = []
-                etax.append(eta_1[0])
-                WeightJson = 1.0
-                if lep_label=='lep' and applyIPSigPromptLepSF and ipSigJsonSF!=None:
-                    WeightJson = ipSigJsonSF.evaluate(ptx, etax, 0, 'nom')[0]
-                if lep_label=='tau' and applyIPSigTauLepSF and ipSigJsonSF!=None:
-                    WeightJson = ipSigJsonSF.evaluate(ptx, etax, 1, 'nom')[0]
-
-                WeightSF = 1.0
-                if lep_label=='lep' and applyIPSigPromptLepSF and ipSigJsonSF!=None:
-                    WeightSF = ipSigPromptLepSF.getSF(pt_1[0],eta_1[0])
-                if lep_label=='tau' and applyIPSigTauLepSF and ipSigJsonSF!=None:
-                    WeightSF = ipSigTauLepSF.getSF(pt_1[0],eta_1[0])
-                print('applyIPSigJson     : %s  pt = %5.1f  eta = %5.2f  SF = %5.3f'%(lep_label,pt_1[0],eta_1[0],WeightJson))
-                print('applyIPScaleFactor : %s  pt = %5.1f  eta = %5.2f  SF = %5.3f'%(lep_label,pt_1[0],eta_1[0],WeightSF))
-                """
-                        
-            if channel=='mm' or channel=='ee':
-                if cuts.applyIPSigLep2Cut and self.ismc:
-                    if applyIPSigJsonSF:
-                        ptx = []
-                        ptx.append(pt_2[0])
-                        etax = []
-                        etax.append(eta_2[0])
-                        if applyIPSigPromptLepSF and ipSigJsonSF!=None:
-                            WeightSF *= ipSigJsonSF.evaluate(ptx, etax, 0, 'nom')[0]
-                    else:
-                        if applyIPSigPromptLepSF and ipSigPromptLepSF!=None:
-                            WeightSF *= ipSigPromptLepSF.getSF(pt_2[0],eta_2[0])
-
-
+#            if not cuts.applyIPSigLep1Cut and self.ismc:
+#                Weight = Weight/w_IP_Significance[0]
+                
             ####################################
             # Applying jet->tau fake factors ###
             ####################################
@@ -1299,17 +1302,18 @@ class analysisSample:
                 
             if applyFakeFactor and fakeFactor!=None:
                 for FF in FF_Weights:
-                    if FF not in ['ar','qcd_closure']:
-                        FF_Weights[FF] = fakeFactor.getFF(pt_2[0],
-                                                          eta=eta_label,
-                                                          dm=dm_label,
-                                                          njets=njets_label,
-                                                          typ=FF)
-                FF_Weights['qcd_closure'] = FF_Weights['qcd']*FF_Weights['os_antiiso']/FF_Weights['ss_antiiso']
+                    if FF not in ['ar']:
+#                        print(pt_2[0],n_jets[0],DecayMode)
+                        pt_a = [pt_2[0]]
+                        njets_a = [n_jets[0]]
+                        dm_a = [DecayMode]
+                        FF_Weights[FF] = self.fakeFactor.evaluate(pt_a,
+                                                                  njets_a,
+                                                                  dm_a,
+                                                                  FF,
+                                                                  'nom')[0]
 #            for FF in FF_Weights:            
 #                print('%6s -> %6.4f'%(FF,FF_Weights[FF]))
-
-
                     
             #####################################
             ####### JetFakes measurements #######
@@ -1319,49 +1323,40 @@ class analysisSample:
                 # histogram for measurement of jet->tau fake
                 if region_flags['qcd_ff']:
                     name = 'pt_2_qcd_%s_%s_%s_%s_%s'%(dm_label,njets_label,eta_label,deeptau_label,lep2_label)
-                    hists[name].Fill(variables['pt_2'],Weight*WeightSF)
+                    hists[name].Fill(variables['pt_2'],Weight)
                     name = 'pt_2_qcd_%s_%s_%s_%s_all'%(dm_label,njets_label,eta_label,deeptau_label)
-                    hists[name].Fill(variables['pt_2'],Weight*WeightSF)
+                    hists[name].Fill(variables['pt_2'],Weight)
                     name = 'pt_2_qcd_%s_%s_all_%s_%s'%(dm_label,njets_label,deeptau_label,lep2_label)
-                    hists[name].Fill(variables['pt_2'],Weight*WeightSF)
+                    hists[name].Fill(variables['pt_2'],Weight)
                     name = 'pt_2_qcd_%s_%s_all_%s_all'%(dm_label,njets_label,deeptau_label)
-                    hists[name].Fill(variables['pt_2'],Weight*WeightSF)
+                    hists[name].Fill(variables['pt_2'],Weight)
                 if region_flags['wj_ff']:
                     name = 'pt_2_wj_%s_%s_%s_%s_%s'%(dm_label,njets_label,eta_label,deeptau_label,lep2_label)
-                    hists[name].Fill(variables['pt_2'],Weight*WeightSF)
+                    hists[name].Fill(variables['pt_2'],Weight)
                     name = 'pt_2_wj_%s_%s_%s_%s_all'%(dm_label,njets_label,eta_label,deeptau_label)
-                    hists[name].Fill(variables['pt_2'],Weight*WeightSF)
+                    hists[name].Fill(variables['pt_2'],Weight)
                     name = 'pt_2_wj_%s_%s_all_%s_%s'%(dm_label,njets_label,deeptau_label,lep2_label)
-                    hists[name].Fill(variables['pt_2'],Weight*WeightSF)
+                    hists[name].Fill(variables['pt_2'],Weight)
                     name = 'pt_2_wj_%s_%s_all_%s_all'%(dm_label,njets_label,deeptau_label)
-                    hists[name].Fill(variables['pt_2'],Weight*WeightSF)
+                    hists[name].Fill(variables['pt_2'],Weight)
                 if region_flags['lowmt_os_iso']:
                     name = 'pt_2_top_%s_%s_%s_%s_%s'%(dm_label,njets_label,eta_label,deeptau_label,lep2_label)
-                    hists[name].Fill(variables['pt_2'],Weight*WeightSF)
+                    hists[name].Fill(variables['pt_2'],Weight)
                     name = 'pt_2_top_%s_%s_%s_%s_all'%(dm_label,njets_label,eta_label,deeptau_label)
-                    hists[name].Fill(variables['pt_2'],Weight*WeightSF)
+                    hists[name].Fill(variables['pt_2'],Weight)
                     name = 'pt_2_top_%s_%s_all_%s_%s'%(dm_label,njets_label,deeptau_label,lep2_label)
-                    hists[name].Fill(variables['pt_2'],Weight*WeightSF)
+                    hists[name].Fill(variables['pt_2'],Weight)
                     name = 'pt_2_top_%s_%s_all_%s_all'%(dm_label,njets_label,deeptau_label)
-                    hists[name].Fill(variables['pt_2'],Weight*WeightSF)
-                if region_flags['lowmt_ss_antiiso']:
-                    name = 'pt_2_ss_antiiso_%s_%s_%s_%s_%s'%(dm_label,njets_label,eta_label,deeptau_label,lep2_label)
-                    hists[name].Fill(variables['pt_2'],Weight*WeightSF)
-                    name = 'pt_2_ss_antiiso_%s_%s_%s_%s_all'%(dm_label,njets_label,eta_label,deeptau_label)
-                    hists[name].Fill(variables['pt_2'],Weight*WeightSF)
-                    name = 'pt_2_ss_antiiso_%s_%s_all_%s_%s'%(dm_label,njets_label,deeptau_label,lep2_label)
-                    hists[name].Fill(variables['pt_2'],Weight*WeightSF)
-                    name = 'pt_2_ss_antiiso_%s_%s_all_%s_all'%(dm_label,njets_label,deeptau_label)
-                    hists[name].Fill(variables['pt_2'],Weight*WeightSF)
-                if region_flags['lowmt_os_antiiso']:
-                    name = 'pt_2_os_antiiso_%s_%s_%s_%s_%s'%(dm_label,njets_label,eta_label,deeptau_label,lep2_label)
-                    hists[name].Fill(variables['pt_2'],Weight*WeightSF)
-                    name = 'pt_2_os_antiiso_%s_%s_%s_%s_all'%(dm_label,njets_label,eta_label,deeptau_label)
-                    hists[name].Fill(variables['pt_2'],Weight*WeightSF)
-                    name = 'pt_2_os_antiiso_%s_%s_all_%s_%s'%(dm_label,njets_label,deeptau_label,lep2_label)
-                    hists[name].Fill(variables['pt_2'],Weight*WeightSF)
-                    name = 'pt_2_os_antiiso_%s_%s_all_%s_all'%(dm_label,njets_label,deeptau_label)
-                    hists[name].Fill(variables['pt_2'],Weight*WeightSF)
+                    hists[name].Fill(variables['pt_2'],Weight)
+                if region_flags['qcd_looseIso_ff']:
+                    name = 'pt_2_qcd_looseIso_%s_%s_%s_%s_%s'%(dm_label,njets_label,eta_label,deeptau_label,lep2_label)
+                    hists[name].Fill(variables['pt_2'],Weight)
+                    name = 'pt_2_qcd_looseIso_%s_%s_%s_%s_all'%(dm_label,njets_label,eta_label,deeptau_label)
+                    hists[name].Fill(variables['pt_2'],Weight)
+                    name = 'pt_2_qcd_looseIso_%s_%s_all_%s_%s'%(dm_label,njets_label,deeptau_label,lep2_label)
+                    hists[name].Fill(variables['pt_2'],Weight)
+                    name = 'pt_2_qcd_looseIso_%s_%s_all_%s_all'%(dm_label,njets_label,deeptau_label)
+                    hists[name].Fill(variables['pt_2'],Weight)
 
             #####################################
             ######### datacardsPhiCP ############
@@ -1376,7 +1371,6 @@ class analysisSample:
                 if cat==2:
                     bdt_name = 'bdt_fakes'
                 
-
                 CPWeights = {}
                 if applyWeightCP:
                     CPWeights['sm'] = weight_cp_sm[0]
@@ -1385,19 +1379,19 @@ class analysisSample:
                 
                 if self.ismc:
                     name = '%s_%s_%s_%s_%s'%(bdt_name,sign_label,iso_label,lep_label,lep2_label)
-                    hists[name].Fill(bdt_pred[0],Weight*WeightSF)
+                    hists[name].Fill(bdt_pred[0],Weight)
                     name = '%s_%s_%s_all_%s'%(bdt_name,sign_label,iso_label,lep2_label)
-                    hists[name].Fill(bdt_pred[0],Weight*WeightSF)
+                    hists[name].Fill(bdt_pred[0],Weight)
                     name = '%s_%s_%s_all_all'%(bdt_name,sign_label,iso_label)
-                    hists[name].Fill(bdt_pred[0],Weight*WeightSF)
+                    hists[name].Fill(bdt_pred[0],Weight)
                     if applyWeightCP:
                         for CPWeight in CPWeights:
                             name = '%s_%s_%s_%s_%s_%s'%(bdt_name,sign_label,iso_label,lep_label,lep2_label,CPWeight)
-                            hists[name].Fill(bdt_pred[0],Weight*WeightSF*CPWeights[CPWeight])
+                            hists[name].Fill(bdt_pred[0],Weight*CPWeights[CPWeight])
                             name = '%s_%s_%s_all_%s_%s'%(bdt_name,sign_label,iso_label,lep2_label,CPWeight)
-                            hists[name].Fill(bdt_pred[0],Weight*WeightSF*CPWeights[CPWeight])
+                            hists[name].Fill(bdt_pred[0],Weight*CPWeights[CPWeight])
                             name = '%s_%s_%s_all_all_%s'%(bdt_name,sign_label,iso_label,CPWeight)
-                            hists[name].Fill(bdt_pred[0],Weight*WeightSF*CPWeights[CPWeight])
+                            hists[name].Fill(bdt_pred[0],Weight*CPWeights[CPWeight])
                 else:
                     name = '%s_%s_%s_all_all'%(bdt_name,sign_label,iso_label)
                     hists[name].Fill(bdt_pred[0],1.0)
@@ -1408,19 +1402,19 @@ class analysisSample:
                     phiCP = RadToDeg*aco_lep[dm_label]
                     if self.ismc:
                         name = '%s_%s_%s_%s_%s'%(decay_label,sign_label,iso_label,lep_label,lep2_label)
-                        hists[name].Fill(bdt_pred[0],phiCP,Weight*WeightSF)
+                        hists[name].Fill(bdt_pred[0],phiCP,Weight)
                         name = '%s_%s_%s_all_%s'%(decay_label,sign_label,iso_label,lep2_label)
-                        hists[name].Fill(bdt_pred[0],phiCP,Weight*WeightSF)
+                        hists[name].Fill(bdt_pred[0],phiCP,Weight)
                         name = '%s_%s_%s_all_all'%(decay_label,sign_label,iso_label)
-                        hists[name].Fill(bdt_pred[0],phiCP,Weight*WeightSF)
+                        hists[name].Fill(bdt_pred[0],phiCP,Weight)
                         if applyWeightCP:
                             for CPWeight in CPWeights:
                                 name = '%s_%s_%s_%s_%s_%s'%(decay_label,sign_label,iso_label,lep_label,lep2_label,CPWeight)
-                                hists[name].Fill(bdt_pred[0],phiCP,Weight*WeightSF*CPWeights[CPWeight])
+                                hists[name].Fill(bdt_pred[0],phiCP,Weight*CPWeights[CPWeight])
                                 name = '%s_%s_%s_all_%s_%s'%(decay_label,sign_label,iso_label,lep2_label,CPWeight)
-                                hists[name].Fill(bdt_pred[0],phiCP,Weight*WeightSF*CPWeights[CPWeight])
+                                hists[name].Fill(bdt_pred[0],phiCP,Weight*CPWeights[CPWeight])
                                 name = '%s_%s_%s_all_all_%s'%(decay_label,sign_label,iso_label,CPWeight)
-                                hists[name].Fill(bdt_pred[0],phiCP,Weight*WeightSF*CPWeights[CPWeight])
+                                hists[name].Fill(bdt_pred[0],phiCP,Weight*CPWeights[CPWeight])
                     else:
                         name = '%s_%s_%s_all_all'%(decay_label,sign_label,iso_label)
                         hists[name].Fill(bdt_pred[0],phiCP,1.0)
@@ -1435,32 +1429,32 @@ class analysisSample:
                         for reg in ['incl_os_iso','incl_ss_iso']:
                             if region_flags[reg]:
                                 name = '%s_incl_%s_iso_all'%(varname,sign_label)
-                                hists[name].Fill(variables[varname],Weight*WeightSF)
+                                hists[name].Fill(variables[varname],Weight)
                 else:
                     for reg in utils.region_labels:
                         if region_flags[reg]:
                             for varname in variables:
                                 if deeptau_label=='nominal':
                                     name = '%s_%s_all'%(varname,reg)
-                                    hists[name].Fill(variables[varname],Weight*WeightSF)
+                                    hists[name].Fill(variables[varname],Weight)
                                     name = '%s_%s_%s'%(varname,reg,lep2_label)
-                                    hists[name].Fill(variables[varname],Weight*WeightSF)
+                                    hists[name].Fill(variables[varname],Weight)
                                     # number of jets
                                     #name = '%s_%s_%s_all'%(varname,reg,njets_label)
-                                    #hists[name].Fill(variables[varname],Weight*WeightSF)
+                                    #hists[name].Fill(variables[varname],Weight)
                                     #name = '%s_%s_%s_%s'%(varname,reg,njets_label,lep2_label)
-                                    #hists[name].Fill(variables[varname],Weight*WeightSF)
+                                    #hists[name].Fill(variables[varname],Weight)
                                 else:
                                     for FF in FF_Weights:
                                         name = '%s_%s_%s_all'%(varname,reg,FF)
-                                        hists[name].Fill(variables[varname],Weight*WeightSF*FF_Weights[FF])
+                                        hists[name].Fill(variables[varname],Weight*FF_Weights[FF])
                                         name = '%s_%s_%s_%s'%(varname,reg,FF,lep2_label)
-                                        hists[name].Fill(variables[varname],Weight*WeightSF*FF_Weights[FF])
+                                        hists[name].Fill(variables[varname],Weight*FF_Weights[FF])
                                         # number of jets 
                                         #name = '%s_%s_%s_%s_all'%(varname,reg,njets_label,FF)
-                                        #hists[name].Fill(variables[varname],Weight*WeightSF*FF_Weight[FF])
+                                        #hists[name].Fill(variables[varname],Weight*FF_Weight[FF])
                                         #name = '%s_%s_%s_%s_%s'%(varname,reg,njets_label,FF,lep2_label)
-                                        #hists[name].Fill(variables[varname],Weight*WeightSF*FF_Weight[FF])
+                                        #hists[name].Fill(variables[varname],Weight*FF_Weight[FF])
 
             #######################################
             #### IP significance scale factors ####
@@ -1515,9 +1509,9 @@ class analysisSample:
                             WeightSF *= ipSigPromptLepSF.getSF(pt_1[0],eta_1[0])
                         region_label = 'pass'
                         name = 'm_vis_%s_%s_%s_%s_%s'%(region_label,bin_label,sign_label,iso_label,lep_label)
-                        hists[name].Fill(variables['m_vis'],Weight*WeightSF)
+                        hists[name].Fill(variables['m_vis'],Weight)
                         name = 'm_vis_%s_%s_%s_%s_all'%(region_label,bin_label,sign_label,iso_label)
-                        hists[name].Fill(variables['m_vis'],Weight*WeightSF)
+                        hists[name].Fill(variables['m_vis'],Weight)
                     else:
                         # failing probes
                         # print('failed')
@@ -1532,199 +1526,522 @@ class analysisSample:
             ## phi(CP) studies with signal MC ##
             ####################################
             if analysisType=='phiCP':
+                variablesCP = {}
+                
+                P1 = ROOT.TLorentzVector()
+                R1 = ROOT.TLorentzVector()
+                P2 = ROOT.TLorentzVector()
+                R2 = ROOT.TLorentzVector()
+
+                Pi1_1 = ROOT.TLorentzVector()
+                Pi2_1 = ROOT.TLorentzVector()
+                Pi3_1 = ROOT.TLorentzVector()
+                
+                Pi1_2 = ROOT.TLorentzVector()
+                Pi2_2 = ROOT.TLorentzVector()
+                Pi3_2 = ROOT.TLorentzVector()
+
+                P1_vis = ROOT.TLorentzVector()
+                P2_vis = ROOT.TLorentzVector()
+                
+                P1Gen = ROOT.TLorentzVector()                        
+                P1Gen.SetPtEtaPhiM(genPart_pt_1[0],genPart_eta_1[0],genPart_phi_1[0],utils.tau_mass)
+                P2Gen = ROOT.TLorentzVector()
+                P2Gen.SetPtEtaPhiM(genPart_pt_2[0],genPart_eta_2[0],genPart_phi_2[0],utils.tau_mass)
+                
+                R1Gen = ROOT.TLorentzVector()
+                R2Gen = ROOT.TLorentzVector()
+                
+                MET = ROOT.TVector3(met_pt[0]*math.cos(met_phi[0]),
+                                    met_pt[0]*math.sin(met_phi[0]),
+                                    0.0)
+
+                variablesCP['aco_lep_pi'] = -9999.                
+                variablesCP['aco_lep_rho'] = -9999.
+
+                variablesCP['aco_lep_a1'] = -9999.
+                variablesCP['aco_lep_a1_chi5'] = -9999.
+                variablesCP['aco_lep_a1_chi10'] = -9999.
+                variablesCP['aco_lep_a1_chi20'] = -9999.
+                
+                variablesCP['aco_lep_a1_KinFit'] = -9999.
+                variablesCP['aco_lep_a1_chi5_KinFit'] = -9999.
+                variablesCP['aco_lep_a1_chi10_KinFit'] = -9999.
+                variablesCP['aco_lep_a1_chi20_KinFit'] = -9999.
+                
+                variablesCP['aco_lep_a1_GenPV'] = -9999.
+                variablesCP['aco_lep_a1_GenTheta'] = -9999.
+
+                variablesCP['theta_GJ'] = -9999.
+                variablesCP['theta_GJ_max'] = -9999.
+                
+                variablesCP['dAlpha'] = -9999.
+                variablesCP['dAlpha_KinFit'] = -9999.
+                variablesCP['dAlpha_KinFitSV'] = -9999.
+                
+                variablesCP['dTheta'] = -9999.
+                variablesCP['dTheta_KinFit'] = -9999.
+                variablesCP['dTheta_KinFitSV'] = -9999.
+                
+                variablesCP['dPt'] = -9999.
+                variablesCP['dPt_KinFit'] = -9999.
+                
+                variablesCP['aco_pi_a1'] = -9999.
+                variablesCP['aco_rho_a1'] = -9999.
+                variablesCP['aco_a1_a1'] = -9999.
+                
+                variablesCP['aco_pi_a1_chi5'] = -9999.
+                variablesCP['aco_rho_a1_chi5'] = -9999.
+                variablesCP['aco_a1_a1_chi5'] = -9999.
+
+                variablesCP['aco_pi_a1_chi10'] = -9999.
+                variablesCP['aco_rho_a1_chi10'] = -9999.
+                variablesCP['aco_a1_a1_chi10'] = -9999.
+                
+                variablesCP['aco_pi_a1_chi20'] = -9999.
+                variablesCP['aco_rho_a1_chi20'] = -9999.
+                variablesCP['aco_a1_a1_chi20'] = -9999.
+                
+                variablesCP['aco_pi_a1_KinFit'] = -9999.
+                variablesCP['aco_rho_a1_KinFit'] = -9999.
+                variablesCP['aco_a1_a1_KinFit'] = -9999.
+
+                variablesCP['aco_pi_a1_chi5_KinFit'] = -9999.
+                variablesCP['aco_rho_a1_chi5_KinFit'] = -9999.
+                variablesCP['aco_a1_a1_chi5_KinFit'] = -9999.
+
+                variablesCP['aco_pi_a1_chi10_KinFit'] = -9999.
+                variablesCP['aco_rho_a1_chi10_KinFit'] = -9999.
+                variablesCP['aco_a1_a1_chi10_KinFit'] = -9999.
+
+                variablesCP['aco_pi_a1_chi20_KinFit'] = -9999.
+                variablesCP['aco_rho_a1_chi20_KinFit'] = -9999.
+                variablesCP['aco_a1_a1_chi20_KinFit'] = -9999.
+
+                variablesCP['aco_pi_a1_GenPV'] = -9999.
+                variablesCP['aco_rho_a1_GenPV'] = -9999.
+                variablesCP['aco_a1_a1_GenPV'] = -9999.
+
+                variablesCP['aco_pi_a1_GenTheta'] = -9999.
+                variablesCP['aco_rho_a1_GenTheta'] = -9999.
+                variablesCP['aco_a1_a1_GenTheta'] = -9999.
+                
+                variablesCP['aco_pi_pi'] = -9999.
+                variablesCP['aco_pi_rho'] = -9999.
+                variablesCP['aco_rho_rho'] = -9999.
+
+                variablesCP['mass'] = -9999.
+                variablesCP['mass_KinFit'] = -9999.
+                
+                variablesCP['mass_a1_a1'] = -9999.
+                variablesCP['mass_a1_a1_KinFit'] = -9999.
+
+                variablesCP['chi2_pi_a1'] = -99999.
+                variablesCP['chi2_rho_a1'] = -99999.
+                variablesCP['chi2_a1_a1'] = -99999.
+                variablesCP['chi2_lep_a1'] = -99999.
+                
+                mass1_TT = -100.
+                mass2_TT = -100.
+                mass12_TT = -99999.
+                dummyMass = -100.
+                
+                firstNegative = charge_1[0]<0
+
+                if channel=='tt':
+                    
+                    solution1 = False
+                    solution2 = False
+                    chi2_1 = 10000.
+                    chi2_2 = 10000.
+                    label1 = 'Impact-Parameter'
+                    label2 = 'Impact-Parameter'
+                    
+                    if isTauToPi_1:
+                        label1 = 'Impact-Parameter'
+                        P1.SetPtEtaPhiM(pt_1[0],eta_1[0],phi_1[0],utils.pi_mass) 
+                        R1.SetXYZT(ip_x_1[0],ip_y_1[0],ip_z_1[0],0.)
+                    if isTauToRho_1:
+                        label1 = 'Decay-Plane'
+                        P1.SetPtEtaPhiM(pi_pt_1[0],pi_eta_1[0],pi_phi_1[0],massPi)
+                        R1.SetPtEtaPhiM(pi0_pt_1[0],pi0_eta_1[0],pi0_phi_1[0],massPi0)
+                    if isTauToA1_3pr_1:
+                        label1 = 'PV'
+                        sv = ROOT.TVector3(sv_x_1[0]-PVBS_x[0],sv_y_1[0]-PVBS_y[0],sv_z_1[0]-PVBS_z[0])
+                        Pi1_1.SetPtEtaPhiM(pi_pt_1[0],pi_eta_1[0],pi_phi_1[0],massPi)
+                        Pi2_1.SetPtEtaPhiM(pi2_pt_1[0],pi2_eta_1[0],pi2_phi_1[0],massPi)
+                        Pi3_1.SetPtEtaPhiM(pi3_pt_1[0],pi3_eta_1[0],pi3_phi_1[0],massPi)                        
+                        P1_vis = Pi1_1 + Pi2_1 + Pi3_1
+                        P2_vis.SetPtEtaPhiM(pt_2[0],eta_2[0],phi_2[0],mass_2[0])
+                        P_os,P_ss1,P_ss2 = pv_utils.sortA1(Pi1_1,Pi2_1,Pi3_1,pi_charge_1[0],pi2_charge_1[0],pi3_charge_1[0])
+                        if cppKinFit:
+                            #Ptau,Pother,chi2 = pv_utils.FastMTT_3pr_cpp(P1_vis,P2_vis,
+                            #                                            met_pt,met_phi,met_covXX,met_covXY,met_covYY,
+                            #                                            sv,
+                            #                                            sv_cov00_1,sv_cov10_1,sv_cov11_1,
+                            #                                            sv_cov20_1,sv_cov21_1,sv_cov22_1,
+                            #                                            dummyMass)
+                            #if chi2<1.0e+10: mass1_TT = (Ptau+Pother).M()
+                            Ptau,Pother,chi2 = pv_utils.FastMTT_3pr_cpp(P1_vis,P2_vis,
+                                                                        met_pt,met_phi,
+                                                                        met_covXX,met_covXY,met_covYY,
+                                                                        sv,
+                                                                        sv_cov00_1,sv_cov10_1,sv_cov11_1,
+                                                                        sv_cov20_1,sv_cov21_1,sv_cov22_1,
+                                                                        phiScan,
+                                                                        utils.massH)
+                        else:
+                            Pother,Ptau,chi2 = pv_utils.FastMTT_3pr(P2_vis,P1_vis,
+                                                                    MET,
+                                                                    met_covXX,met_covXY,met_covYY,
+                                                                    sv,
+                                                                    sv_cov00_1,sv_cov10_1,sv_cov11_1,
+                                                                    sv_cov20_1,sv_cov21_1,sv_cov22_1)
+                        
+                        if chi2<1.0e+10:
+                            solution1 = True
+                            chi2_1 = chi2
+                            results = pv_utils.AnalysisGenerator(pt_1_FastMTT[0],Ptau,P1_vis,P1Gen,sv)
+                            variablesCP['dPt'] = results['dPt']
+                            variablesCP['dPt_KinFit'] = results['dPt_KinFit']
+                            variablesCP['dAlpha'] = results['dAlpha']
+                            variablesCP['dAlpha_KinFit'] = results['dAlpha_KinFit']
+                            variablesCP['dAlpha_KinFitSV'] = results['dAlpha_KinFitSV']
+                            variablesCP['dTheta'] = results['dTheta']
+                            variablesCP['dTheta_KinFit'] = results['dTheta_KinFit']
+                            variablesCP['dTheta_KinFitSV'] = results['dTheta_KinFitSV']
+                            
+                        P1 = Ptau
+                        R1 = pv_utils.PolVectA1(Ptau,P_os,P_ss1,P_ss2,charge_1[0])
+                        R1Gen = pv_utils.PolVectA1(P1Gen,P_os,P_ss1,P_ss2,charge_1[0])
+                        P1ThetaGen = pv_utils.GeneratorVector(P1Gen,P1_vis,sv)                        
+                        R1ThetaGen = pv_utils.PolVectA1(P1ThetaGen,P_os,P_ss1,P_ss2,charge_1[0])
+                        
+                    if isTauToPi_2:
+                        label2 = 'Impact-Parameter'
+                        P2.SetPtEtaPhiM(pt_2[0],eta_2[0],phi_2[0],utils.pi_mass) 
+                        R2.SetXYZT(ip_x_2[0],ip_y_2[0],ip_z_2[0],0.)
+                    if isTauToRho_2:
+                        label2 = 'Decay-Plane'
+                        P2.SetPtEtaPhiM(pi_pt_2[0],pi_eta_2[0],pi_phi_2[0],massPi)
+                        R2.SetPtEtaPhiM(pi0_pt_2[0],pi0_eta_2[0],pi0_phi_2[0],massPi0)
+                    if isTauToA1_3pr_2:
+                        label2 = 'PV'
+                        sv = ROOT.TVector3(sv_x_2[0]-PVBS_x[0],sv_y_2[0]-PVBS_y[0],sv_z_2[0]-PVBS_z[0])
+                        
+                        Pi1_2.SetPtEtaPhiM(pi_pt_2[0],pi_eta_2[0],pi_phi_2[0],massPi)
+                        Pi2_2.SetPtEtaPhiM(pi2_pt_2[0],pi2_eta_2[0],pi2_phi_2[0],massPi)
+                        Pi3_2.SetPtEtaPhiM(pi3_pt_2[0],pi3_eta_2[0],pi3_phi_2[0],massPi)                        
+                        P2_vis = Pi1_2 + Pi2_2 + Pi3_2
+                        P1_vis.SetPtEtaPhiM(pt_1[0],eta_1[0],phi_1[0],mass_1[0])
+                        P_os,P_ss1,P_ss2 = pv_utils.sortA1(Pi1_2,Pi2_2,Pi3_2,pi_charge_2[0],pi2_charge_2[0],pi3_charge_2[0])
+                        if cppKinFit:
+                            #Ptau,Pother,chi2 = pv_utils.FastMTT_3pr_cpp(P2_vis,P1_vis,
+                            #                                            met_pt,met_phi,
+                            #                                            met_covXX,met_covXY,met_covYY,
+                            #                                            sv,
+                            #                                            sv_cov00_2,sv_cov10_2,sv_cov11_2,
+                            #                                            sv_cov20_2,sv_cov21_2,sv_cov22_2,
+                            #                                            dummyMass)
+                            #if chi2<1.0e+10: mass2_TT = (Ptau+Pother).M()                        
+                            Ptau,Pother,chi2 = pv_utils.FastMTT_3pr_cpp(P2_vis,P1_vis,
+                                                                        met_pt,met_phi,
+                                                                        met_covXX,met_covXY,met_covYY,
+                                                                        sv,
+                                                                        sv_cov00_2,sv_cov10_2,sv_cov11_2,
+                                                                        sv_cov20_2,sv_cov21_2,sv_cov22_2,
+                                                                        phiScan,
+                                                                        utils.massH)
+                        else:
+                            Pother,Ptau,chi2 = pv_utils.FastMTT_3pr(P1_vis,P2_vis,
+                                                                    MET,
+                                                                    met_covXX,met_covXY,met_covYY,
+                                                                    sv,
+                                                                    sv_cov00_2,sv_cov10_2,sv_cov11_2,
+                                                                    sv_cov20_2,sv_cov21_2,sv_cov22_2)
+                        
+                        if chi2<1.0e+10:
+                            solution2 = True
+                            chi2_2 = chi2
+                            results = pv_utils.AnalysisGenerator(pt_2_FastMTT[0],Ptau,P2_vis,P2Gen,sv)
+                            variablesCP['dPt'] = results['dPt']
+                            variablesCP['dPt_KinFit'] = results['dPt_KinFit']
+                            variablesCP['dAlpha'] = results['dAlpha']
+                            variablesCP['dAlpha_KinFit'] = results['dAlpha_KinFit']
+                            variablesCP['dAlpha_KinFitSV'] = results['dAlpha_KinFitSV']
+                            variablesCP['dTheta'] = results['dTheta']
+                            variablesCP['dTheta_KinFit'] = results['dTheta_KinFit']
+                            variablesCP['dTheta_KinFitSV'] = results['dTheta_KinFitSV']
+                            
+                        P2 = Ptau
+                        R2 = pv_utils.PolVectA1(Ptau,P_os,P_ss1,P_ss2,charge_2[0])
+                        R2Gen = pv_utils.PolVectA1(P2Gen,P_os,P_ss1,P_ss2,charge_2[0])
+                        P2ThetaGen = pv_utils.GeneratorVector(P2Gen,P2_vis,sv)                        
+                        R2ThetaGen = pv_utils.PolVectA1(P2ThetaGen,P_os,P_ss1,P_ss2,charge_1[0])
+                    
+                    # computing acoplanarities
+                    if isTauToA1_3pr_1 and (isTauToPi_2 or isTauToRho_2):
+                        aco = pv_utils.acoCP(P1,P2,R1,R2,firstNegative,label1,label2)
+                        aco_gen = pv_utils.acoCP(P1Gen,P2,R1Gen,R2,firstNegative,label1,label2)
+                        aco_genTheta = pv_utils.acoCP(P1ThetaGen,P2,R1ThetaGen,R2,firstNegative,label1,label2)
+                        if isTauToPi_2:
+                            variablesCP['aco_pi_a1_GenPV'] = RadToDeg*aco_gen
+                            variablesCP['aco_pi_a1_GenTheta'] = RadToDeg*aco_genTheta
+                            variablesCP['mass'] = FastMTT_mass[0]
+                            variablesCP['mass_KinFit'] = mass1_TT
+                            if solution1:
+                                variablesCP['chi2_pi_a1'] = chi2_1
+                                variablesCP['aco_pi_a1_KinFit'] = RadToDeg*aco
+                                if chi2_1<5:
+                                    variablesCP['aco_pi_a1_chi5_KinFit'] = RadToDeg*aco
+                                if chi2_1<10:
+                                    variablesCP['aco_pi_a1_chi10_KinFit'] = RadToDeg*aco
+                                if chi2_1<20:
+                                    variablesCP['aco_pi_a1_chi20_KinFit'] = RadToDeg*aco
+                        if isTauToRho_2:
+                            variablesCP['aco_rho_a1_GenPV'] = RadToDeg*aco_gen
+                            variablesCP['aco_rho_a1_GenTheta'] = RadToDeg*aco_genTheta
+                            variablesCP['mass'] = FastMTT_mass[0]
+                            variablesCP['mass_KinFit'] = mass1_TT
+                            if solution1:
+                                variablesCP['chi2_rho_a1'] = chi2_1
+                                variablesCP['aco_rho_a1_KinFit'] = RadToDeg*aco
+                                if chi2_1<5:
+                                    variablesCP['aco_rho_a1_chi5_KinFit'] = RadToDeg*aco
+                                if chi2_1<10:
+                                    variablesCP['aco_rho_a1_chi10_KinFit'] = RadToDeg*aco
+                                if chi2_1<20:
+                                    variablesCP['aco_rho_a1_chi20_KinFit'] = RadToDeg*aco
+                            
+                    if isTauToA1_3pr_2 and (isTauToPi_1 or isTauToRho_1):
+                        aco = pv_utils.acoCP(P1,P2,R1,R2,firstNegative,label1,label2)
+                        aco_gen = pv_utils.acoCP(P1,P2Gen,R1,R2Gen,firstNegative,label1,label2)
+                        aco_genTheta = pv_utils.acoCP(P1,P2ThetaGen,R1,R2ThetaGen,firstNegative,label1,label2)
+                        if isTauToPi_1:
+                            variablesCP['aco_pi_a1_GenPV'] = RadToDeg*aco_gen
+                            variablesCP['aco_pi_a1_GenTheta'] = RadToDeg*aco_genTheta
+                            variablesCP['mass'] = FastMTT_mass[0]
+                            variablesCP['mass_KinFit'] = mass2_TT
+                            if solution2:
+                                variablesCP['chi2_pi_a1'] = chi2_2
+                                variablesCP['aco_pi_a1_KinFit'] = RadToDeg*aco
+                                if chi2_2<5:
+                                    variablesCP['aco_pi_a1_chi5_KinFit'] = RadToDeg*aco
+                                if chi2_2<10:
+                                    variablesCP['aco_pi_a1_chi10_KinFit'] = RadToDeg*aco
+                                if chi2_2<20:
+                                    variablesCP['aco_pi_a1_chi20_KinFit'] = RadToDeg*aco
+                        if isTauToRho_1:
+                            variablesCP['aco_rho_a1_GenPV'] = RadToDeg*aco_gen
+                            variablesCP['aco_rho_a1_GenTheta'] = RadToDeg*aco_genTheta
+                            variablesCP['mass'] = FastMTT_mass[0]
+                            variablesCP['mass_KinFit'] = mass2_TT
+                            if solution2:
+                                variablesCP['chi2_rho_a1'] = chi2_2
+                                variablesCP['aco_rho_a1_KinFit'] = RadToDeg*aco
+                                if chi2_2<5:
+                                    variablesCP['aco_rho_a1_chi5_KinFit'] = RadToDeg*aco
+                                if chi2_2<10:
+                                    variablesCP['aco_rho_a1_chi10_KinFit'] = RadToDeg*aco
+                                if chi2_2<20:
+                                    variablesCP['aco_rho_a1_chi20_KinFit'] = RadToDeg*aco
+                                
+                    if isTauToA1_3pr_1 and isTauToA1_3pr_2:
+                        
+                        sv1 = ROOT.TVector3(sv_x_1[0]-PVBS_x[0],sv_y_1[0]-PVBS_y[0],sv_z_1[0]-PVBS_z[0])
+                        Pi1_1.SetPtEtaPhiM(pi_pt_1[0],pi_eta_1[0],pi_phi_1[0],massPi)
+                        Pi2_1.SetPtEtaPhiM(pi2_pt_1[0],pi2_eta_1[0],pi2_phi_1[0],massPi)
+                        Pi3_1.SetPtEtaPhiM(pi3_pt_1[0],pi3_eta_1[0],pi3_phi_1[0],massPi)                        
+                        P1_vis = Pi1_1 + Pi2_1 + Pi3_1
+                        
+                        sv2 = ROOT.TVector3(sv_x_2[0]-PVBS_x[0],sv_y_2[0]-PVBS_y[0],sv_z_2[0]-PVBS_z[0])
+                        Pi1_2.SetPtEtaPhiM(pi_pt_2[0],pi_eta_2[0],pi_phi_2[0],massPi)
+                        Pi2_2.SetPtEtaPhiM(pi2_pt_2[0],pi2_eta_2[0],pi2_phi_2[0],massPi)
+                        Pi3_2.SetPtEtaPhiM(pi3_pt_2[0],pi3_eta_2[0],pi3_phi_2[0],massPi)                        
+                        P2_vis = Pi1_2 + Pi2_2 + Pi3_2
+
+                        P1_os,P1_ss1,P1_ss2 = pv_utils.sortA1(Pi1_1,Pi2_1,Pi3_1,pi_charge_1[0],pi2_charge_1[0],pi3_charge_1[0])
+                        P2_os,P2_ss1,P2_ss2 = pv_utils.sortA1(Pi1_2,Pi2_2,Pi3_2,pi_charge_2[0],pi2_charge_2[0],pi3_charge_2[0])
+
+                        if cppKinFit:
+                            #P1_tau,P2_tau,chi2 = pv_utils.FastMTT_3pr_3pr_cpp(P1_vis,P2_vis,
+                            #                                                  met_pt, met_phi,
+                            #                                                  met_covXX,met_covXY,met_covYY,
+                            #                                                  sv1,
+                            #                                                  sv_cov00_1,sv_cov10_1,sv_cov11_1,
+                            #                                                  sv_cov20_1,sv_cov21_1,sv_cov22_1,
+                            #                                                  sv2,
+                            #                                                  sv_cov00_2,sv_cov10_2,sv_cov11_2,
+                            #                                                  sv_cov20_2,sv_cov21_2,sv_cov22_2,
+                            #                                                  dummyMass)
+                            #if chi2<1.0e+10:
+                            #    variablesCP['mass_a1_a1_KinFit'] = (P1_tau+P2_tau).M()
+                            #    variablesCP['mass_a1_a1'] = FastMTT_mass[0]
+                            P1_tau,P2_tau,chi2 = pv_utils.FastMTT_3pr_3pr_cpp(P1_vis,P2_vis,
+                                                                              met_pt, met_phi,
+                                                                              met_covXX,met_covXY,met_covYY,
+                                                                              sv1,
+                                                                              sv_cov00_1,sv_cov10_1,sv_cov11_1,
+                                                                              sv_cov20_1,sv_cov21_1,sv_cov22_1,
+                                                                              sv2,
+                                                                              sv_cov00_2,sv_cov10_2,sv_cov11_2,
+                                                                              sv_cov20_2,sv_cov21_2,sv_cov22_2,
+                                                                              utils.massH)
+                        else:
+                            P1_tau,P2_tau,chi2 = pv_utils.FastMTT_3pr_3pr(P1_vis,P2_vis,
+                                                                          MET,
+                                                                          met_covXX,met_covXY,met_covYY,
+                                                                          sv1,
+                                                                          sv_cov00_1,sv_cov10_1,sv_cov11_1,
+                                                                          sv_cov20_1,sv_cov21_1,sv_cov22_1,
+                                                                          sv2,
+                                                                          sv_cov00_2,sv_cov10_2,sv_cov11_2,
+                                                                          sv_cov20_2,sv_cov21_2,sv_cov22_2,
+                                                                          )      
+                        
+                        if chi2<1.0e+10:
+                            R1_tau = pv_utils.PolVectA1(P1_tau,P1_os,P1_ss1,P1_ss2,charge_1[0])
+                            R2_tau = pv_utils.PolVectA1(P2_tau,P2_os,P2_ss1,P2_ss2,charge_2[0])
+                            aco_a1_a1_comb = pv_utils.acoCP(P1_tau,P2_tau,R1_tau,R2_tau,firstNegative,'PV','PV')
+                            aco_a1_a1_comb += math.pi
+                            if aco_a1_a1_comb > 2.0*math.pi: aco_a1_a1_comb -= 2.0*math.pi
+                            variablesCP['aco_a1_a1_KinFit'] = RadToDeg*aco_a1_a1_comb
+                            variablesCP['chi2_a1_a1'] = chi2
+                            if chi2<20:
+                                variablesCP['aco_a1_a1_chi20_KinFit'] = RadToDeg*aco_a1_a1_comb
+                            if chi2<10:
+                                variablesCP['aco_a1_a1_chi10_KinFit'] = RadToDeg*aco_a1_a1_comb
+                            if chi2<5:
+                                variablesCP['aco_a1_a1_chi5_KinFit'] = RadToDeg*aco_a1_a1_comb
+
+                        aco_a1_a1_gen = pv_utils.acoCP(P1Gen,P2Gen,R1Gen,R2Gen,firstNegative,'PV','PV')
+                        aco_a1_a1_gen += math.pi
+                        if aco_a1_a1_gen>2.0*math.pi: aco_a1_a1_gen -= 2.0*math.pi
+                        
+                        P1ThetaGen = pv_utils.GeneratorVector(P1Gen,P1_vis,sv1)
+                        R1ThetaGen = pv_utils.PolVectA1(P1ThetaGen,P1_os,P1_ss1,P1_ss2,charge_1[0])
+                        P2ThetaGen = pv_utils.GeneratorVector(P2Gen,P2_vis,sv2)
+                        R2ThetaGen = pv_utils.PolVectA1(P2ThetaGen,P2_os,P2_ss1,P2_ss2,charge_1[0])
+                        aco_a1_a1_gen_Theta = pv_utils.acoCP(P1ThetaGen,P2ThetaGen,R1ThetaGen,R2ThetaGen,firstNegative,'PV','PV')
+                        aco_a1_a1_gen_Theta += math.pi
+                        if aco_a1_a1_gen_Theta>2.0*math.pi: aco_a1_a1_gen_Theta -= 2.0*math.pi                        
+                        variablesCP['aco_a1_a1_GenPV'] = RadToDeg*aco_a1_a1_gen
+                        variablesCP['aco_a1_a1_GenTheta'] = RadToDeg*aco_a1_a1_gen_Theta
+                        
+                    # acoplanarities from tuple
+                    if isTauToPi_1 and isTauToPi_2:
+                        variablesCP['aco_pi_pi'] = RadToDeg*aco_pi_pi[0]
+                    if isTauToRho_1 and isTauToRho_2:
+                        variablesCP['aco_rho_rho'] = RadToDeg*aco_rho_rho[0]
+                    if isTauToA1_3pr_1 and isTauToA1_3pr_2:
+                        variablesCP['aco_a1_a1'] = RadToDeg*aco_a1_a1[0]
+                        
+                    if isTauToPi_1 and isTauToRho_2:
+                        variablesCP['aco_pi_rho'] = RadToDeg*aco_pi_rho[0]
+                    if isTauToRho_1 and isTauToPi_2:
+                        variablesCP['aco_pi_rho'] = RadToDeg*aco_rho_pi[0]
+                        
+                    if isTauToPi_1 and isTauToA1_3pr_2:
+                        variablesCP['aco_pi_a1'] = RadToDeg*aco_pi_a1[0]                        
+                    if isTauToA1_3pr_1 and isTauToPi_2:
+                        variablesCP['aco_pi_a1'] = RadToDeg*aco_a1_pi[0]
+
+                    if isTauToRho_1 and isTauToA1_3pr_2:
+                        variablesCP['aco_rho_a1'] = RadToDeg*aco_rho_a1[0]                        
+                    if isTauToA1_3pr_1 and isTauToRho_2:
+                        variablesCP['aco_rho_a1'] = RadToDeg*aco_a1_rho[0]
+
+                ####################################
+                ###### Leptonic channels ###########
+                ####################################
                 if channel=='mt' or channel=='et':
-                    variablesCP['aco_lep_pi_plus'] = -9999.
-                    variablesCP['aco_lep_pi_minus'] = -9999.
-                    variablesCP['aco_lep_pi'] = -9999.
-                    variablesCP['aco_lep_piIP'] = -9999.
-                    variablesCP['aco_lepIP_pi'] = -9999.
-                    variablesCP['aco_lepIP_piIP'] = -9999.
-            
-                    variablesCP['aco_lep_rho_plus'] = -9999.
-                    variablesCP['aco_lep_rho_minus'] = -9999.
-                    variablesCP['aco_lep_rho'] = -9999.
-                    variablesCP['aco_lepIP_rho'] = -9999.
-                    variablesCP['aco_lep_rhoECut'] = -9999.
-                    variablesCP['aco_lep_rhoGen'] = -9999.
-                    variablesCP['aco_lep_rhoReco'] = -9999.
-                    variablesCP['aco_lep_rhoCollinear'] = -9999.
-                    variablesCP['aco_lep_rhoRecoGen'] = -9999.
-                    variablesCP['aco_lep_rhoRecoGenECut'] = -9999.
+                    accept = sign_label=='os' and iso_label=='iso' and deeptau_label=='nominal' and mt_label=='lowmt'
+                    if not accept: continue 
+
+                    solution = False
+                    leptonDecay = True
                     
-                    variablesCP['aco_lep_rhoRecoIP1p0'] = -9999.
-                    variablesCP['aco_lep_rhoRecoGenIP1p0'] = -9999.
-                    variablesCP['aco_lep_rhoRecoIP1p0ECut'] = -9999.
-                    variablesCP['aco_lep_rhoRecoGenIP1p0ECut'] = -9999.
-                    
-                    variablesCP['aco_lep_rhoRecoIP1p2'] = -9999.
-                    variablesCP['aco_lep_rhoRecoGenIP1p2'] = -9999.
-                    variablesCP['aco_lep_rhoRecoIP1p2ECut'] = -9999.
-                    variablesCP['aco_lep_rhoRecoGenIP1p2ECut'] = -9999.
-                    
-                    variablesCP['aco_lep_rhoRecoIP1p5'] = -9999.
-                    variablesCP['aco_lep_rhoRecoGenIP1p5'] = -9999.
-                    variablesCP['aco_lep_rhoRecoIP1p5ECut'] = -9999.
-                    variablesCP['aco_lep_rhoRecoGenIP1p5ECut'] = -9999.
-                
-                    variablesCP['aco_lep_a1_plus'] = -9999.
-                    variablesCP['aco_lep_a1_minus'] = -9999.
-                    variablesCP['aco_lep_a1'] = -9999.
-                    variablesCP['aco_lepIP_a1'] = -9999.
-                    variablesCP['aco_lep_a1DP'] = -9999.
-                    variablesCP['aco_lep_a1PVGen'] = -9999.
-                    variablesCP['aco_lepIP_a1PVGen'] = -9999.
-                    variablesCP['aco_lep_a1PVDESY'] = -9999.
-                    variablesCP['aco_lepIP_a1PVDESY'] = -9999.
-                    variablesCP['aco_lep_a1PVIC'] = -9999.
-                    
-                    variablesCP['alpha_lep_pi'] = -9999.
-                    variablesCP['alpha_lep_rho'] = -9999.
-                    variablesCP['alpha_lep_a1'] = -9999.
-                    
-                    alpha = -9999.
-                    cosa = pv_utils.CosAlpha(pi_pt_2[0],pi_eta_2[0],pi_phi_2[0],massPi,
-                                         ip_x_2[0],ip_y_2[0],ip_z_2[0],False)
-                    alpha_IP = ROOT.TMath.ACos(cosa)
-                    aco = -9999.
-                    pv = ROOT.TLorentzVector()
-                    aco_a1 = -9999.
-                
+                    firstNegative = charge_1[0] < 0
+                    P1 = ROOT.TLorentzVector()
+                    P1.SetPtEtaPhiM(pt_1[0],eta_1[0],phi_1[0],massLep)
+                    P1_vis = ROOT.TLorentzVector()
+                    P1_vis.SetPtEtaPhiM(pt_1[0],eta_1[0],phi_1[0],massLep)
+                    R1 = ROOT.TLorentzVector()
+                    R1.SetXYZT(ip_x_1[0],ip_y_1[0],ip_z_1[0],0.0)
                     if isTauToPi_2:
                         # tau->pi+v decay 
-                        alpha = alpha_IP
-                        variablesCP['alpha_lep_pi'] = RadToDeg * alpha
                         variablesCP['aco_lep_pi'] = RadToDeg*aco_lep_pi[0]
-                        if abs(ipsig_2[0])>cuts.ipsigTauCut:
-                            variablesCP['aco_lep_piIP'] = RadToDeg*aco_lep_pi[0]
-                        if abs(ipsig_1[0])>cuts.ipsigLepCut:
-                            variablesCP['aco_lepIP_pi'] = RadToDeg*aco_lep_pi[0]
-                        if abs(ipsig_1[0])>cuts.ipsigLepCut and abs(ipsig_2[0])>cuts.ipsigLepCut:
-                            variablesCP['aco_lepIP_piIP'] = RadToDeg*aco_lep_pi[0]
-                        if alpha > pi_over_4:
-                            variablesCP['aco_lep_pi_plus'] = RadToDeg*aco_lep_pi[0]
-                        else:
-                            variablesCP['aco_lep_pi_minus'] = RadToDeg*aco_lep_pi[0]
-
                     if isTauToRho_2:
                         # tau->rho(p+pi-)+v decay
-                        Pi0 = ROOT.TLorentzVector()
-                        Pi0.SetPtEtaPhiM(pi0_pt_2[0],pi0_eta_2[0],pi0_phi_2[0],massPi0)
-                        Pi = ROOT.TLorentzVector()
-                        Pi.SetPtEtaPhiM(pi_pt_2[0],pi_eta_2[0],pi_phi_2[0],massPi)
-                        magPi0 = Pi0.Vect().Mag()
-                        magPi = Pi.Vect().Mag()
-                        cosa = pv_utils.CosAlpha(pi_pt_2[0],pi_eta_2[0],pi_phi_2[0],massPi,Pi0.Px(),Pi0.Py(),Pi0.Pz(),True)
-                        alpha = ROOT.TMath.ACos(cosa)
-                        variablesCP['alpha_lep_rho'] = RadToDeg * alpha
-                        P1 = ROOT.TLorentzVector()
-                        P1.SetPtEtaPhiM(pt_1_FastMTT[0],eta_1[0],phi_1[0],massLep)
-                        R1 = ROOT.TLorentzVector()
-                        R1.SetXYZT(ip_x_1[0],ip_y_1[0],ip_z_1[0],0.0)
-                        ip_vec_2 = ROOT.TVector3(ip_x_2[0],ip_y_2[0],ip_z_2[0])
-                        PGen = ROOT.TLorentzVector()
-                        PGen.SetPtEtaPhiM(genPart_pt_2[0],genPart_eta_2[0],genPart_phi_2[0],utils.tau_mass)
-
-                        deltaE = abs((Pi.E()-Pi0.E())/(Pi.E()+Pi0.E()))
-                    
-                        # Gen
-                        P2,R2 = pv_utils.PolVectRho(pt_2_FastMTT[0],Pi,Pi0,ip_vec_2,PGen,'gen')
-                        firstNeg = charge_1[0] < 0.
-                        aco = pv_utils.acoCP(P1,P2,R1,R2,firstNeg,'Impact-Parameter','PV')
-                        if math.isnan(aco): aco = -9999.
-                        variablesCP['aco_lep_rhoGen'] = RadToDeg*aco
-
-                        # Collinear
-                        P2,R2 = pv_utils.PolVectRho(pt_2_FastMTT[0],Pi,Pi0,ip_vec_2,PGen,'collinear')
-                        firstNeg = charge_1[0] < 0.
-                        aco = pv_utils.acoCP(P1,P2,R1,R2,firstNeg,'Impact-Parameter','PV')
-                        if math.isnan(aco): aco = -9999.
-                        variablesCP['aco_lep_rhoCollinear'] = RadToDeg*aco
-
-                        # Reco
-                        P2,R2 = pv_utils.PolVectRho(pt_2_FastMTT[0],Pi,Pi0,ip_vec_2,PGen,'reco')
-                        firstNeg = charge_1[0] < 0.
-                        aco = pv_utils.acoCP(P1,P2,R1,R2,firstNeg,'Impact-Parameter','PV')
-                        if math.isnan(aco): aco = -9999.
-                        variablesCP['aco_lep_rhoReco'] = RadToDeg*aco
-                    
-                        # Reco-Gen
-                        P2,R2 = pv_utils.PolVectRho(pt_2_FastMTT[0],Pi,Pi0,ip_vec_2,PGen,'reco_gen')
-                        firstNeg = charge_1[0] < 0.
-                        aco = pv_utils.acoCP(P1,P2,R1,R2,firstNeg,'Impact-Parameter','PV')
-                        if math.isnan(aco): aco = -9999.
-                        variablesCP['aco_lep_rhoRecoGen'] = RadToDeg*aco
-                        variablesCP['aco_lep_rho'] = RadToDeg*aco_lep_rho[0]
-                        if alpha > pi_over_4:
-                            variablesCP['aco_lep_rho_plus'] = RadToDeg*aco_lep_rho[0]
-                        else:
-                            variablesCP['aco_lep_rho_minus'] = RadToDeg*aco_lep_rho[0]
+                        variablesCP['aco_lep_rho'] = RadToDeg * aco_lep_rho[0]                        
                     if isTauToA1_3pr_2:
-                        # tau->a1(3pr)+v decay
-                        PGen = ROOT.TLorentzVector()
-                        PGen.SetPtEtaPhiM(genPart_pt_2[0],genPart_eta_2[0],genPart_phi_2[0],utils.tau_mass)
-                    
-                        sv_pv = ROOT.TVector3(sv_x_2[0]-PVBS_x[0],sv_y_2[0]-PVBS_y[0],sv_z_2[0]-PVBS_z[0])
-                        Pi1 = ROOT.TLorentzVector()
-                        Pi1.SetPtEtaPhiM(pi_pt_2[0],pi_eta_2[0],pi_phi_2[0],massPi)
-                        Pi2 = ROOT.TLorentzVector()
-                        Pi2.SetPtEtaPhiM(pi2_pt_2[0],pi2_eta_2[0],pi2_phi_2[0],massPi)
-                        Pi3 = ROOT.TLorentzVector()
-                        Pi3.SetPtEtaPhiM(pi3_pt_2[0],pi3_eta_2[0],pi3_phi_2[0],massPi)
-                        lv_a1 = Pi1 + Pi2 + Pi3
-                        cosa = pv_utils.CosAlpha(lv_a1.Pt(),lv_a1.Eta(),lv_a1.Phi(),lv_a1.M(),sv_pv.X(),sv_pv.Y(),sv_pv.Z(),False)
-                        alpha = ROOT.TMath.ACos(cosa)
-                        variablesCP['alpha_lep_a1'] = RadToDeg * alpha
-
-                        PV_Mag = math.sqrt(PVBS_x[0]*PVBS_x[0]+PVBS_y[0]*PVBS_y[0]+PVBS_z[0]*PVBS_z[0])
-                        SV_Mag = math.sqrt(sv_x_2[0]*sv_x_2[0]+sv_y_2[0]*sv_y_2[0]+sv_z_2[0]*sv_z_2[0])
-                        P1 = ROOT.TLorentzVector()
-                        P1.SetPtEtaPhiM(pt_1[0],eta_1[0],phi_1[0],massLep)
-                        R1 = ROOT.TLorentzVector()
-                        R1.SetXYZT(ip_x_1[0],ip_y_1[0],ip_z_1[0],0.0)
-                        
-                        PV = ROOT.TLorentzVector()
-                        PV.SetXYZT(PVBS_x[0],PVBS_y[0],PVBS_z[0],PV_Mag)
-                        SV = ROOT.TLorentzVector()
-                        SV.SetXYZT(sv_x_2[0],sv_y_2[0],sv_z_2[0],SV_Mag)
-
-                        P_os,P_ss1,P_ss2 = pv_utils.sortA1(Pi1,Pi2,Pi3,pi_charge_2[0],pi2_charge_2[0],pi3_charge_2[0])
-                        firstNeg = charge_1[0] < 0.
-
-                        # DESY method
-                        P2,R2  = pv_utils.PolVectA1(PV,SV,
-                                                    pt_2_FastMTT[0],P_os,P_ss1,P_ss2,PGen,
-                                                    charge_2[0],'recoDESY')
-                        aco = pv_utils.acoCP(P1,P2,R1,R2,firstNeg,'Impact-Parameter','PV')
-                        if math.isnan(aco): aco = -9999.
-                        variablesCP['aco_lep_a1PVDESY'] = RadToDeg * aco
-                        aco_DESY = aco
-                        
-                        variablesCP['aco_lep_a1DP'] = RadToDeg*aco_lep_a1[0]
-                        variablesCP['aco_lep_a1'] = RadToDeg*aco_lep_a1_FastMTT[0]
-                        if abs(ipsig_1[0])>cuts.ipsigLepCut:
-                            variablesCP['aco_lepIP_a1'] = RadToDeg*aco_lep_a1_FastMTT[0]
-                        if alpha > pi_over_4:
-                            variablesCP['aco_lep_a1_plus'] = RadToDeg*aco_lep_a1_FastMTT[0]
+                        # tau->a1(3pr)+v decay                        
+                        sv = ROOT.TVector3(sv_x_2[0]-PVBS_x[0],sv_y_2[0]-PVBS_y[0],sv_z_2[0]-PVBS_z[0])
+                        Pi1_2.SetPtEtaPhiM(pi_pt_2[0],pi_eta_2[0],pi_phi_2[0],massPi)
+                        Pi2_2.SetPtEtaPhiM(pi2_pt_2[0],pi2_eta_2[0],pi2_phi_2[0],massPi)
+                        Pi3_2.SetPtEtaPhiM(pi3_pt_2[0],pi3_eta_2[0],pi3_phi_2[0],massPi)                        
+                        P2_vis = Pi1_2 + Pi2_2 + Pi3_2
+                        variablesCP['aco_lep_a1'] = RadToDeg*aco_lep_a1[0]
+                        P1Gen.SetPtEtaPhiM(genPart_pt_1[0],genPart_eta_1[0],genPart_phi_1[0],utils.tau_mass)
+                        P2Gen.SetPtEtaPhiM(genPart_pt_2[0],genPart_eta_2[0],genPart_phi_2[0],utils.tau_mass)
+                        P_os,P_ss1,P_ss2 = pv_utils.sortA1(Pi1_2,Pi2_2,Pi3_2,pi_charge_2[0],pi2_charge_2[0],pi3_charge_2[0])
+                        if cppKinFit:
+                            Ptau,Pother,chi2 = pv_utils.FastMTT_3pr_cpp(P2_vis,P1_vis,
+                                                                        met_pt,met_phi,
+                                                                        met_covXX,met_covXY,met_covYY,
+	                                                                sv,
+	                                                                sv_cov00_2,sv_cov10_2,sv_cov11_2,
+                                                                        sv_cov20_2,sv_cov21_2,sv_cov22_2,
+                                                                        phiScan,
+                                                                        utils.massH)
                         else:
-                            variablesCP['aco_lep_a1_minus'] = RadToDeg*aco_lep_a1_FastMTT[0]
-                    for varname in variablesCP:
-                        nameAll = '%s_%s_%s_all'%(varname,sign_label,iso_label)
-                        name = '%s_%s_%s_%s'%(varname,sign_label,iso_label,lep_label)
-                        hists[nameAll].Fill(variables[varname],Weight*WeightSF)
-                        hists[name].Fill(variables[varname],Weight*WeightSF)
-                        if applyWeightCP:
-                            nameAll_sm = '%s_%s_%s_all_sm'%(varname,sign_label,iso_label)
-                            name_sm = '%s_%s_%s_%s_sm'%(varname,sign_label,iso_label,lep_label)
-                            nameAll_ps = '%s_%s_%s_all_ps'%(varname,sign_label,iso_label)
-                            name_ps = '%s_%s_%s_%s_ps'%(varname,sign_label,iso_label,lep_label)
-                            nameAll_mm = '%s_%s_%s_all_mm'%(varname,sign_label,iso_label)
-                            name_mm = '%s_%s_%s_%s_mm'%(varname,sign_label,iso_label,lep_label)
-                            hists[nameAll_sm].Fill(variables[varname],Weight*WeightSF*weight_cp_sm[0])
-                            hists[name_sm].Fill(variables[varname],Weight*WeightSF*weight_cp_sm[0])
-                            hists[nameAll_ps].Fill(variables[varname],Weight*WeightSF*weight_cp_ps[0])
-                            hists[name_ps].Fill(variables[varname],Weight*WeightSF*weight_cp_ps[0])
-                            hists[nameAll_mm].Fill(variables[varname],Weight*WeightSF*weight_cp_mm[0])
-                            hists[name_mm].Fill(variables[varname],Weight*WeightSF*weight_cp_mm[0])
+                            Pother, Ptau, chi2 = pv_utils.FastMTT_3pr(P1_vis,P2_vis,
+                                                                      MET,
+                                                                      met_covXX,met_covXY,met_covYY,
+                                                                      sv,
+                                                                      sv_cov00_2,sv_cov10_2,sv_cov11_2,
+                                                                      sv_cov20_2,sv_cov21_2,sv_cov22_2)
+                        
+                        if chi2<1.0e+10:
+                            results = pv_utils.AnalysisGenerator(pt_2_FastMTT[0],Ptau,P2_vis,P2Gen,sv)
+                            variablesCP['dPt'] = results['dPt']
+                            variablesCP['dPt_KinFit'] = results['dPt_KinFit']
+                            variablesCP['dAlpha'] = results['dAlpha']
+                            variablesCP['dAlpha_KinFit'] = results['dAlpha_KinFit']
+                            variablesCP['dTheta'] = results['dTheta']
+                            variablesCP['dTheta_KinFit'] = results['dTheta_KinFit']
+                            variablesCP['dTheta_KinFitSV'] = results['dTheta_KinFitSV']
+                            R2 = pv_utils.PolVectA1(Ptau,P_os,P_ss1,P_ss2,charge_2[0])
+                            P2 = Ptau
+                            aco = pv_utils.acoCP(P1,P2,R1,R2,firstNegative,'Impact-Parameter','PV')
+                            variablesCP['aco_lep_a1_KinFit'] = RadToDeg*aco
+                            variablesCP['chi2_lep_a1'] = chi2
+                            if chi2<5:
+                                variablesCP['aco_lep_a1_chi5_KinFit'] = RadToDeg*aco
+                            if chi2<10:
+                                variablesCP['aco_lep_a1_chi10_KinFit'] = RadToDeg*aco
+                            if chi2<20:
+                                variablesCP['aco_lep_a1_chi20_KinFit'] = RadToDeg*aco
+                        R2Gen = pv_utils.PolVectA1(P2Gen,P_os,P_ss1,P_ss2,charge_2[0])                        
+                        aco_Gen = pv_utils.acoCP(P1,P2Gen,R1,R2Gen,firstNegative,'Impact-Parameter','PV')
+                        
+                        P2_GenTheta = pv_utils.GeneratorVector(P2Gen,P2_vis,sv)
+                        R2_GenTheta = pv_utils.PolVectA1(P2_GenTheta,P_os,P_ss1,P_ss2,charge_2[0])
+                        aco_GenTheta = pv_utils.acoCP(P1,P2_GenTheta,R1,R2_GenTheta,firstNegative,'Impact-Parameter','PV')
+                        variablesCP['aco_lep_a1_GenPV'] = RadToDeg*aco_Gen
+                        variablesCP['aco_lep_a1_GenTheta'] = RadToDeg*aco_GenTheta
+
+                for varname in variablesCP:
+                    cp_weigths = {
+                        'sm' : weight_cp_sm[0],
+                        'ps' : weight_cp_ps[0],
+                        'mm' : weight_cp_mm[0],
+                    }
+                    hists[varname].Fill(variablesCP[varname],Weight)
+                    if applyWeightCP:
+                        for cp_weight in cp_weigths: 
+                            name = '%s_%s'%(varname,cp_weight)
+                            hists[name].Fill(variablesCP[varname],Weight*cp_weigths[cp_weight])
 
 
             

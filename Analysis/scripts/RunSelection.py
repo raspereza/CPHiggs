@@ -22,13 +22,15 @@ if __name__ == "__main__":
 
     from argparse import ArgumentParser
     parser = ArgumentParser()
-    parser.add_argument('-era','--era',dest='era',default='Run3_2022preEE',choices=['Run3_2022preEE','Run3_2022postEE','Run3_2023preBPix','Run3_2023postBPix'])
-    parser.add_argument('-channel','--channel',dest='channel',default='mt',choices=['mt','et','ee','mm'])
-    parser.add_argument('-applyIPSigLepCut','--applyIPSigLepCut',dest='applyIPSigLepCut',type=int,default=1)
-    parser.add_argument('-applyFakeFactor','--applyFakeFactor',dest='applyFakeFactor',type=int,default=1)
-    parser.add_argument('-sample','--sample',dest='sample',default='data',choices=['data','ztt_0j','ztt_1j','ztt_2j','zll_0j','zll_1j','zll_2j','zll_incl','zll_ext','wjets','top','vv','st','top_2l2v','top_2l2v_ext','top_lv2q','top_lv2q_ext','ggH_sm','ggH_ps','ggH_mm','qqH','HWplus','HWminus','ZH'])
-    parser.add_argument('-analysisType','--analysisType',dest='analysisType',default='baseline',choices=['baseline','ipSig','phiCP','datacardsPhiCP','jetFakes'])
-    parser.add_argument('-ff_version','--ff_version',dest='ff_version',default='v3')
+    parser.add_argument('-era','--era',dest='era',default='Run3_2022postEE',choices=['Run3_2022preEE','Run3_2022postEE','Run3_2023preBPix','Run3_2023postBPix'])
+    parser.add_argument('-channel','--channel',dest='channel',default='tt',choices=['mt','et','ee','mm','tt'])
+    parser.add_argument('-applyIPSigLepCut','--applyIPSigLepCut',dest='applyIPSigLepCut',type=int,default=0)
+    parser.add_argument('-applyFakeFactor','--applyFakeFactor',dest='applyFakeFactor',type=int,default=0)
+    parser.add_argument('-sample','--sample',dest='sample',default='ggH_sm',choices=['data','ztt_0j','ztt_1j','ztt_2j','zll_0j','zll_1j','zll_2j','zll_incl','zll_ext','wjets','top','vv','st','top_2l2v','top_2l2v_ext','top_lv2q','top_lv2q_ext','ggH_sm','ggH_ps','ggH_mm','qqH','HWplus','HWminus','ZH'])
+    parser.add_argument('-analysisType','--analysisType',dest='analysisType',default='phiCP',choices=['baseline','ipSig','phiCP','datacardsPhiCP','jetFakes'])
+    parser.add_argument('-ff_version','--ff_version',dest='ff_version',default='ipcut',choices=['ipcut','noipcut'])
+    parser.add_argument('-cpp_fit','--cpp_fit',dest='cpp_fit',action='store_true')
+    parser.add_argument('-phi_scan','--phi_scan',dest='phi_scan',action='store_true')
     args = parser.parse_args()
 
     eras = utils.periods[args.era]
@@ -37,29 +39,27 @@ if __name__ == "__main__":
     analysisType = args.analysisType
 
     useCrossTrigger = False
+    setCPPkinfit = args.cpp_fit
+    phiScan = args.phi_scan
     applyBVeto = False
     applyIPSigLep1Cut = False
     applyIPSigLep2Cut = False
-    applyIPSigPromptLepSF = False
-    applyIPSigTauLepSF = False
-    applyIPSigJsonSF = False
     applyFakeFactor = False
     if args.applyIPSigLepCut==1:
         applyIPSigLep1Cut = True
-        applyIPSigPromptLepSF = True
-        applyIPSigTauLepSF = True
-        applyIPSigJsonSF = True
     if args.applyFakeFactor==1:
         applyFakeFactor = True
 
     ff_version = args.ff_version
     baseFolder = '%s/src/CPHiggs/Analysis'%(os.getenv('CMSSW_BASE'))
-    tupleFolderPOWHEG = utils.tupleFolderPOWHEG
-    tupleFolderV2 = utils.tupleFolderV2
-    tupleFolderMG = utils.tupleFolderMG
+
+    tupleFolder = utils.tupleFolderV2
+    if analysisType=='phiCP':
+        tupleFolder = utils.tupleFolderPhiCP
+    
     outputFolder = '%s'%(utils.outputFolder)
-    folderSF = '%s/src/IPcorrectionsRun3/IPsignificance/data'%(os.getenv('CMSSW_BASE'))
-    folderIPSigJsonSF = '%s/src/IPcorrectionsRun3/IPsignificance/JSON'%(os.getenv('CMSSW_BASE'))
+    ipSigCorrFolder = '%s/src/IPcorrectionsRun3/IPsignificance/JSON'%(os.getenv('CMSSW_BASE'))
+    fakeFactorFolder = '%s/src/IPcorrectionsRun3/FakeFactors/JSON/Nov18/'%(os.getenv('CMSSW_BASE'))
     
     mvisUpperCut = 999999999.
     mvisLowerCut = 0.
@@ -81,40 +81,15 @@ if __name__ == "__main__":
     histEtaBins = ROOT.TH1D('histEtaBins','',nbinsEta,array('d',list(etabins)))
 
     #########################
-    # Loading scale factors #
+    # Loading fake factors  #
     #########################
-    # custom classes
-    ipSigPromptLepSF = None
-    ipSigTauLepSF = None
-    # json corrector
-    ipSigJsonSF = None
-    
-    suffixPromptLep = 'PromptMu'
-    suffixTauLep = 'TauMu'
-    suffixLep = 'muon'
-    if chan=='ee' or chan=='et':
-        suffixPromptLep = 'PromptE'
-        suffixTauLep = 'TauE'
-        suffixLep = 'electron'
 
-    if applyIPSigJsonSF: # use json file ->
-        fileNameIPSigJson = '%s/IP_Significance_Correction_Run3_2022-2023_%s.json'%(folderIPSigJsonSF,suffixLep)
-        cset = correctionlib.CorrectionSet.from_file(fileNameIPSigJson)
-        ipSigJsonSF = cset["ipsig_correction"]
-        
-    else: # use custom interface (ScaleFactor)
-        if applyIPSigPromptLepSF:
-            fileNamePromptLepSF = '%s/SF_%s_Run3_2022-2023.root'%(folderSF,suffixPromptLep)
-            ipSigPromptLepSF = ScaleFactor(filename=fileNamePromptLepSF)
-        if applyIPSigTauLepSF:
-            fileNameTauLepSF = '%s/SF_%s_Run3_2022-2023.root'%(folderSF,suffixTauLep)
-            ipSigTauLepSF = ScaleFactor(filename=fileNameTauLepSF)
-
-    fakeFactorFolder = '%s/src/IPcorrectionsRun3/FakeFactors/data'%(os.getenv('CMSSW_BASE'))
-    filenameFakeFactor = '%s/FF_Run3_%s_%s.root'%(fakeFactorFolder,chan,ff_version)
     fakeFactor = None
     if applyFakeFactor:
-        fakeFactor = FakeFactor(filename=filenameFakeFactor)
+        filenameFakeFactor = '%s/FF_Run3_%s_%s.json'%(fakeFactorFolder,chan,ff_version)
+        print('Opening file %s'%(filenameFakeFactor))
+        cset = correctionlib.CorrectionSet.from_file(filenameFakeFactor)
+        fakeFactor = cset['Fake_factors']
             
     ######################
     # definition of cuts #
@@ -123,7 +98,7 @@ if __name__ == "__main__":
     ptLep1Cut = 21.
     etaLep1Cut = 2.4
     ptLep2Cut = 20.
-    etaLep2Cut = 2.3
+    etaLep2Cut = 2.5
     ptSingleLepTrigger = 26.
     etaSingleLepTrigger = 2.4
     ptLepCrossTrigger = 21.
@@ -206,7 +181,7 @@ if __name__ == "__main__":
         for era in eras:
             for name in dataNames[era]:
                 sampleName = name
-                Samples[sampleName] = analysis.analysisSample(tupleFolderV2,era,chan,name,1.0,True,analysisType=analysisType)
+                Samples[sampleName] = analysis.analysisSample(tupleFolder,era,chan,name,1.0,True,analysisType=analysisType)
     else:
         print('')
         print('initializing %s samples >>'%(sample))
@@ -214,7 +189,7 @@ if __name__ == "__main__":
             for name in utils.samplesDict[sample][era]:
                 norm = metadata[era][0]['lumi']*metadata[era][0][name]['xs']*metadata[era][0][name]['filter_efficiency']/metadata[era][0][name]['eff']
                 sampleName = name+'_'+era
-                Samples[sampleName] = analysis.analysisSample(tupleFolderV2,era,chan,name,norm,False,analysisType=analysisType)
+                Samples[sampleName] = analysis.analysisSample(tupleFolder,era,chan,name,norm,False,analysisType=analysisType)
 
     print('')
     print('++++++++++++++++++++++++++++++++++++++++++++')
@@ -232,15 +207,11 @@ if __name__ == "__main__":
                                  fakeFactor=fakeFactor)
         else:
             Samples[s].SetConfig(cuts,histPtBins,histEtaBins,
-                                 applyIPSigPromptLepSF=applyIPSigPromptLepSF,
-                                 applyIPSigTauLepSF=applyIPSigTauLepSF,
-                                 applyIPSigJsonSF=applyIPSigJsonSF,
                                  applyFakeFactor=applyFakeFactor,
-                                 ipSigPromptLepSF=ipSigPromptLepSF,
-                                 ipSigTauLepSF=ipSigTauLepSF,
-                                 ipSigJsonSF=ipSigJsonSF,
                                  fakeFactor=fakeFactor,
-                                 applyWeightCP=applyWeightCP)
+                                 applyWeightCP=applyWeightCP,
+                                 cppKinFit=setCPPkinfit,
+                                 phiScan=phiScan)
 
     
     hists[sample]  = analysis.RunSamplesTuple(Samples,utils.samplesNameDict[sample])
@@ -256,6 +227,12 @@ if __name__ == "__main__":
         suffix += '_ff_'+ff_version
     
     outputFileName = '%s/selection/%s/%s_%s_%s%s.root'%(outputFolder,analysisType,sample,chan,args.era,suffix)
+    if analysisType=='phiCP':
+        if setCPPkinfit:
+            outputFileName = '%s/selection/%s/%s_%s_%s_cpp.root'%(outputFolder,analysisType,sample,chan,args.era)
+        else:
+            outputFileName = '%s/selection/%s/%s_%s_%s_python.root'%(outputFolder,analysisType,sample,chan,args.era)
+            
 
     print('Saving histograms to file %s'%(outputFileName))
     outputFile = ROOT.TFile(outputFileName,'recreate')

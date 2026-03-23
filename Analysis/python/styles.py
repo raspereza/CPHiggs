@@ -16,6 +16,7 @@ eraLumiLabel = {
     "Run3_2023BPix": "2023postBPix, 9.7 fb^{-1} (13.6 TeV)",
     "Run3_2023": "2023, 27.8 fb^{-1} (13.6 TeV)",
     "Run3": "2022-2023, 62.5 fb^{-1} (13.6 TeV)",
+    "Run3_all": "Run3, 280 fb^{-1} (13.6)",
 }
 
 def InitROOT():
