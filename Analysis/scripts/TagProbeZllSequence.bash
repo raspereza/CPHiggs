@@ -11,7 +11,8 @@ fi
 channel=${1}
 generator=${2}
 
-for era in Run3_2022 Run3_2023
+#for era in Run3_2022 Run3_2023
+for era in Run3 
 do
     for binEta in 1 2 3
     do
