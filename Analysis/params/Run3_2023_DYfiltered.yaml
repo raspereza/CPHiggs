@@ -51,27 +51,27 @@ DYto2L_M_50_madgraphMLM_ext1:
   filter_efficiency: 1.0
   xs: 6282.6
 DYto2Tau_MLL_50_0J_Filtered_amcatnloFXFX:
-  eff: 24516597
+  eff: 221078323.77066502
   filter_efficiency: 1.0
   xs: 1664.6841730883225
 DYto2Tau_MLL_50_0J_amcatnloFXFX:
-  eff: 68706683
+  eff: 221078323.77066502
   filter_efficiency: 1.0
   xs: 1664.6841730883225
 DYto2Tau_MLL_50_1J_Filtered_amcatnloFXFX:
-  eff: 21627137
+  eff: 171442476.03743315
   filter_efficiency: 1.0
   xs: 316.2403378778898
 DYto2Tau_MLL_50_1J_amcatnloFXFX:
-  eff: 55789337
+  eff: 171442476.03743315
   filter_efficiency: 1.0
   xs: 316.2403378778898
 DYto2Tau_MLL_50_2J_Filtered_amcatnloFXFX:
-  eff: 21077983
+  eff: 186836438.954781
   filter_efficiency: 1.0
   xs: 116.47203023117962
 DYto2Tau_MLL_50_2J_amcatnloFXFX:
-  eff: 87552487
+  eff: 186836438.954781
   filter_efficiency: 1.0
   xs: 116.47203023117962
 GluGluHTo2Tau_UncorrelatedDecay_CPodd_Filtered_ProdAndDecay:
