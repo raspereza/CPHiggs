@@ -1,8 +1,8 @@
 //////////////////////////////////////////////////////////
 // This class has been automatically generated on
-// Fri Aug 15 16:10:27 2025 by ROOT version 6.30/07
+// Thu Apr  2 12:20:40 2026 by ROOT version 6.30/07
 // from TTree ntuple/
-// found on file: root://eoscms.cern.ch//eos/cms/store/group/phys_tau/lrussell/forAliaksei/old/oldTuples/Run3_2022EE/mt/GluGluHTo2Tau_UncorrelatedDecay_UnFiltered/nominal/merged.root
+// found on file: root://eoscms.cern.ch//eos/cms/store/group/phys_tau/lrussell/forAliaksei/CPSignalStudies/Run3_2022EE/mt/GluGluHTo2Tau_UncorrelatedDecay_SM_Filtered_ProdAndDecay/nominal/merged.root
 //////////////////////////////////////////////////////////
 
 #ifndef ntuple_h
@@ -25,8 +25,6 @@ public :
    Long64_t        event;
    Long64_t        run;
    Long64_t        lumi;
-   Double_t        original_index_1;
-   Double_t        original_index_2;
    Double_t        charge_1;
    Short_t         charge_2;
    Double_t        pt_1;
@@ -61,27 +59,9 @@ public :
    Long64_t        idDeepTau2018v2p5VSjet_2;
    Long64_t        idDeepTau2018v2p5VSmu_2;
    Long64_t        idDeepTau2018v2p5VSe_2;
-   Long64_t        idDeepTau2018v2p5noDAVSjet_2;
-   Long64_t        idDeepTau2018v2p5noDAVSmu_2;
-   Long64_t        idDeepTau2018v2p5noDAVSe_2;
-   Double_t        rawDeepTau2018v2p5VSjet_2;
-   Double_t        rawDeepTau2018v2p5VSmu_2;
-   Double_t        rawDeepTau2018v2p5VSe_2;
-   Double_t        rawDeepTau2018v2p5noDAVSjet_2;
-   Double_t        rawDeepTau2018v2p5noDAVSmu_2;
-   Double_t        rawDeepTau2018v2p5noDAVSe_2;
-   Double_t        rawPNetVSjet_2;
-   Double_t        rawPNetVSmu_2;
-   Double_t        rawPNetVSe_2;
    Long64_t        decayMode_2;
    Short_t         decayModePNet_2;
-   Double_t        probDM0PNet_2;
-   Double_t        probDM1PNet_2;
-   Double_t        probDM2PNet_2;
-   Double_t        probDM10PNet_2;
-   Double_t        probDM11PNet_2;
    Double_t        n_jets;
-   Double_t        n_prebjets;
    Double_t        n_bjets;
    Double_t        mjj;
    Double_t        jdeta;
@@ -93,22 +73,15 @@ public :
    Double_t        jpt_2;
    Double_t        jeta_2;
    Double_t        jphi_2;
-   Double_t        seeding_n_jets;
-   Double_t        seeding_mjj;
-   Double_t        seeding_jdeta;
-   Double_t        seeding_sjdphi;
-   Double_t        seeding_dijetpt;
-   Double_t        seeding_jpt_1;
-   Double_t        seeding_jeta_1;
-   Double_t        seeding_jphi_1;
-   Double_t        seeding_jpt_2;
-   Double_t        seeding_jeta_2;
-   Double_t        seeding_jphi_2;
    Double_t        aco_mu_pi;
    Double_t        aco_mu_rho;
-   Double_t        aco_mu_a1;
+   Double_t        aco_mu_a1_FASTMTT_MassConstraint;
    Double_t        alphaAngle_mu_pi_1;
    Double_t        alphaAngle_mu_pi_2;
+   Double_t        alphaAngle_mu_rho_1;
+   Double_t        alphaAngle_mu_rho_2;
+   Double_t        alphaAngle_mu_a1_FASTMTT_MassConstraint_1;
+   Double_t        alphaAngle_mu_a1_FASTMTT_MassConstraint_2;
    Double_t        PV_x;
    Double_t        PV_y;
    Double_t        PV_z;
@@ -131,6 +104,44 @@ public :
    Double_t        sv_x_2;
    Double_t        sv_y_2;
    Double_t        sv_z_2;
+   Double_t        PVBS_cov00;
+   Double_t        PVBS_cov10;
+   Double_t        PVBS_cov11;
+   Double_t        PVBS_cov20;
+   Double_t        PVBS_cov21;
+   Double_t        PVBS_cov22;
+   Double_t        sv_cov00_1;
+   Double_t        sv_cov10_1;
+   Double_t        sv_cov11_1;
+   Double_t        sv_cov20_1;
+   Double_t        sv_cov21_1;
+   Double_t        sv_cov22_1;
+   Double_t        sv_cov00_2;
+   Double_t        sv_cov10_2;
+   Double_t        sv_cov11_2;
+   Double_t        sv_cov20_2;
+   Double_t        sv_cov21_2;
+   Double_t        sv_cov22_2;
+   Double_t        ip_cov00_1;
+   Double_t        ip_cov10_1;
+   Double_t        ip_cov11_1;
+   Double_t        ip_cov20_1;
+   Double_t        ip_cov21_1;
+   Double_t        ip_cov22_1;
+   Double_t        ip_cov00_2;
+   Double_t        ip_cov10_2;
+   Double_t        ip_cov11_2;
+   Double_t        ip_cov20_2;
+   Double_t        ip_cov21_2;
+   Double_t        ip_cov22_2;
+   Double_t        FastMTT_mass;
+   Double_t        FastMTT_pt;
+   Double_t        FastMTT_pt_1;
+   Double_t        FastMTT_pt_2;
+   Double_t        FastMTT_mass_constraint;
+   Double_t        FastMTT_pt_constraint;
+   Double_t        FastMTT_pt_1_constraint;
+   Double_t        FastMTT_pt_2_constraint;
    Double_t        pi_pt_1;
    Double_t        pi_eta_1;
    Double_t        pi_phi_1;
@@ -187,10 +198,9 @@ public :
    Double_t        pi0_charge_2;
    Double_t        pi0_pdgId_2;
    Double_t        pi0_Energy_2;
-   Double_t        leadTkPtOverTauPt_2;
-   Double_t        strip_pt_2;
    Double_t        weight;
    Double_t        genWeight;
+   Double_t        is_data;
    Double_t        LHEReweightingWeight_SM;
    Double_t        LHEReweightingWeight_PS;
    Double_t        LHEReweightingWeight_MM;
@@ -234,36 +244,53 @@ public :
    Double_t        genIP_2_x;
    Double_t        genIP_2_y;
    Double_t        genIP_2_z;
-   Double_t        GenVsReco_PVBS_dxy;
-   Double_t        GenVsReco_PVBS_dz;
-   Double_t        GenVsReco_PV_dxy;
-   Double_t        GenVsReco_PV_dz;
-   Double_t        w_DY_soup;
    Double_t        w_WJ_soup;
    Double_t        w_DY_NLO_soup;
    Double_t        w_Pileup;
    Double_t        w_Zpt_Reweighting;
    Double_t        w_Top_pt_Reweighting;
    Double_t        w_ggH_QuarkMass_Effects;
-   Double_t        w_Electron_ID;
-   Double_t        w_Electron_Reco;
    Double_t        w_Muon_ID;
    Double_t        w_Muon_Isolation;
-   Double_t        w_Tau_ID;
+   Double_t        w_Tau_ID_PNet;
    Double_t        w_Tau_e_FakeRate;
    Double_t        w_Tau_mu_FakeRate;
    Double_t        w_Trigger;
-   Double_t        w_SingleMuon_leg1;
+   Double_t        w_IP_Significance;
    Double_t        w_CrossTrigger_Muon_leg1;
    Double_t        w_CrossTrigger_Tau_leg2;
+   Double_t        w_SingleTauTrigger;
+   Double_t        w_SingleMuon_leg1;
    Double_t        iso_1;
+   Double_t        abs_eta_1;
+   Double_t        BDT_pred_score;
+   Double_t        BDT_pred_class;
+   Double_t        BDT_raw_score_tau;
+   Double_t        BDT_raw_score_higgs;
+   Double_t        BDT_raw_score_fake;
+   Double_t        FF_wj_ipcut_closure_nom;
+   Double_t        FF_wj_ipcut_nom;
+   Double_t        FF_wj_ipcut_syst_up;
+   Double_t        FF_wj_ipcut_syst_down;
+   Double_t        FF_wj_ipcut_up;
+   Double_t        FF_wj_ipcut_down;
+   Double_t        FF_qcd_ipcut_closure_nom;
+   Double_t        FF_qcd_ipcut_nom;
+   Double_t        FF_qcd_ipcut_syst_up;
+   Double_t        FF_qcd_ipcut_syst_down;
+   Double_t        FF_qcd_ipcut_up;
+   Double_t        FF_qcd_ipcut_down;
+   Double_t        FF_mc_top_ipcut_closure_nom;
+   Double_t        FF_mc_top_ipcut_nom;
+   Double_t        FF_mc_top_ipcut_syst_up;
+   Double_t        FF_mc_top_ipcut_syst_down;
+   Double_t        FF_mc_top_ipcut_up;
+   Double_t        FF_mc_top_ipcut_down;
 
    // List of branches
    TBranch        *b_event;   //!
    TBranch        *b_run;   //!
    TBranch        *b_lumi;   //!
-   TBranch        *b_original_index_1;   //!
-   TBranch        *b_original_index_2;   //!
    TBranch        *b_charge_1;   //!
    TBranch        *b_charge_2;   //!
    TBranch        *b_pt_1;   //!
@@ -298,27 +325,9 @@ public :
    TBranch        *b_idDeepTau2018v2p5VSjet_2;   //!
    TBranch        *b_idDeepTau2018v2p5VSmu_2;   //!
    TBranch        *b_idDeepTau2018v2p5VSe_2;   //!
-   TBranch        *b_idDeepTau2018v2p5noDAVSjet_2;   //!
-   TBranch        *b_idDeepTau2018v2p5noDAVSmu_2;   //!
-   TBranch        *b_idDeepTau2018v2p5noDAVSe_2;   //!
-   TBranch        *b_rawDeepTau2018v2p5VSjet_2;   //!
-   TBranch        *b_rawDeepTau2018v2p5VSmu_2;   //!
-   TBranch        *b_rawDeepTau2018v2p5VSe_2;   //!
-   TBranch        *b_rawDeepTau2018v2p5noDAVSjet_2;   //!
-   TBranch        *b_rawDeepTau2018v2p5noDAVSmu_2;   //!
-   TBranch        *b_rawDeepTau2018v2p5noDAVSe_2;   //!
-   TBranch        *b_rawPNetVSjet_2;   //!
-   TBranch        *b_rawPNetVSmu_2;   //!
-   TBranch        *b_rawPNetVSe_2;   //!
    TBranch        *b_decayMode_2;   //!
    TBranch        *b_decayModePNet_2;   //!
-   TBranch        *b_probDM0PNet_2;   //!
-   TBranch        *b_probDM1PNet_2;   //!
-   TBranch        *b_probDM2PNet_2;   //!
-   TBranch        *b_probDM10PNet_2;   //!
-   TBranch        *b_probDM11PNet_2;   //!
    TBranch        *b_n_jets;   //!
-   TBranch        *b_n_prebjets;   //!
    TBranch        *b_n_bjets;   //!
    TBranch        *b_mjj;   //!
    TBranch        *b_jdeta;   //!
@@ -330,22 +339,15 @@ public :
    TBranch        *b_jpt_2;   //!
    TBranch        *b_jeta_2;   //!
    TBranch        *b_jphi_2;   //!
-   TBranch        *b_seeding_n_jets;   //!
-   TBranch        *b_seeding_mjj;   //!
-   TBranch        *b_seeding_jdeta;   //!
-   TBranch        *b_seeding_sjdphi;   //!
-   TBranch        *b_seeding_dijetpt;   //!
-   TBranch        *b_seeding_jpt_1;   //!
-   TBranch        *b_seeding_jeta_1;   //!
-   TBranch        *b_seeding_jphi_1;   //!
-   TBranch        *b_seeding_jpt_2;   //!
-   TBranch        *b_seeding_jeta_2;   //!
-   TBranch        *b_seeding_jphi_2;   //!
    TBranch        *b_aco_mu_pi;   //!
    TBranch        *b_aco_mu_rho;   //!
-   TBranch        *b_aco_mu_a1;   //!
+   TBranch        *b_aco_mu_a1_FASTMTT_MassConstraint;   //!
    TBranch        *b_alphaAngle_mu_pi_1;   //!
    TBranch        *b_alphaAngle_mu_pi_2;   //!
+   TBranch        *b_alphaAngle_mu_rho_1;   //!
+   TBranch        *b_alphaAngle_mu_rho_2;   //!
+   TBranch        *b_alphaAngle_mu_a1_FASTMTT_MassConstraint_1;   //!
+   TBranch        *b_alphaAngle_mu_a1_FASTMTT_MassConstraint_2;   //!
    TBranch        *b_PV_x;   //!
    TBranch        *b_PV_y;   //!
    TBranch        *b_PV_z;   //!
@@ -368,6 +370,44 @@ public :
    TBranch        *b_sv_x_2;   //!
    TBranch        *b_sv_y_2;   //!
    TBranch        *b_sv_z_2;   //!
+   TBranch        *b_PVBS_cov00;   //!
+   TBranch        *b_PVBS_cov10;   //!
+   TBranch        *b_PVBS_cov11;   //!
+   TBranch        *b_PVBS_cov20;   //!
+   TBranch        *b_PVBS_cov21;   //!
+   TBranch        *b_PVBS_cov22;   //!
+   TBranch        *b_sv_cov00_1;   //!
+   TBranch        *b_sv_cov10_1;   //!
+   TBranch        *b_sv_cov11_1;   //!
+   TBranch        *b_sv_cov20_1;   //!
+   TBranch        *b_sv_cov21_1;   //!
+   TBranch        *b_sv_cov22_1;   //!
+   TBranch        *b_sv_cov00_2;   //!
+   TBranch        *b_sv_cov10_2;   //!
+   TBranch        *b_sv_cov11_2;   //!
+   TBranch        *b_sv_cov20_2;   //!
+   TBranch        *b_sv_cov21_2;   //!
+   TBranch        *b_sv_cov22_2;   //!
+   TBranch        *b_ip_cov00_1;   //!
+   TBranch        *b_ip_cov10_1;   //!
+   TBranch        *b_ip_cov11_1;   //!
+   TBranch        *b_ip_cov20_1;   //!
+   TBranch        *b_ip_cov21_1;   //!
+   TBranch        *b_ip_cov22_1;   //!
+   TBranch        *b_ip_cov00_2;   //!
+   TBranch        *b_ip_cov10_2;   //!
+   TBranch        *b_ip_cov11_2;   //!
+   TBranch        *b_ip_cov20_2;   //!
+   TBranch        *b_ip_cov21_2;   //!
+   TBranch        *b_ip_cov22_2;   //!
+   TBranch        *b_FastMTT_mass;   //!
+   TBranch        *b_FastMTT_pt;   //!
+   TBranch        *b_FastMTT_pt_1;   //!
+   TBranch        *b_FastMTT_pt_2;   //!
+   TBranch        *b_FastMTT_mass_constraint;   //!
+   TBranch        *b_FastMTT_pt_constraint;   //!
+   TBranch        *b_FastMTT_pt_1_constraint;   //!
+   TBranch        *b_FastMTT_pt_2_constraint;   //!
    TBranch        *b_pi_pt_1;   //!
    TBranch        *b_pi_eta_1;   //!
    TBranch        *b_pi_phi_1;   //!
@@ -424,10 +464,9 @@ public :
    TBranch        *b_pi0_charge_2;   //!
    TBranch        *b_pi0_pdgId_2;   //!
    TBranch        *b_pi0_Energy_2;   //!
-   TBranch        *b_leadTkPtOverTauPt_2;   //!
-   TBranch        *b_strip_pt_2;   //!
    TBranch        *b_weight;   //!
    TBranch        *b_genWeight;   //!
+   TBranch        *b_is_data;   //!
    TBranch        *b_LHEReweightingWeight_SM;   //!
    TBranch        *b_LHEReweightingWeight_PS;   //!
    TBranch        *b_LHEReweightingWeight_MM;   //!
@@ -471,29 +510,48 @@ public :
    TBranch        *b_genIP_2_x;   //!
    TBranch        *b_genIP_2_y;   //!
    TBranch        *b_genIP_2_z;   //!
-   TBranch        *b_GenVsReco_PVBS_dxy;   //!
-   TBranch        *b_GenVsReco_PVBS_dz;   //!
-   TBranch        *b_GenVsReco_PV_dxy;   //!
-   TBranch        *b_GenVsReco_PV_dz;   //!
-   TBranch        *b_w_DY_soup;   //!
    TBranch        *b_w_WJ_soup;   //!
    TBranch        *b_w_DY_NLO_soup;   //!
    TBranch        *b_w_Pileup;   //!
    TBranch        *b_w_Zpt_Reweighting;   //!
    TBranch        *b_w_Top_pt_Reweighting;   //!
    TBranch        *b_w_ggH_QuarkMass_Effects;   //!
-   TBranch        *b_w_Electron_ID;   //!
-   TBranch        *b_w_Electron_Reco;   //!
    TBranch        *b_w_Muon_ID;   //!
    TBranch        *b_w_Muon_Isolation;   //!
-   TBranch        *b_w_Tau_ID;   //!
+   TBranch        *b_w_Tau_ID_PNet;   //!
    TBranch        *b_w_Tau_e_FakeRate;   //!
    TBranch        *b_w_Tau_mu_FakeRate;   //!
    TBranch        *b_w_Trigger;   //!
-   TBranch        *b_w_SingleMuon_leg1;   //!
+   TBranch        *b_w_IP_Significance;   //!
    TBranch        *b_w_CrossTrigger_Muon_leg1;   //!
    TBranch        *b_w_CrossTrigger_Tau_leg2;   //!
+   TBranch        *b_w_SingleTauTrigger;   //!
+   TBranch        *b_w_SingleMuon_leg1;   //!
    TBranch        *b_iso_1;   //!
+   TBranch        *b_abs_eta_1;   //!
+   TBranch        *b_BDT_pred_score;   //!
+   TBranch        *b_BDT_pred_class;   //!
+   TBranch        *b_BDT_raw_score_tau;   //!
+   TBranch        *b_BDT_raw_score_higgs;   //!
+   TBranch        *b_BDT_raw_score_fake;   //!
+   TBranch        *b_FF_wj_ipcut_closure_nom;   //!
+   TBranch        *b_FF_wj_ipcut_nom;   //!
+   TBranch        *b_FF_wj_ipcut_syst_up;   //!
+   TBranch        *b_FF_wj_ipcut_syst_down;   //!
+   TBranch        *b_FF_wj_ipcut_up;   //!
+   TBranch        *b_FF_wj_ipcut_down;   //!
+   TBranch        *b_FF_qcd_ipcut_closure_nom;   //!
+   TBranch        *b_FF_qcd_ipcut_nom;   //!
+   TBranch        *b_FF_qcd_ipcut_syst_up;   //!
+   TBranch        *b_FF_qcd_ipcut_syst_down;   //!
+   TBranch        *b_FF_qcd_ipcut_up;   //!
+   TBranch        *b_FF_qcd_ipcut_down;   //!
+   TBranch        *b_FF_mc_top_ipcut_closure_nom;   //!
+   TBranch        *b_FF_mc_top_ipcut_nom;   //!
+   TBranch        *b_FF_mc_top_ipcut_syst_up;   //!
+   TBranch        *b_FF_mc_top_ipcut_syst_down;   //!
+   TBranch        *b_FF_mc_top_ipcut_up;   //!
+   TBranch        *b_FF_mc_top_ipcut_down;   //!
 
    ntuple(TTree *tree=0);
    virtual ~ntuple();
@@ -514,9 +572,9 @@ ntuple::ntuple(TTree *tree) : fChain(0)
 // if parameter tree is not specified (or zero), connect the file
 // used to generate this class and read the Tree.
    if (tree == 0) {
-      TFile *f = (TFile*)gROOT->GetListOfFiles()->FindObject("root://eoscms.cern.ch//eos/cms/store/group/phys_tau/lrussell/forAliaksei/old/oldTuples/Run3_2022EE/mt/GluGluHTo2Tau_UncorrelatedDecay_UnFiltered/nominal/merged.root");
+      TFile *f = (TFile*)gROOT->GetListOfFiles()->FindObject("root://eoscms.cern.ch//eos/cms/store/group/phys_tau/lrussell/forAliaksei/CPSignalStudies/Run3_2022EE/mt/GluGluHTo2Tau_UncorrelatedDecay_SM_Filtered_ProdAndDecay/nominal/merged.root");
       if (!f || !f->IsOpen()) {
-         f = new TFile("root://eoscms.cern.ch//eos/cms/store/group/phys_tau/lrussell/forAliaksei/old/oldTuples/Run3_2022EE/mt/GluGluHTo2Tau_UncorrelatedDecay_UnFiltered/nominal/merged.root");
+         f = new TFile("root://eoscms.cern.ch//eos/cms/store/group/phys_tau/lrussell/forAliaksei/CPSignalStudies/Run3_2022EE/mt/GluGluHTo2Tau_UncorrelatedDecay_SM_Filtered_ProdAndDecay/nominal/merged.root");
       }
       f->GetObject("ntuple",tree);
 
@@ -568,8 +626,6 @@ void ntuple::Init(TTree *tree)
    fChain->SetBranchAddress("event", &event, &b_event);
    fChain->SetBranchAddress("run", &run, &b_run);
    fChain->SetBranchAddress("lumi", &lumi, &b_lumi);
-   fChain->SetBranchAddress("original_index_1", &original_index_1, &b_original_index_1);
-   fChain->SetBranchAddress("original_index_2", &original_index_2, &b_original_index_2);
    fChain->SetBranchAddress("charge_1", &charge_1, &b_charge_1);
    fChain->SetBranchAddress("charge_2", &charge_2, &b_charge_2);
    fChain->SetBranchAddress("pt_1", &pt_1, &b_pt_1);
@@ -604,27 +660,9 @@ void ntuple::Init(TTree *tree)
    fChain->SetBranchAddress("idDeepTau2018v2p5VSjet_2", &idDeepTau2018v2p5VSjet_2, &b_idDeepTau2018v2p5VSjet_2);
    fChain->SetBranchAddress("idDeepTau2018v2p5VSmu_2", &idDeepTau2018v2p5VSmu_2, &b_idDeepTau2018v2p5VSmu_2);
    fChain->SetBranchAddress("idDeepTau2018v2p5VSe_2", &idDeepTau2018v2p5VSe_2, &b_idDeepTau2018v2p5VSe_2);
-   fChain->SetBranchAddress("idDeepTau2018v2p5noDAVSjet_2", &idDeepTau2018v2p5noDAVSjet_2, &b_idDeepTau2018v2p5noDAVSjet_2);
-   fChain->SetBranchAddress("idDeepTau2018v2p5noDAVSmu_2", &idDeepTau2018v2p5noDAVSmu_2, &b_idDeepTau2018v2p5noDAVSmu_2);
-   fChain->SetBranchAddress("idDeepTau2018v2p5noDAVSe_2", &idDeepTau2018v2p5noDAVSe_2, &b_idDeepTau2018v2p5noDAVSe_2);
-   fChain->SetBranchAddress("rawDeepTau2018v2p5VSjet_2", &rawDeepTau2018v2p5VSjet_2, &b_rawDeepTau2018v2p5VSjet_2);
-   fChain->SetBranchAddress("rawDeepTau2018v2p5VSmu_2", &rawDeepTau2018v2p5VSmu_2, &b_rawDeepTau2018v2p5VSmu_2);
-   fChain->SetBranchAddress("rawDeepTau2018v2p5VSe_2", &rawDeepTau2018v2p5VSe_2, &b_rawDeepTau2018v2p5VSe_2);
-   fChain->SetBranchAddress("rawDeepTau2018v2p5noDAVSjet_2", &rawDeepTau2018v2p5noDAVSjet_2, &b_rawDeepTau2018v2p5noDAVSjet_2);
-   fChain->SetBranchAddress("rawDeepTau2018v2p5noDAVSmu_2", &rawDeepTau2018v2p5noDAVSmu_2, &b_rawDeepTau2018v2p5noDAVSmu_2);
-   fChain->SetBranchAddress("rawDeepTau2018v2p5noDAVSe_2", &rawDeepTau2018v2p5noDAVSe_2, &b_rawDeepTau2018v2p5noDAVSe_2);
-   fChain->SetBranchAddress("rawPNetVSjet_2", &rawPNetVSjet_2, &b_rawPNetVSjet_2);
-   fChain->SetBranchAddress("rawPNetVSmu_2", &rawPNetVSmu_2, &b_rawPNetVSmu_2);
-   fChain->SetBranchAddress("rawPNetVSe_2", &rawPNetVSe_2, &b_rawPNetVSe_2);
    fChain->SetBranchAddress("decayMode_2", &decayMode_2, &b_decayMode_2);
    fChain->SetBranchAddress("decayModePNet_2", &decayModePNet_2, &b_decayModePNet_2);
-   fChain->SetBranchAddress("probDM0PNet_2", &probDM0PNet_2, &b_probDM0PNet_2);
-   fChain->SetBranchAddress("probDM1PNet_2", &probDM1PNet_2, &b_probDM1PNet_2);
-   fChain->SetBranchAddress("probDM2PNet_2", &probDM2PNet_2, &b_probDM2PNet_2);
-   fChain->SetBranchAddress("probDM10PNet_2", &probDM10PNet_2, &b_probDM10PNet_2);
-   fChain->SetBranchAddress("probDM11PNet_2", &probDM11PNet_2, &b_probDM11PNet_2);
    fChain->SetBranchAddress("n_jets", &n_jets, &b_n_jets);
-   fChain->SetBranchAddress("n_prebjets", &n_prebjets, &b_n_prebjets);
    fChain->SetBranchAddress("n_bjets", &n_bjets, &b_n_bjets);
    fChain->SetBranchAddress("mjj", &mjj, &b_mjj);
    fChain->SetBranchAddress("jdeta", &jdeta, &b_jdeta);
@@ -636,22 +674,15 @@ void ntuple::Init(TTree *tree)
    fChain->SetBranchAddress("jpt_2", &jpt_2, &b_jpt_2);
    fChain->SetBranchAddress("jeta_2", &jeta_2, &b_jeta_2);
    fChain->SetBranchAddress("jphi_2", &jphi_2, &b_jphi_2);
-   fChain->SetBranchAddress("seeding_n_jets", &seeding_n_jets, &b_seeding_n_jets);
-   fChain->SetBranchAddress("seeding_mjj", &seeding_mjj, &b_seeding_mjj);
-   fChain->SetBranchAddress("seeding_jdeta", &seeding_jdeta, &b_seeding_jdeta);
-   fChain->SetBranchAddress("seeding_sjdphi", &seeding_sjdphi, &b_seeding_sjdphi);
-   fChain->SetBranchAddress("seeding_dijetpt", &seeding_dijetpt, &b_seeding_dijetpt);
-   fChain->SetBranchAddress("seeding_jpt_1", &seeding_jpt_1, &b_seeding_jpt_1);
-   fChain->SetBranchAddress("seeding_jeta_1", &seeding_jeta_1, &b_seeding_jeta_1);
-   fChain->SetBranchAddress("seeding_jphi_1", &seeding_jphi_1, &b_seeding_jphi_1);
-   fChain->SetBranchAddress("seeding_jpt_2", &seeding_jpt_2, &b_seeding_jpt_2);
-   fChain->SetBranchAddress("seeding_jeta_2", &seeding_jeta_2, &b_seeding_jeta_2);
-   fChain->SetBranchAddress("seeding_jphi_2", &seeding_jphi_2, &b_seeding_jphi_2);
    fChain->SetBranchAddress("aco_mu_pi", &aco_mu_pi, &b_aco_mu_pi);
    fChain->SetBranchAddress("aco_mu_rho", &aco_mu_rho, &b_aco_mu_rho);
-   fChain->SetBranchAddress("aco_mu_a1", &aco_mu_a1, &b_aco_mu_a1);
+   fChain->SetBranchAddress("aco_mu_a1_FASTMTT_MassConstraint", &aco_mu_a1_FASTMTT_MassConstraint, &b_aco_mu_a1_FASTMTT_MassConstraint);
    fChain->SetBranchAddress("alphaAngle_mu_pi_1", &alphaAngle_mu_pi_1, &b_alphaAngle_mu_pi_1);
    fChain->SetBranchAddress("alphaAngle_mu_pi_2", &alphaAngle_mu_pi_2, &b_alphaAngle_mu_pi_2);
+   fChain->SetBranchAddress("alphaAngle_mu_rho_1", &alphaAngle_mu_rho_1, &b_alphaAngle_mu_rho_1);
+   fChain->SetBranchAddress("alphaAngle_mu_rho_2", &alphaAngle_mu_rho_2, &b_alphaAngle_mu_rho_2);
+   fChain->SetBranchAddress("alphaAngle_mu_a1_FASTMTT_MassConstraint_1", &alphaAngle_mu_a1_FASTMTT_MassConstraint_1, &b_alphaAngle_mu_a1_FASTMTT_MassConstraint_1);
+   fChain->SetBranchAddress("alphaAngle_mu_a1_FASTMTT_MassConstraint_2", &alphaAngle_mu_a1_FASTMTT_MassConstraint_2, &b_alphaAngle_mu_a1_FASTMTT_MassConstraint_2);
    fChain->SetBranchAddress("PV_x", &PV_x, &b_PV_x);
    fChain->SetBranchAddress("PV_y", &PV_y, &b_PV_y);
    fChain->SetBranchAddress("PV_z", &PV_z, &b_PV_z);
@@ -674,6 +705,44 @@ void ntuple::Init(TTree *tree)
    fChain->SetBranchAddress("sv_x_2", &sv_x_2, &b_sv_x_2);
    fChain->SetBranchAddress("sv_y_2", &sv_y_2, &b_sv_y_2);
    fChain->SetBranchAddress("sv_z_2", &sv_z_2, &b_sv_z_2);
+   fChain->SetBranchAddress("PVBS_cov00", &PVBS_cov00, &b_PVBS_cov00);
+   fChain->SetBranchAddress("PVBS_cov10", &PVBS_cov10, &b_PVBS_cov10);
+   fChain->SetBranchAddress("PVBS_cov11", &PVBS_cov11, &b_PVBS_cov11);
+   fChain->SetBranchAddress("PVBS_cov20", &PVBS_cov20, &b_PVBS_cov20);
+   fChain->SetBranchAddress("PVBS_cov21", &PVBS_cov21, &b_PVBS_cov21);
+   fChain->SetBranchAddress("PVBS_cov22", &PVBS_cov22, &b_PVBS_cov22);
+   fChain->SetBranchAddress("sv_cov00_1", &sv_cov00_1, &b_sv_cov00_1);
+   fChain->SetBranchAddress("sv_cov10_1", &sv_cov10_1, &b_sv_cov10_1);
+   fChain->SetBranchAddress("sv_cov11_1", &sv_cov11_1, &b_sv_cov11_1);
+   fChain->SetBranchAddress("sv_cov20_1", &sv_cov20_1, &b_sv_cov20_1);
+   fChain->SetBranchAddress("sv_cov21_1", &sv_cov21_1, &b_sv_cov21_1);
+   fChain->SetBranchAddress("sv_cov22_1", &sv_cov22_1, &b_sv_cov22_1);
+   fChain->SetBranchAddress("sv_cov00_2", &sv_cov00_2, &b_sv_cov00_2);
+   fChain->SetBranchAddress("sv_cov10_2", &sv_cov10_2, &b_sv_cov10_2);
+   fChain->SetBranchAddress("sv_cov11_2", &sv_cov11_2, &b_sv_cov11_2);
+   fChain->SetBranchAddress("sv_cov20_2", &sv_cov20_2, &b_sv_cov20_2);
+   fChain->SetBranchAddress("sv_cov21_2", &sv_cov21_2, &b_sv_cov21_2);
+   fChain->SetBranchAddress("sv_cov22_2", &sv_cov22_2, &b_sv_cov22_2);
+   fChain->SetBranchAddress("ip_cov00_1", &ip_cov00_1, &b_ip_cov00_1);
+   fChain->SetBranchAddress("ip_cov10_1", &ip_cov10_1, &b_ip_cov10_1);
+   fChain->SetBranchAddress("ip_cov11_1", &ip_cov11_1, &b_ip_cov11_1);
+   fChain->SetBranchAddress("ip_cov20_1", &ip_cov20_1, &b_ip_cov20_1);
+   fChain->SetBranchAddress("ip_cov21_1", &ip_cov21_1, &b_ip_cov21_1);
+   fChain->SetBranchAddress("ip_cov22_1", &ip_cov22_1, &b_ip_cov22_1);
+   fChain->SetBranchAddress("ip_cov00_2", &ip_cov00_2, &b_ip_cov00_2);
+   fChain->SetBranchAddress("ip_cov10_2", &ip_cov10_2, &b_ip_cov10_2);
+   fChain->SetBranchAddress("ip_cov11_2", &ip_cov11_2, &b_ip_cov11_2);
+   fChain->SetBranchAddress("ip_cov20_2", &ip_cov20_2, &b_ip_cov20_2);
+   fChain->SetBranchAddress("ip_cov21_2", &ip_cov21_2, &b_ip_cov21_2);
+   fChain->SetBranchAddress("ip_cov22_2", &ip_cov22_2, &b_ip_cov22_2);
+   fChain->SetBranchAddress("FastMTT_mass", &FastMTT_mass, &b_FastMTT_mass);
+   fChain->SetBranchAddress("FastMTT_pt", &FastMTT_pt, &b_FastMTT_pt);
+   fChain->SetBranchAddress("FastMTT_pt_1", &FastMTT_pt_1, &b_FastMTT_pt_1);
+   fChain->SetBranchAddress("FastMTT_pt_2", &FastMTT_pt_2, &b_FastMTT_pt_2);
+   fChain->SetBranchAddress("FastMTT_mass_constraint", &FastMTT_mass_constraint, &b_FastMTT_mass_constraint);
+   fChain->SetBranchAddress("FastMTT_pt_constraint", &FastMTT_pt_constraint, &b_FastMTT_pt_constraint);
+   fChain->SetBranchAddress("FastMTT_pt_1_constraint", &FastMTT_pt_1_constraint, &b_FastMTT_pt_1_constraint);
+   fChain->SetBranchAddress("FastMTT_pt_2_constraint", &FastMTT_pt_2_constraint, &b_FastMTT_pt_2_constraint);
    fChain->SetBranchAddress("pi_pt_1", &pi_pt_1, &b_pi_pt_1);
    fChain->SetBranchAddress("pi_eta_1", &pi_eta_1, &b_pi_eta_1);
    fChain->SetBranchAddress("pi_phi_1", &pi_phi_1, &b_pi_phi_1);
@@ -730,10 +799,9 @@ void ntuple::Init(TTree *tree)
    fChain->SetBranchAddress("pi0_charge_2", &pi0_charge_2, &b_pi0_charge_2);
    fChain->SetBranchAddress("pi0_pdgId_2", &pi0_pdgId_2, &b_pi0_pdgId_2);
    fChain->SetBranchAddress("pi0_Energy_2", &pi0_Energy_2, &b_pi0_Energy_2);
-   fChain->SetBranchAddress("leadTkPtOverTauPt_2", &leadTkPtOverTauPt_2, &b_leadTkPtOverTauPt_2);
-   fChain->SetBranchAddress("strip_pt_2", &strip_pt_2, &b_strip_pt_2);
    fChain->SetBranchAddress("weight", &weight, &b_weight);
    fChain->SetBranchAddress("genWeight", &genWeight, &b_genWeight);
+   fChain->SetBranchAddress("is_data", &is_data, &b_is_data);
    fChain->SetBranchAddress("LHEReweightingWeight_SM", &LHEReweightingWeight_SM, &b_LHEReweightingWeight_SM);
    fChain->SetBranchAddress("LHEReweightingWeight_PS", &LHEReweightingWeight_PS, &b_LHEReweightingWeight_PS);
    fChain->SetBranchAddress("LHEReweightingWeight_MM", &LHEReweightingWeight_MM, &b_LHEReweightingWeight_MM);
@@ -777,29 +845,48 @@ void ntuple::Init(TTree *tree)
    fChain->SetBranchAddress("genIP_2_x", &genIP_2_x, &b_genIP_2_x);
    fChain->SetBranchAddress("genIP_2_y", &genIP_2_y, &b_genIP_2_y);
    fChain->SetBranchAddress("genIP_2_z", &genIP_2_z, &b_genIP_2_z);
-   fChain->SetBranchAddress("GenVsReco_PVBS_dxy", &GenVsReco_PVBS_dxy, &b_GenVsReco_PVBS_dxy);
-   fChain->SetBranchAddress("GenVsReco_PVBS_dz", &GenVsReco_PVBS_dz, &b_GenVsReco_PVBS_dz);
-   fChain->SetBranchAddress("GenVsReco_PV_dxy", &GenVsReco_PV_dxy, &b_GenVsReco_PV_dxy);
-   fChain->SetBranchAddress("GenVsReco_PV_dz", &GenVsReco_PV_dz, &b_GenVsReco_PV_dz);
-   fChain->SetBranchAddress("w_DY_soup", &w_DY_soup, &b_w_DY_soup);
    fChain->SetBranchAddress("w_WJ_soup", &w_WJ_soup, &b_w_WJ_soup);
    fChain->SetBranchAddress("w_DY_NLO_soup", &w_DY_NLO_soup, &b_w_DY_NLO_soup);
    fChain->SetBranchAddress("w_Pileup", &w_Pileup, &b_w_Pileup);
    fChain->SetBranchAddress("w_Zpt_Reweighting", &w_Zpt_Reweighting, &b_w_Zpt_Reweighting);
    fChain->SetBranchAddress("w_Top_pt_Reweighting", &w_Top_pt_Reweighting, &b_w_Top_pt_Reweighting);
    fChain->SetBranchAddress("w_ggH_QuarkMass_Effects", &w_ggH_QuarkMass_Effects, &b_w_ggH_QuarkMass_Effects);
-   fChain->SetBranchAddress("w_Electron_ID", &w_Electron_ID, &b_w_Electron_ID);
-   fChain->SetBranchAddress("w_Electron_Reco", &w_Electron_Reco, &b_w_Electron_Reco);
    fChain->SetBranchAddress("w_Muon_ID", &w_Muon_ID, &b_w_Muon_ID);
    fChain->SetBranchAddress("w_Muon_Isolation", &w_Muon_Isolation, &b_w_Muon_Isolation);
-   fChain->SetBranchAddress("w_Tau_ID", &w_Tau_ID, &b_w_Tau_ID);
+   fChain->SetBranchAddress("w_Tau_ID_PNet", &w_Tau_ID_PNet, &b_w_Tau_ID_PNet);
    fChain->SetBranchAddress("w_Tau_e_FakeRate", &w_Tau_e_FakeRate, &b_w_Tau_e_FakeRate);
    fChain->SetBranchAddress("w_Tau_mu_FakeRate", &w_Tau_mu_FakeRate, &b_w_Tau_mu_FakeRate);
    fChain->SetBranchAddress("w_Trigger", &w_Trigger, &b_w_Trigger);
-   fChain->SetBranchAddress("w_SingleMuon_leg1", &w_SingleMuon_leg1, &b_w_SingleMuon_leg1);
+   fChain->SetBranchAddress("w_IP_Significance", &w_IP_Significance, &b_w_IP_Significance);
    fChain->SetBranchAddress("w_CrossTrigger_Muon_leg1", &w_CrossTrigger_Muon_leg1, &b_w_CrossTrigger_Muon_leg1);
    fChain->SetBranchAddress("w_CrossTrigger_Tau_leg2", &w_CrossTrigger_Tau_leg2, &b_w_CrossTrigger_Tau_leg2);
+   fChain->SetBranchAddress("w_SingleTauTrigger", &w_SingleTauTrigger, &b_w_SingleTauTrigger);
+   fChain->SetBranchAddress("w_SingleMuon_leg1", &w_SingleMuon_leg1, &b_w_SingleMuon_leg1);
    fChain->SetBranchAddress("iso_1", &iso_1, &b_iso_1);
+   fChain->SetBranchAddress("abs_eta_1", &abs_eta_1, &b_abs_eta_1);
+   fChain->SetBranchAddress("BDT_pred_score", &BDT_pred_score, &b_BDT_pred_score);
+   fChain->SetBranchAddress("BDT_pred_class", &BDT_pred_class, &b_BDT_pred_class);
+   fChain->SetBranchAddress("BDT_raw_score_tau", &BDT_raw_score_tau, &b_BDT_raw_score_tau);
+   fChain->SetBranchAddress("BDT_raw_score_higgs", &BDT_raw_score_higgs, &b_BDT_raw_score_higgs);
+   fChain->SetBranchAddress("BDT_raw_score_fake", &BDT_raw_score_fake, &b_BDT_raw_score_fake);
+   fChain->SetBranchAddress("FF_wj_ipcut_closure_nom", &FF_wj_ipcut_closure_nom, &b_FF_wj_ipcut_closure_nom);
+   fChain->SetBranchAddress("FF_wj_ipcut_nom", &FF_wj_ipcut_nom, &b_FF_wj_ipcut_nom);
+   fChain->SetBranchAddress("FF_wj_ipcut_syst_up", &FF_wj_ipcut_syst_up, &b_FF_wj_ipcut_syst_up);
+   fChain->SetBranchAddress("FF_wj_ipcut_syst_down", &FF_wj_ipcut_syst_down, &b_FF_wj_ipcut_syst_down);
+   fChain->SetBranchAddress("FF_wj_ipcut_up", &FF_wj_ipcut_up, &b_FF_wj_ipcut_up);
+   fChain->SetBranchAddress("FF_wj_ipcut_down", &FF_wj_ipcut_down, &b_FF_wj_ipcut_down);
+   fChain->SetBranchAddress("FF_qcd_ipcut_closure_nom", &FF_qcd_ipcut_closure_nom, &b_FF_qcd_ipcut_closure_nom);
+   fChain->SetBranchAddress("FF_qcd_ipcut_nom", &FF_qcd_ipcut_nom, &b_FF_qcd_ipcut_nom);
+   fChain->SetBranchAddress("FF_qcd_ipcut_syst_up", &FF_qcd_ipcut_syst_up, &b_FF_qcd_ipcut_syst_up);
+   fChain->SetBranchAddress("FF_qcd_ipcut_syst_down", &FF_qcd_ipcut_syst_down, &b_FF_qcd_ipcut_syst_down);
+   fChain->SetBranchAddress("FF_qcd_ipcut_up", &FF_qcd_ipcut_up, &b_FF_qcd_ipcut_up);
+   fChain->SetBranchAddress("FF_qcd_ipcut_down", &FF_qcd_ipcut_down, &b_FF_qcd_ipcut_down);
+   fChain->SetBranchAddress("FF_mc_top_ipcut_closure_nom", &FF_mc_top_ipcut_closure_nom, &b_FF_mc_top_ipcut_closure_nom);
+   fChain->SetBranchAddress("FF_mc_top_ipcut_nom", &FF_mc_top_ipcut_nom, &b_FF_mc_top_ipcut_nom);
+   fChain->SetBranchAddress("FF_mc_top_ipcut_syst_up", &FF_mc_top_ipcut_syst_up, &b_FF_mc_top_ipcut_syst_up);
+   fChain->SetBranchAddress("FF_mc_top_ipcut_syst_down", &FF_mc_top_ipcut_syst_down, &b_FF_mc_top_ipcut_syst_down);
+   fChain->SetBranchAddress("FF_mc_top_ipcut_up", &FF_mc_top_ipcut_up, &b_FF_mc_top_ipcut_up);
+   fChain->SetBranchAddress("FF_mc_top_ipcut_down", &FF_mc_top_ipcut_down, &b_FF_mc_top_ipcut_down);
    Notify();
 }
 
