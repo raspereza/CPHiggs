@@ -63,6 +63,8 @@ def Plot(hists,**kwargs):
     h_data_ar = hists['data_ar_all'].Clone('h_data_ar')
     h_data_ewk = hists['data_wj_all'].Clone('h_data_ewk')
     h_data_top = hists['data_mc_top_all'].Clone('h_data_top')
+    h_ew_jtau = h_data_ewk.Clone('h_ew_jtau')
+    h_top_jtau = h_data_top.Clone('h_top_jtau')
     
     for mc in mc_samples:
         hist = h_mc['%s_ar_lepton'%(mc)]
@@ -114,8 +116,12 @@ def Plot(hists,**kwargs):
         x_ff_ewk = h_data_ewk.GetBinContent(ib)
         x_ff_top = h_data_top.GetBinContent(ib) 
         x_ff = f_ewk*x_ff_ewk+f_qcd*x_ff_qcd+f_top*x_ff_top
+        h_ew_jtau.SetBinContent(ib,f_ewk*x_ff_ewk)
+        h_top_jtau.SetBinContent(ib,f_top*x_ff_top)
+        h_data_qcd.SetBinContent(ib,f_qcd*x_ff_qcd)
+        
 #        e_ff = ROOT.TMath.Sqrt(f_ewk*e_ff_ewk*f_ewk*e_ff_ewk+f_qcd*e_ff_qcd*f_qcd*e_ff_qcd+f_top*e_ff_top*f_top*e_ff_top)
-        h_data_qcd.SetBinContent(ib,x_ff)
+#        h_data_qcd.SetBinContent(ib,x_ff)
 #        h_data_qcd.SetBinError(ib,e_ff)
         
     styles.InitData(h_data)
@@ -126,11 +132,13 @@ def Plot(hists,**kwargs):
     h_vv = h_mc['vv_lepton'].Clone('vv')
     h_wjets = h_mc['wjets_lepton'].Clone('wjets')
     h_qcd = h_data_qcd.Clone('qcd')
+    h_top.Add(h_top,h_top_jtau,1.,1.)
     
     xtitle = utils.XTitle[chan][var]
     styles.InitHist(h_ztt,"","",ROOT.TColor.GetColor("#FFCC66"),1001)
     styles.InitHist(h_zll,"","",ROOT.TColor.GetColor(100,192,232),1001)
     styles.InitHist(h_top,"","",ROOT.TColor.GetColor("#9999CC"),1001)
+    styles.InitHist(h_ew_jtau,"","",ROOT.kGreen-6,1001)
     styles.InitHist(h_vv,"","",ROOT.TColor.GetColor("#DE5A6A"),1001)
     styles.InitHist(h_qcd,"","",ROOT.TColor.GetColor("#FFCCFF"),1001)
     styles.InitHist(h_wjets,"","",ROOT.TColor.GetColor("#DE5A6A"),1001)
@@ -142,8 +150,9 @@ def Plot(hists,**kwargs):
     x_top   = h_top.GetSumOfWeights()
     x_vv    = h_vv.GetSumOfWeights() 
     x_wjets = h_wjets.GetSumOfWeights()
+    x_ew_jtau = h_ew_jtau.GetSumOfWeights()
     x_qcd   = h_qcd.GetSumOfWeights() 
-    x_tot   = x_ztt + x_zll + x_top + x_vv + x_wjets + x_qcd
+    x_tot   = x_ztt + x_zll + x_top + x_vv + x_wjets + x_qcd + x_ew_jtau
 
     print('')
     print('Yields ->')
@@ -152,7 +161,8 @@ def Plot(hists,**kwargs):
     print('TTbar      : %7.0f'%(x_top))
     print('VV+ST      : %7.0f'%(x_vv))
     print('WJets      : %7.0f'%(x_wjets))
-    print('Fakes      : %7.0f'%(x_qcd))
+    print('Fakes (EW) : %7.0f'%(x_ew_jtau))
+    print('Fakes (QCD): %7.0f'%(x_qcd))
     print('Total MC   : %7.0f'%(x_tot))
     print('Data       : %7.0f'%(x_data))
     print('')
@@ -160,7 +170,8 @@ def Plot(hists,**kwargs):
     h_vv.Add(h_vv,h_top,1.,1.)
     h_vv.Add(h_vv,h_wjets,1.,1.)
     h_qcd.Add(h_qcd,h_vv,1.,1.)
-    h_zll.Add(h_zll,h_qcd,1.,1.)
+    h_ew_jtau.Add(h_ew_jtau,h_qcd,1.,1.)
+    h_zll.Add(h_zll,h_ew_jtau,1.,1.)
     h_ztt.Add(h_ztt,h_zll,1.,1.)
 
     nbins = h_ztt.GetNbinsX()
@@ -191,6 +202,7 @@ def Plot(hists,**kwargs):
     utils.zeroBinErrors(h_top)
     utils.zeroBinErrors(h_vv)
     utils.zeroBinErrors(h_wjets)
+    utils.zeroBinErrors(h_ew_jtau)
     utils.zeroBinErrors(h_qcd)
 
     
@@ -212,6 +224,7 @@ def Plot(hists,**kwargs):
     h_data.Draw('e1')
     h_ztt.Draw('hsame')
     h_zll.Draw('hsame')
+    h_ew_jtau.Draw('hsame')
     h_qcd.Draw('hsame')
     h_vv.Draw('hsame')
     h_top.Draw('hsame')
@@ -225,8 +238,9 @@ def Plot(hists,**kwargs):
     leg.AddEntry(h_ztt,'Z#rightarrow#tau#tau','f')
     if chan=='mt': leg.AddEntry(h_zll,'Z#rightarrow#mu#mu','f')
     else: leg.AddEntry(h_zll,'Z#rightarrowee','f')
-    leg.AddEntry(h_qcd,'j#rightarrow#tau fakes','f')
-    leg.AddEntry(h_vv,'electroweak','f')
+    leg.AddEntry(h_ew_jtau,'EW j#rightarrow#tau fakes','f')
+    leg.AddEntry(h_qcd,'QCD','f')
+    leg.AddEntry(h_vv,'EW genuine #tau','f')
     leg.AddEntry(h_top,'t#bar{t}','f')
     if plotLegend: leg.Draw()
 
@@ -265,7 +279,7 @@ def Plot(hists,**kwargs):
     canvas.SetSelected(canvas)
     canvas.Update()
     print('')
-    outputFolder = '/eos/home-r/rasp/php-plots/plots/%s_FFmodel'%(chan)
+    outputFolder = '/eos/home-r/rasp/php-plots/plots/%s_FFmodel_split'%(chan)
     outputGraphics = '%s/%s.png'%(outputFolder,var)
     if qcd_corr: outputGraphics = '%s.png'%(outputFolder,var)
     canvas.Print(outputGraphics)

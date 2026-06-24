@@ -24,10 +24,10 @@ if __name__ == "__main__":
     parser = ArgumentParser()
     parser.add_argument('-era','--era',dest='era',default='Run3_2022postEE',choices=['Run3_2022preEE','Run3_2022postEE','Run3_2023preBPix','Run3_2023postBPix'])
     parser.add_argument('-channel','--channel',dest='channel',default='tt',choices=['mt','et','ee','mm','tt'])
-    parser.add_argument('-applyIPSigLepCut','--applyIPSigLepCut',dest='applyIPSigLepCut',type=int,default=0)
+    parser.add_argument('-applyIPSigLepCut','--applyIPSigLepCut',dest='applyIPSigLepCut',type=int,default=1)
     parser.add_argument('-applyFakeFactor','--applyFakeFactor',dest='applyFakeFactor',type=int,default=0)
     parser.add_argument('-sample','--sample',dest='sample',default='ggH_sm',choices=['data','ztt_0j','ztt_1j','ztt_2j','zll_0j','zll_1j','zll_2j','zll_incl','zll_ext','wjets','top','vv','st','top_2l2v','top_2l2v_ext','top_lv2q','top_lv2q_ext','ggH_sm','ggH_ps','ggH_mm','qqH','HWplus','HWminus','ZH'])
-    parser.add_argument('-analysisType','--analysisType',dest='analysisType',default='phiCP',choices=['baseline','ipSig','phiCP','datacardsPhiCP','jetFakes'])
+    parser.add_argument('-analysisType','--analysisType',dest='analysisType',default='datacardsPhiCP',choices=['baseline','ipSig','phiCP','datacardsPhiCP','jetFakes'])
     parser.add_argument('-ff_version','--ff_version',dest='ff_version',default='ipcut',choices=['ipcut','noipcut'])
     parser.add_argument('-cpp_fit','--cpp_fit',dest='cpp_fit',action='store_true')
     parser.add_argument('-phi_scan','--phi_scan',dest='phi_scan',action='store_true')
@@ -39,7 +39,8 @@ if __name__ == "__main__":
     analysisType = args.analysisType
 
     useCrossTrigger = False
-    setCPPkinfit = args.cpp_fit
+    #    setCPPkinfit = args.cpp_fit
+    setCPPkinfit = True
     phiScan = args.phi_scan
     applyBVeto = False
     applyIPSigLep1Cut = False
@@ -176,6 +177,7 @@ if __name__ == "__main__":
         for era in eras:
             datasets = utils.muonSamples[era]
             if args.channel=='et' or args.channel=='ee': datasets =  utils.elecSamples[era]
+            if args.channel=='tt': datasets = utils.tauSamples[era]
             dataNames[era] = datasets
 
         for era in eras:
